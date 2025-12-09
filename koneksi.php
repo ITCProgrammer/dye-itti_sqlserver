@@ -10,11 +10,11 @@ $con=mysqli_connect("10.0.0.10","dit","4dm1n","db_dying");
 $cond=mysqli_connect("10.0.0.10","dit","4dm1n","db_qc");
 
 // SQL Server: database nowprd (migrated from MySQL)
-$nowprdServer = "10.0.0.10,1433";
+$nowprdServer = "10.0.0.221";
 $nowprdOptions = array(
     "Database" => "nowprd",
-    "UID" => "dit",
-    "PWD" => "4dm1n",
+    "UID" => "sa",
+    "PWD" => "Ind@taichen2024",
     "CharacterSet" => "UTF-8"
 );
 $con_nowprd = sqlsrv_connect($nowprdServer, $nowprdOptions);
