@@ -1,0 +1,1644 @@
+<?php
+session_start();
+include"koneksi.php";
+?>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="refresh" content="180">
+		<title>Status Mesin</title>
+		<style>
+			td {
+				padding: 1px 0px;
+			}
+			p {
+   				line-height: 4px;
+				font-size: 10px;
+			}
+		</style>
+		<style type="text/css">
+			.teks-berjalan {
+				background-color: #03165E;
+				color: #F4F0F0;
+				font-family: monospace;
+				font-size: 24px;
+				font-style: italic;
+			}
+
+		</style>
+	</head>
+
+	<body>
+		
+		<div class="row">
+			<div class="col-xs-12">
+				<div class="box table-responsive">
+					<div class="box-header with-border">
+						<h3 class="box-title">Status Mesin Dyeing ITTI</h3>
+						<div class="box-tools pull-right">
+							<button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+							<a href="pages/status-mesin-full.php" class="btn btn-xs" data-toggle="tooltip" data-html="true" data-placement="bottom" title="FullScreen"><i class="fa fa-expand"></i></a>
+						</div>
+					</div>
+					<div class="box-body">
+<?php
+function NoMesin($mc)
+{
+	$qMC=mysql_query("SELECT *,IF(DATEDIFF(now(),a.tgl_delivery) > 0,'Urgent',
+IF(DATEDIFF(now(),a.tgl_delivery) > -4,'Potensi Delay','')) as `sts` FROM tbl_schedule a 
+LEFT JOIN tbl_montemp b ON a.id=b.id_schedule
+WHERE a.no_mesin='$mc' and (b.`status`='sedang jalan' or a.`status`='antri mesin') ORDER BY a.no_urut ASC");
+	$dMC=mysql_fetch_array($qMC);	
+	$qLama=mysql_query("SELECT round(TIME_FORMAT(timediff(b.tgl_target,now()),'%H')) as lama FROM tbl_schedule a
+LEFT JOIN tbl_montemp b ON a.id=b.id_schedule
+WHERE a.no_mesin='$mc' AND b.status='sedang jalan' ORDER BY a.no_urut ASC");
+	$dLama=mysql_fetch_array($qLama);
+	
+		if($dMC[ket_status]=="Tolak Basah"){
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="btn-warning blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="btn-warning border-dashed";							
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="btn-warning blink_me";
+			}else{ 
+				$warnaMc="btn-warning";}
+		}else if($dMC[ket_status]=="Mini Bulk"){
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="btn-primary blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="btn-primary border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="btn-primary blink_me";
+			}else{ 
+				$warnaMc="btn-primary";}			
+		}else if($dMC[ket_status]=="MC Stop"){
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="bg-black blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="bg-black border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="bg-black blink_me";
+			}else{ 
+				$warnaMc="bg-black";}
+		}else if($dMC[ket_status]=="MC Rusak"){
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="bg-abu blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="bg-abu border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="bg-abu blink_me";
+			}else{ 
+				$warnaMc="bg-abu";}
+		}else if($dMC[ket_status]=="MC Dibongkar"){
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="bg-aqua blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="bg-aqua border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="bg-aqua blink_me";
+			}else{ 
+				$warnaMc="bg-aqua";}
+		}else if($dMC[ket_status]=="Test Proses"){
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="bg-navy blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="bg-navy border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="bg-navy blink_me";
+			}else{ 
+				$warnaMc="bg-navy";}
+		}else if($dMC[ket_status]=="Cuci Misty"){
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="bg-teal blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="bg-teal border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="bg-teal blink_me";
+			}else{ 
+				$warnaMc="bg-teal";}
+		}else if($dMC[ket_status]=="Kain Basah"){
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="bg-maroon blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="bg-maroon border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="bg-maroon blink_me";
+			}else{ 
+				$warnaMc="bg-maroon";}
+		}else if($dMC[ket_status]=="Relaxing-Preset" or $dMC[ket_status]=="Scouring-Preset" or $dMC[ket_status]=="Continuous"){
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="bg-purple blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="bg-purple border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="bg-purple blink_me";
+			}else{ 
+				$warnaMc="bg-purple";}
+		}else if($dMC[ket_status]=="Greige"){	
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="btn-success blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="btn-success border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="btn-success blink_me";
+			}else{ 
+				$warnaMc="btn-success";}
+		}else if($dMC[ket_status]=="Perbaikan"){
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="btn-danger blink_me1";	
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="btn-danger border-dashed";
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="btn-danger blink_me";
+			}else{ 
+				$warnaMc="btn-danger";}
+		}else if($dMC[ket_status]=="Gagal Proses"){	
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="bg-kuning blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+
+				$warnaMc="bg-kuning border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="bg-kuning blink_me";
+			}else{ 
+				$warnaMc="bg-kuning";}
+		}else if($dMC[ket_status]=="Cuci YD"){	
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="bg-hijau blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="bg-hijau border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="bg-hijau blink_me";
+			}else{ 
+				$warnaMc="bg-hijau";}
+		}else if($dMC[ket_status]=="Development Sample"){
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="bg-fuchsia blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="bg-fuchsia border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="bg-fuchsia blink_me";
+			}else{ 
+				$warnaMc="bg-fuchsia";}
+		}else if($dMC[ket_status]=="Salesmen Sample" or $dMC[ket_status]=="First Lot"){
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="bg-lime blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="bg-lime border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="bg-lime blink_me";
+			}else{ 
+				$warnaMc="bg-lime";}
+		}else if($dMC[ket_status]=="Cuci Mesin"){	
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="bg-violet blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="bg-violet border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="bg-violet blink_me";
+			}else{ 
+				$warnaMc="bg-violet";}	
+		}else if($dMC[ket_status]=="Greige Delay"){	
+			if($dLama[lama]<"1" and $dLama[lama]!=""){ 
+				$warnaMc="btn-default blink_me1";
+			}else if($dMC[sts]=="Potensi Delay"){
+				$warnaMc="btn-default border-dashed";				
+			}else if($dMC[sts]=="Urgent"){ 
+				$warnaMc="btn-default blink_me";
+			}else{ 
+				$warnaMc="btn-default";}	
+		}else{
+		/*Tidak Ada PO*/ 
+		$warnaMc="";
+		}
+
+    return $warnaMc;
+}
+function Rajut($mc)
+{
+	$qMC=mysql_query("SELECT a.langganan,a.no_order,a.warna,a.proses FROM tbl_schedule a 
+	LEFT JOIN tbl_montemp b ON a.id=b.id_schedule
+	WHERE a.no_mesin='$mc' and b.status='sedang jalan' ORDER BY a.no_urut ASC LIMIT 1");
+	$dMC=mysql_fetch_array($qMC);
+    echo "<font size=+2><u>".$mc."</u></font> <br>".$dMC[no_order]."<br> ".$dMC[langganan]."<br>".$dMC[warna]."<br>".$dMC[proses];	
+}
+		function Waktu($mc){
+			$qLama=mysql_query("SELECT TIME_FORMAT(timediff(b.tgl_target,now()),'%H:%i') as lama FROM tbl_schedule a
+LEFT JOIN tbl_montemp b ON a.id=b.id_schedule
+WHERE a.no_mesin='$mc' AND b.status='sedang jalan' AND (ISNULL(b.tgl_stop) or NOT ISNULL(b.tgl_mulai)) ORDER BY a.no_urut ASC");
+			$dLama=mysql_fetch_array($qLama);
+			if($dLama[lama]!=""){echo $dLama[lama];}else{echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ";}
+		}
+
+/* Total Status Mesin */
+    $sqlStatus=mysql_query("SELECT no_mesin FROM tbl_mesin");
+    while ($rM=mysql_fetch_array($sqlStatus)) {
+        $sts=NoMesin($rM[no_mesin]);
+        if ($sts=="btn-primary" or
+           $sts=="btn-primary border-dashed" or
+		   $sts=="btn-primary blink_me1" or	
+           $sts=="btn-primary blink_me") {
+            $MB="1";
+        } else {
+            $MB="0";
+        }
+		if ($sts=="bg-purple" or
+           $sts=="bg-purple border-dashed" or
+		   $sts=="bg-purple blink_me1" or	
+           $sts=="bg-purple blink_me") {
+            $SPT="1";
+        } else {
+            $SPT="0";
+        }
+        if ($sts=="btn-warning" or
+           $sts=="btn-warning border-dashed" or
+		   $sts=="btn-warning blink_me1" or	
+           $sts=="btn-warning blink_me") {
+            $FL="1";
+        } else {
+            $FL="0";
+        }
+        if ($sts=="btn-danger" or
+           $sts=="btn-danger border-dashed" or
+		   $sts=="btn-danger blink_me1" or	
+           $sts=="btn-danger blink_me") {
+            $PBK="1";
+        } else {
+            $PBK="0";
+        }
+        if ($sts=="btn-success" or
+           $sts=="btn-success border-dashed" or
+		   $sts=="btn-success blink_me1" or	
+           $sts=="btn-success blink_me") {
+            $GRG="1";
+        } else {
+            $GRG="0";
+        }
+        if ($sts=="btn-default" or
+		   $sts=="btn-default border-dashed" or
+		   $sts=="btn-default blink_me1" or	
+           $sts=="btn-default blink_me") {
+            $GD="1";
+        } else {
+            $GD="0";
+        }
+        if ($sts=="bg-kuning" or
+           $sts=="bg-kuning border-dashed" or
+		   $sts=="bg-kuning blink_me1" or	
+           $sts=="bg-kuning blink_me") {
+            $GPS="1";
+        } else {
+            $GPS="0";
+        }
+		if ($sts=="bg-hijau" or
+           $sts=="bg-hijau border-dashed" or
+		   $sts=="bg-hijau blink_me1" or	
+           $sts=="bg-hijau blink_me") {
+            $CYD="1";
+        } else {
+            $CYD="0";
+        }
+        if ($sts=="bg-black" or
+           $sts=="bg-black border-dashed" or
+		   $sts=="bg-black blink_me1" or	
+           $sts=="bg-black blink_me") {
+            $MCS="1";
+        } else {
+            $MCS="0";
+        }
+        if ($sts=="bg-abu" or
+           $sts=="bg-abu border-dashed" or
+		   $sts=="bg-abu blink_me1" or	
+           $sts=="bg-abu blink_me") {
+            $MCR="1";
+        } else {
+            $MCR="0";
+		}
+		if ($sts=="bg-aqua" or
+           $sts=="bg-aqua border-dashed" or
+		   $sts=="bg-aqua blink_me1" or	
+           $sts=="bg-aqua blink_me") {
+            $MCB="1";
+        } else {
+            $MCB="0";
+        }
+		if ($sts=="bg-teal" or
+           $sts=="bg-teal border-dashed" or
+		   $sts=="bg-teal blink_me1" or	
+           $sts=="bg-teal blink_me") {
+            $CMY="1";
+        } else {
+            $CMY="0";
+        }
+		if ($sts=="bg-fuchsia" or
+           $sts=="bg-fuchsia border-dashed" or
+		   $sts=="bg-fuchsia blink_me1" or	
+           $sts=="bg-fuchsia blink_me") {
+            $DTS="1";
+        } else {
+            $DTS="0";
+        }
+		if ($sts=="bg-lime" or
+           $sts=="bg-lime border-dashed" or
+		   $sts=="bg-lime blink_me1" or	
+           $sts=="bg-lime blink_me") {
+            $SMS="1";
+        } else {
+            $SMS="0";
+        }
+		if ($sts=="bg-violet" or
+           $sts=="bg-violet border-dashed" or
+		   $sts=="bg-violet blink_me1" or	
+           $sts=="bg-violet blink_me") {
+            $CMS="1";
+        } else {
+            $CMS="0";
+        }
+        if ($sts=="bg-abu border-dashed" or
+		   $sts=="bg-black border-dashed" or
+		   $sts=="bg-aqua border-dashed" or
+           $sts=="bg-kuning border-dashed" or
+		   $sts=="bg-hijau border-dashed" or	
+           $sts=="btn-success border-dashed" or
+           $sts=="btn-danger border-dashed" or
+           $sts=="btn-warning border-dashed" or
+           $sts=="btn-primary border-dashed" or
+		   $sts=="bg-teal border-dashed" or
+		   $sts=="bg-purple border-dashed" or	
+		   $sts=="bg-fuchsia border-dashed" or
+		   $sts=="bg-lime border-dashed" or	
+		   $sts=="bg-violet border-dashed") {
+            $PTD="1";
+        } else {
+            $PTD="0";
+        }
+        if ($sts=="bg-abu blink_me" or
+		   $sts=="bg-black blink_me" or
+		   $sts=="bg-aqua blink_me" or
+		   $sts=="bg-kuning blink_me" or
+		   $sts=="bg-hijau blink_me" or	
+           $sts=="btn-success blink_me" or
+           $sts=="btn-danger blink_me" or
+           $sts=="btn-warning blink_me" or
+           $sts=="btn-primary blink_me" or
+		   $sts=="bg-teal blink_me" or
+		   $sts=="bg-fuchsia blink_me" or
+		   $sts=="bg-lime blink_me" or	
+		   $sts=="bg-purple blink_me" or
+		   $sts=="bg-violet blink_me") {
+            $URG="1";
+        } else {
+            $URG="0";
+        }
+		
+        $totPTD=$totPTD+$PTD;
+        $totURG=$totURG+$URG;
+		$totGRG=$totGRG+$GRG;
+		$totCYD=$totCYD+$CYD;
+		$totGPS=$totGPS+$GPS;
+		$totPBK=$totPBK+$PBK;
+		$totFL=$totFL+$FL;
+		$totMB=$totMB+$MB;
+		$totGD=$totGD+$GD;
+		$totSPT=$totSPT+$SPT;
+		$totMCR=$totMCR+$MCR;
+		$totMCS=$totMCS+$MCS;
+		$totMCB=$totMCB+$MCB;
+		$totCMY=$totCMY+$CMY;
+		$totDTS=$totDTS+$DTS;
+		$totSMS=$totSMS+$SMS;
+		$totCMS=$totCMS+$CMS;
+		
+    }
+    //$totMesin=$totTS+$totTPB+$totTBW+$totAM+$totTBS+$totTQ+$totPM+$totSJ+$totTAP;
+						
+?>
+
+
+						<table width="100%" border="0">
+							<tbody>
+								<tr>
+								  <td align="center" class="bg-purple">2400 KGs</td>
+								  <td align="center" class="bg-black">1800 KGs</td>
+								  <td colspan="2" align="center" class="bg-blue">1200 KGs</td>
+								  <td colspan="2" align="center" class="bg-yellow">900 KGs</td>
+								  <td colspan="2" align="center" class="bg-red">800 KGs</td>
+								  <td colspan="2" align="center" class="bg-purple"> 750 KGs </td>
+								  <td colspan="3" align="center" class="bg-black"> 600 KGs </td>
+								  <td align="center" class="bg-kuning"> 500 KGs </td>
+								  <td colspan="2" align="center" class="bg-abu"> 400 KGs </td>
+								  <td colspan="2" align="center" class="bg-fuchsia"> 300 KGs </td>
+								  <td colspan="2" align="center" class="bg-aqua"> 200 KGs </td>
+								  <td colspan="2" align="center" class="bg-yellow">150KGs</td>
+								  <td colspan="2" align="center" class="bg-info"> 100 KGs </td>
+								  <td colspan="2" align="center" class="bg-maroon"> 50 KGs </td>
+								  <td colspan="2" align="center" class="bg-green"> 30 KGs </td>
+								  <td colspan="2" align="center" class="bg-gray"> 20 KGs </td>
+								  <td colspan="2" align="center" class="bg-lime"> 10 KGs </td>
+								  <td align="center" class="bg-teal">0 KGs</td>
+						      </tr>
+								<tr>
+								  <td colspan="33" align="center" ></td>
+							  </tr>
+								<tr>
+								  <td align="center" bgcolor="#ECE7E7"><span class="detail_status btn btn-sm <?php echo NoMesin("32"); ?>" id="32" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("32"); ?>">32
+								    <p><?php echo Waktu("32"); ?></p>
+								    </span></td>
+								  <td align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("35"); ?>" id="35" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("35"); ?>">35
+									  <p><?php echo Waktu("35"); ?></p>
+									  </span></td>
+									<td align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("01"); ?>" id="01" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("01"); ?>">01<p><?php echo Waktu("01"); ?></p></span></td>
+									<td align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("17"); ?>" id="17" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("17"); ?>">17
+									  <p><?php echo Waktu("17"); ?></p>
+									  </span></td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("10"); ?>" id="10" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("10"); ?>">10<p><?php echo Waktu("10"); ?></p></span></td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("52"); ?>" id="52" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("52"); ?>">52<p><?php echo Waktu("52"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("63"); ?>" id="63" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("63"); ?>">63<p><?php echo Waktu("63"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("34"); ?>" id="34" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("34"); ?>">34<p><?php echo Waktu("34"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("09"); ?>" id="09" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("09"); ?>">09<p><?php echo Waktu("09"); ?></p></span> </td>
+									<td colspan="2" align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("16"); ?>" id="16" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("16"); ?>">16<p><?php echo Waktu("16"); ?></p></span></td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td colspan="2" align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("66"); ?>" id="66" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("66"); ?>">66<p><?php echo Waktu("66"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("03"); ?>" id="03" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("03"); ?>">03<p><?php echo Waktu("03"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("07"); ?>" id="07" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("07"); ?>">07<p><?php echo Waktu("07"); ?></p></span> </td>
+									<td colspan="2" align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("64"); ?>" id="64" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("64"); ?>">64
+									  <p><?php echo Waktu("64"); ?></p>
+									  </span></td>
+									<td colspan="2" align="center" bgcolor="#ECE7E7"><span class="detail_status btn btn-sm <?php echo NoMesin("21"); ?>" id="21" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("21"); ?>">21
+									  <p><?php echo Waktu("21"); ?></p>
+									  </span></td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("22"); ?>" id="22" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("22"); ?>">22<p><?php echo Waktu("22"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("49"); ?>" id="49" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("49"); ?>">49<p><?php echo Waktu("49"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("23"); ?>" id="23" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("23"); ?>">23<p><?php echo Waktu("23"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("27"); ?>" id="27" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("27"); ?>">27<p><?php echo Waktu("27"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("53"); ?>" id="53" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("53"); ?>">53<p><?php echo Waktu("53"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("43"); ?>" id="43" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("43"); ?>">43<p><?php echo Waktu("43"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("56"); ?>" id="56" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("56"); ?>">56<p><?php echo Waktu("56"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("59"); ?>" id="59" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("59"); ?>">59<p><?php echo Waktu("59"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("WS"); ?>" id="WS" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("WS"); ?>">WS<p><?php echo Waktu("WS"); ?></p></span> </td>
+							  </tr>
+								<tr>
+								  <td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+								  <td align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("37"); ?>" id="37" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("37"); ?>">37
+									  <p><?php echo Waktu("37"); ?></p>
+									  </span></td>
+									<td align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("02"); ?>" id="02" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("02"); ?>">02<p><?php echo Waktu("02"); ?></p></span></td>
+									<td align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("30"); ?>" id="30" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("30"); ?>">30
+									  <p><?php echo Waktu("30"); ?></p>
+									  </span></td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("54"); ?>" id="54" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("54"); ?>">54<p><?php echo Waktu("54"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("65"); ?>" id="65" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("65"); ?>">65<p><?php echo Waktu("65"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("11"); ?>" id="11" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("11"); ?>">11<p><?php echo Waktu("11"); ?></p></span> </td>
+									<td colspan="2" align="center" bgcolor="#E0DDDD"><span class="detail_status btn  btn-sm  <?php echo NoMesin("18"); ?>" id="18" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("18"); ?>">18
+									  <p><?php echo Waktu("18"); ?></p>
+									  </span></td>
+									<td align="center" bgcolor="#ECE7E7"><span class="detail_status btn  btn-sm <?php echo NoMesin("47"); ?>" id="47" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("47"); ?>">47
+									  <p><?php echo Waktu("47"); ?></p>
+									  </span></td>
+									<td colspan="2" align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("67"); ?>" id="67" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("67"); ?>">67
+									  <p><?php echo Waktu("67"); ?></p>
+									  </span></td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("04"); ?>" id="04" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("04"); ?>">04<p><?php echo Waktu("04"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("08"); ?>" id="08" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("08"); ?>">08<p><?php echo Waktu("08"); ?></p></span> </td>
+									<td colspan="2" align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td colspan="2" align="center" bgcolor="#ECE7E7"><span class="detail_status btn btn-sm <?php echo NoMesin("31"); ?>" id="31" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("31"); ?>">31
+									  <p><?php echo Waktu("31"); ?></p>
+								    </span></td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("28"); ?>" id="28" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("28"); ?>">28<p><?php echo Waktu("28"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("50"); ?>" id="50" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("50"); ?>">50<p><?php echo Waktu("50"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("24"); ?>" id="24" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("24"); ?>">24<p><?php echo Waktu("24"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("51"); ?>" id="51" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("51"); ?>">51<p><?php echo Waktu("51"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("44"); ?>" id="44" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("44"); ?>">44<p><?php echo Waktu("44"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("57"); ?>" id="57" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("57"); ?>">57<p><?php echo Waktu("57"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("CB"); ?>" id="CB" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("CB"); ?>">CB<p><?php echo Waktu("CB"); ?></p></span> </td>
+							  </tr>
+								<tr>
+								  <td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+								  <td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("05"); ?>" id="05" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("05"); ?>">05<p><?php echo Waktu("05"); ?></p></span></td>
+									<td align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("33"); ?>" id="33" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("33"); ?>">33
+									  <p><?php echo Waktu("33"); ?></p>
+									  </span></td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("60"); ?>" id="60" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("60"); ?>">60<p><?php echo Waktu("60"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("68"); ?>" id="68" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("68"); ?>">68<p><?php echo Waktu("68"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD"><span class="detail_status btn  btn-sm <?php echo NoMesin("12"); ?>" id="12" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("12"); ?>">12<p><?php echo Waktu("12"); ?></p></span>  </td>
+									<td colspan="2" align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("19"); ?>" id="19" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("19"); ?>">19
+									  <p><?php echo Waktu("19"); ?></p>
+									  </span></td>
+									<td align="center" bgcolor="#ECE7E7"><span class="detail_status btn btn-sm <?php echo NoMesin("48"); ?>" id="48" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("48"); ?>">48
+									  <p><?php echo Waktu("48"); ?></p>
+									  </span></td>
+									<td colspan="2" align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("06"); ?>" id="06" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("06"); ?>">06<p><?php echo Waktu("06"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"><span class="detail_status btn btn-sm <?php echo NoMesin("36"); ?>" id="36" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("36"); ?>">36
+									    <p><?php echo Waktu("36"); ?></p>
+									  </span></td>
+									<td colspan="2" align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td colspan="2" align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("29"); ?>" id="29" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("29"); ?>">29<p><?php echo Waktu("29"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("39"); ?>" id="39" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("39"); ?>">39
+									  <p><?php echo Waktu("39"); ?></p>
+									  </span></td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("25"); ?>" id="25" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("25"); ?>">25<p><?php echo Waktu("25"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("62"); ?>" id="62" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("62"); ?>">62<p><?php echo Waktu("62"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("45"); ?>" id="45" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("45"); ?>">45<p><?php echo Waktu("45"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin(58); ?>" id="58" data-toggle="tooltip" data-html="true" title="<?php echo Rajut(58); ?>">58<p><?php echo Waktu("58"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+							  </tr>
+								<tr>
+								  <td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+								  <td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("14"); ?>" id="14" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("14"); ?>">14<p><?php echo Waktu("14"); ?></p></span> </td>
+									<td bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("40"); ?>" id="40" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("40"); ?>">40
+									  <p><?php echo Waktu("40"); ?></p>
+								    </span></td>
+									<td bgcolor="#ECE7E7">&nbsp;</td>
+									<td bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin(61); ?>" id="61" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("61"); ?>">61<p><?php echo Waktu("61"); ?></p></span> </td>
+									<td align="center" bgcolor="#E0DDDD"> <span class="detail_status btn btn-sm <?php echo NoMesin("69"); ?>" id="69" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("69"); ?>">69<p><?php echo Waktu("69"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("15"); ?>" id="15" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("15"); ?>">15<p><?php echo Waktu("15"); ?></p></span>  </td>
+									<td colspan="2" align="center" bgcolor="#E0DDDD"><span class="detail_status btn btn-sm <?php echo NoMesin("20"); ?>" id="20" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("20"); ?>">20
+									  <p><?php echo Waktu("20"); ?></p>
+									  </span></td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td colspan="2" align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7"><span class="detail_status btn btn-sm <?php echo NoMesin("41"); ?>" id="41" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("41"); ?>">41
+									  <p><?php echo Waktu("41"); ?></p>
+								    </span></td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td colspan="2" align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td colspan="2" align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("26"); ?>" id="26" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("26"); ?>">26<p><?php echo Waktu("26"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7"><span class="detail_status btn btn-sm <?php echo NoMesin("38"); ?>" id="38" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("38"); ?>">38
+									  <p><?php echo Waktu("38"); ?></p>
+									  </span></td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7"> <span class="detail_status btn btn-sm <?php echo NoMesin("46"); ?>" id="46" data-toggle="tooltip" data-html="true" title="<?php echo Rajut("46"); ?>">46<p><?php echo Waktu("46"); ?></p></span> </td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#E0DDDD">&nbsp;</td>
+									<td align="center" bgcolor="#ECE7E7">&nbsp;</td>
+							  </tr>
+								<tr>
+									<td colspan="4">Greige <span class="label label-success">&nbsp;<?php echo $totGRG;?></span></td>
+									<td colspan="3">Gagal Proses <span class="label bg-kuning">&nbsp;<?php echo $totGPS;?></span></td>
+									<td colspan="4">Tolak Basah <span class="label label-warning">&nbsp;<?php echo $totFL;?></span></td>
+									<td colspan="3">Mini Bulk <span class="label label-primary">&nbsp;<?php echo $totMB;?></span></td>
+									<td colspan="4">Development Sample <span class="label bg-fuchsia"> &nbsp;<?php echo $totDTS;?></span></td>
+									<td colspan="4">Urgent <span class="label   bg-abu blink_me">&nbsp;<?php echo $totURG;?></span></td>
+									<td colspan="3">Greige Delay <span class="label label-default"> &nbsp;<?php echo $totGD;?></span></td>
+									<td>&nbsp;</td>
+									<td colspan="3">Mesin Dibongkar <span class="label bg-aqua">&nbsp;<?php echo $totMCB;?></span></td>
+									<td colspan="4">Mesin Rusak <span class="label bg-abu">&nbsp;<?php echo $totMCR;?></span></td>
+								</tr>
+								<tr>
+								  <td colspan="4">Cuci Y/D <span class="label bg-hijau">&nbsp;<?php echo $totCYD;?></span></td>
+								  <td colspan="3">Perbaikan <span class="label label-danger">&nbsp;<?php echo $totPBK;?></span></td>
+								  <td colspan="4">Cuci Misty <span class="label bg-teal">&nbsp;<?php echo $totCMY;?></span></td>
+								  <td colspan="3"><font size="-2">Cont/Scour/Relax-Preset</font> <span class="label btn-sm bg-purple">&nbsp;<?php echo $totSPT;?></span></td>
+									<td colspan="4">Salesmen Sample-1st Lot <span class="label bg-lime">&nbsp;<?php echo $totSMS;?></span></td>
+									<td colspan="4">Potensi Delay <span class="label bg-abu border-dashed">&nbsp;<?php echo $totPTD;?></span></td>
+									<td>&nbsp;</td>
+									<td colspan="3">Cuci Mesin <span class="label bg-violet">&nbsp;<?php echo $totCMS;?></span></td>
+									<td colspan="4">Mesin Stop <span class="label btn-sm bg-black">&nbsp;<?php echo $totMCS;?></span></td>
+									<td colspan="3">&nbsp;</td>
+									
+								</tr>
+								<tr>
+									<td colspan="33" style="padding: 5px;">
+										<marquee class="teks-berjalan" behavior="scroll" direction="left" onmouseover="this.stop();" onmouseout="this.start();">
+											<?php
+$news=mysql_query("SELECT GROUP_CONCAT(news_line SEPARATOR ' :: ') as news_line FROM tbl_news_line WHERE gedung='LT 1' AND status='Tampil'",$con);
+$rNews=mysql_fetch_array($news);
+$totMesin='0';
+?>
+											<?php echo $rNews[news_line];?>
+										</marquee>
+									</td>
+								</tr>								
+								
+								<!--
+    <tr>
+      <td colspan="26" style="padding: 5px;">&nbsp;</td>
+    </tr> -->
+							</tbody>
+						</table>
+
+				  </div>
+
+				</div>
+
+			</div>
+		</div>
+	<div class="box box-primary">
+      <div class="box-header">
+        <h3 class="box-title">Celup Progress</h3>
+      </div>
+      <div class="box-body table-responsive">
+        <table class="table table-bordered table-hover table-striped" style="width:100%" id="example2">
+          <thead>
+            <tr>
+              <th width="111" style="width: 10px"><div align="center">NoMC</div></th>
+              <th width="89" style="width: 50px"><div align="center">Urutan</div></th>
+              <th width="202" style="width: 10px"><div align="center">Langganan</div></th>
+              <th width="346" style="width: 150px"><div align="center">No Order</div></th>
+              <th width="346" style="width: 150px"><div align="center">Kain</div></th>
+              <th width="116" style="width: 10px"><div align="center">Warna</div></th>
+              <th width="116" style="width: 10px"><div align="center">Lot</div></th>
+              <th width="116" style="width: 10px"><div align="center">Target (Jam)</div></th>
+              <th width="232" style="width: 100px"><div align="center">Progress</div></th>
+              <th width="72" style="width: 10px"><div align="center">%</div></th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php
+			  $prsn=
+    $col=0;
+    $no=0;
+    $qry=mysql_query("SELECT
+   	id,
+	GROUP_CONCAT( lot SEPARATOR '/' ) AS lot,
+	if(COUNT(lot)>1,'Gabung Kartu','') as ket_kartu,
+	no_mesin,
+	no_urut,
+	buyer,
+	langganan,
+	GROUP_CONCAT( no_order SEPARATOR ', ' ) AS no_order,
+	no_resep,
+	nokk,
+	jenis_kain,
+	warna,
+	no_warna,
+	sum(rol) as rol,
+	sum(bruto) as bruto,
+	proses,
+	ket_status,
+	target,
+	tgl_delivery
+FROM
+	tbl_schedule 
+WHERE
+	NOT STATUS = 'selesai' 
+GROUP BY
+	no_mesin,
+	no_urut 
+ORDER BY
+	id ASC");
+  while ($rowd=mysql_fetch_array($qry)) {
+	  $qPro=mysql_query("SELECT TIMESTAMPDIFF(MINUTE, b.tgl_buat, now())-if(ISNULL(TIMESTAMPDIFF(MINUTE, b.tgl_stop, b.tgl_mulai )),0,0) as lama FROM tbl_schedule a
+LEFT JOIN tbl_montemp b ON a.id=b.id_schedule
+WHERE a.no_mesin='$rowd[no_mesin]' AND b.status='sedang jalan' AND a.no_urut='$rowd[no_urut]' ORDER BY a.no_urut ASC");
+			$dPro=mysql_fetch_array($qPro);
+	  		if($dPro[lama]>0 and $rowd[target]!="" and $rowd[target]>"0"){
+	  		$prsn=round(($dPro[lama]/($rowd[target]*60))*100);}else{ $prsn="0";}
+       ?>
+            <tr>
+              <td align="center">
+                <?php echo $rowd[no_mesin]; ?>
+              </td>
+              <td align="center">
+                <?php echo $rowd[no_urut]; ?>
+              </td>
+              <td>
+                <?php echo $rowd[langganan]."/".$rowd[buyer]; ?>
+              </td>
+              <td align="left"><?php echo $rowd[no_order]; ?></td>
+              <td>
+                <?php echo $rowd[jenis_kain]; ?>
+              </td>
+              <td align="center"><?php echo $rowd[warna]; ?></td>
+              <td align="center"><?php echo $rowd[lot]; ?></td>
+              <td align="center">
+                <?php echo $rowd[target]; ?>
+              </td>
+              <td>
+				<span class="label bg-abu"><?php echo $rowd[nokk]; ?></span>  
+                <div class="progress progress-sm">						
+                  <div class="progress-bar <?php if ($prsn=="100") { echo"progress-bar-success"; } elseif ($prsn>70) {
+                    echo"progress-bar-primary";
+                    } elseif ($prsn>50) {
+                    echo"progress-bar-info";
+                    } elseif ($prsn>30) {
+                    echo"progress-bar-warning";
+                    } else {
+                    echo"progress-bar-danger";
+                    } ?>" style="width:
+                    <?php if ($prsn>1) {
+          echo $prsn;
+      } else {
+          echo"1";
+      } ?>%"></div>
+                </div>
+              </td>
+              <td><span class="badge <?php if ($prsn==" 100") { echo"bg-green"; } elseif ($prsn>70) {
+                  echo"bg-blue";
+                  } elseif ($prsn>50) {
+                  echo"bg-aqua";
+                  } elseif ($prsn>30) {
+                  echo"bg-yellow";
+                  } else {
+                  echo"bg-red";
+                  } ?>">
+                  <?php echo $prsn; ?>%</span></td>
+            </tr>
+            <?php
+	  $no++;
+  }?>
+          </tbody>
+        </table>
+      </div>
+      <!-- /.box-body -->
+    </div>
+		<div class="row">
+	<?php 
+	function tampil($mc,$shift){
+			$qry=mysql_query("SELECT a.no_mesin,b.target,b.lama,b.jenis_kain,b.kategori_warna,b.proses,b.g_shift,b.operator FROM tbl_mesin a 
+LEFT JOIN (
+SELECT TIME_FORMAT(timediff(now(),b.tgl_buat),'%H:%i') as lama,a.no_mesin,a.jenis_kain,a.target,a.kategori_warna,a.proses,b.g_shift,b.operator FROM tbl_schedule a
+LEFT JOIN tbl_montemp b ON a.id=b.id_schedule
+WHERE b.status='sedang jalan' AND b.g_shift='$shift' ORDER BY a.no_urut ASC
+) b ON a.no_mesin=b.no_mesin
+WHERE a.no_mesin='$mc'");
+			while ($row=mysql_fetch_array($qry)){
+			$hasil[]=$row;
+			}
+			return $hasil;
+		}		
+	?>		
+		<div class="col-xs-12">
+          <div class="box box-solid">
+			<div class="box-header with-border">
+						<h3 class="box-title">Status Celup</h3>
+						<div class="box-tools pull-right">
+							<button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+							<a href="pages/status-celup-full.php" class="btn btn-xs" data-toggle="tooltip" data-html="true" data-placement="bottom" title="FullScreen"><i class="fa fa-expand"></i></a>
+						</div>
+					</div>
+            <div class="box-body table-responsive">
+              <div id="carousel-example-generic" class="carousel slide" data-ride="carousel">                
+                <div class="carousel-inner">
+                <div class="item active">
+		<table id="tblr1" class="table table-bordered table-hover table-striped" style="width:100%">
+          <thead class="bg-blue">
+            <tr>
+			  <th><div align="center">No MC</div></th>
+              <th><div align="center">Shift</div></th>
+              <th><div align="center">Operator</div></th>
+              <th><div align="center">Jenis Kain</div></th>
+              <th><div align="center">Proses</div></th>
+              <th><div align="center">Kategori Warna</div></th>
+              <th><div align="center">Target</div></th>
+              <th><div align="center">Lama Proses</div></th>
+              <th><div align="center">K.R</div></th>
+              <th><div align="center">Point</div></th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php
+			$data1=mysql_query("SELECT * FROM tbl_mesin ORDER BY no_mesin ASC Limit 0,15");
+			$col=0;
+	  		while($rowd1=mysql_fetch_array($data1)){
+			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
+				$mesin1=$rowd1['no_mesin'];
+				$op=tampil($mesin1,"A");				
+				foreach($op as $dt)
+				$qry1=mysql_query("SELECT
+	a.no_mesin,
+	b.g_shift,
+	b.operator_keluar as operator,
+	a.jenis_kain,
+	a.proses,
+	a.kategori_warna,
+	b.lama_proses as lama,
+	b.point,
+	b.k_resep,
+	if(a.target<HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2),'Over','OK') as ket,
+	a.target,
+	c.tgl_buat AS tgl_in,
+	b.tgl_buat AS tgl_out 
+FROM
+	tbl_schedule a
+	INNER JOIN tbl_montemp c ON a.id = c.id_schedule
+	INNER JOIN tbl_hasilcelup b ON c.id = b.id_montemp 
+WHERE
+	a.`status` = 'selesai' 
+	AND b.g_shift = 'A' 
+	AND a.no_mesin = '$mesin1' 
+	AND DATE_FORMAT( b.tgl_buat, '%Y-%m-%d' ) BETWEEN DATE_FORMAT( DATE_SUB(now(), INTERVAL 1 DAY), '%Y-%m-%d' ) 
+	AND DATE_FORMAT( now( ), '%Y-%m-%d' ) 
+ORDER BY
+	b.tgl_buat DESC LIMIT 1");
+				$row1=mysql_fetch_array($qry1);
+		 ?>
+            <tr bgcolor="<?php echo $bgcolor; ?>">
+              <td align="center"><?php echo $rowd1['no_mesin'];?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['g_shift'];}else{echo $row1['g_shift']; }?></td>
+              <td align="center" bgcolor="<?php if($row1['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row1['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['operator'];}else{echo $row1['operator']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['jenis_kain'];}else{echo $row1['jenis_kain']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['proses'];}else{echo $row1['proses']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['kategori_warna'];}else{echo $row1['kategori_warna']; }?></td>
+			  <td align="center"><?php if($dt['g_shift']!=""){echo $dt['target'];}else{echo $row1['target']; }?></td>	
+              <td align="center" bgcolor="<?php if($row1['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row1['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['lama'];}else{echo $row1['lama']; }?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row1['k_resep'];}?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row1['point'];}?></td>
+              
+            </tr>
+            <?php	$no++;  } ?>
+          </tbody>
+        </table>
+		</div>
+          		<div class="item">					  
+        <table class="table table-bordered table-hover table-striped" style="width:100%">
+          <thead class="bg-blue">
+            <tr>
+			  <th><div align="center">No MC</div></th>
+              <th><div align="center">Shift</div></th>
+              <th><div align="center">Operator</div></th>
+              <th><div align="center">Jenis Kain</div></th>
+              <th><div align="center">Proses</div></th>
+              <th><div align="center">Kategori Warna</div></th>
+              <th><div align="center">Target</div></th>
+              <th><div align="center">Lama Proses</div></th>
+              <th><div align="center">K.R</div></th>
+              <th><div align="center">Point</div></th>
+              </tr>
+          </thead>
+          <tbody>
+         <?php
+		  $data2=mysql_query("SELECT * FROM tbl_mesin ORDER BY no_mesin ASC Limit 15,15");					
+		  while($rowd2=mysql_fetch_array($data2)){
+			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
+			$mesin2=$rowd2['no_mesin'];
+				$op=tampil($mesin2,"A");				
+				foreach($op as $dt)
+			$qry2=mysql_query("SELECT
+	a.no_mesin,
+	b.g_shift,
+	b.operator_keluar as operator,
+	a.jenis_kain,
+	a.proses,
+	a.kategori_warna,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),b.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama,
+	b.point,
+	b.k_resep,
+	if(a.target<(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),(HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2)),((HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2))-(HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))+round(MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))/60,2))))),'Over','OK') as ket,
+	a.target,
+	c.tgl_buat AS tgl_in,
+	b.tgl_buat AS tgl_out  
+FROM
+	tbl_schedule a
+	INNER JOIN tbl_montemp c ON a.id = c.id_schedule
+	INNER JOIN tbl_hasilcelup b ON c.id = b.id_montemp 
+WHERE
+	a.`status` = 'selesai' 
+	AND b.g_shift = 'A' 
+	AND a.no_mesin = '$mesin2' 
+	AND DATE_FORMAT( b.tgl_buat, '%Y-%m-%d' ) BETWEEN DATE_FORMAT( DATE_SUB(now(), INTERVAL 1 DAY), '%Y-%m-%d' ) 
+	AND DATE_FORMAT( now( ), '%Y-%m-%d' ) 
+ORDER BY
+	b.tgl_buat DESC LIMIT 1");
+				$row2=mysql_fetch_array($qry2);		
+		 ?>
+            <tr>
+              <td align="center"><?php echo $rowd2['no_mesin'];?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['g_shift'];}else{echo $row2['g_shift']; }?></td>
+              <td align="center" bgcolor="<?php if($row2['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row2['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['operator'];}else{echo $row2['operator']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['jenis_kain'];}else{echo $row2['jenis_kain']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['proses'];}else{echo $row2['proses']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['kategori_warna'];}else{echo $row2['kategori_warna']; }?></td>
+			  <td align="center"><?php if($dt['g_shift']!=""){echo $dt['target'];}else{echo $row2['target']; }?></td>	
+              <td align="center" bgcolor="<?php if($row2['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row2['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['lama'];}else{echo $row2['lama']; }?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row2['k_resep'];}?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row2['point'];}?></td>
+            </tr>
+            <?php	$no++;  } ?>
+          </tbody>
+        </table>  
+		</div>
+         		<div class="item">
+		<table  class="table table-bordered table-hover table-striped" style="width:100%">
+          <thead class="bg-blue">
+            <tr>
+			  <th><div align="center">No MC</div></th>
+              <th><div align="center">Shift</div></th>
+              <th><div align="center">Operator</div></th>
+              <th><div align="center">Jenis Kain</div></th>
+              <th><div align="center">Proses</div></th>
+              <th><div align="center">Kategori Warna</div></th>
+              <th><div align="center">Target</div></th>
+              <th><div align="center">Lama Proses</div></th>
+              <th><div align="center">K.R</div></th>
+              <th><div align="center">Point</div></th>
+              </tr>
+          </thead>
+          <tbody>
+            <?php
+  $data3=mysql_query("SELECT * FROM tbl_mesin ORDER BY no_mesin ASC Limit 30,15");
+  while($rowd3=mysql_fetch_array($data3)){
+			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
+	  		$mesin3=$rowd3['no_mesin'];
+				$op=tampil($mesin3,"A");				
+				foreach($op as $dt)
+			$qry3=mysql_query("SELECT
+	a.no_mesin,
+	b.g_shift,
+	b.operator_keluar as operator,
+	a.jenis_kain,
+	a.proses,
+	a.kategori_warna,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),b.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama,
+	b.point,
+	b.k_resep,
+	if(a.target<(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),(HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2)),((HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2))-(HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))+round(MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))/60,2))))),'Over','OK') as ket,
+	a.target,
+	c.tgl_buat AS tgl_in,
+	b.tgl_buat AS tgl_out  
+FROM
+	tbl_schedule a
+	INNER JOIN tbl_montemp c ON a.id = c.id_schedule
+	INNER JOIN tbl_hasilcelup b ON c.id = b.id_montemp 
+WHERE
+	a.`status` = 'selesai' 
+	AND b.g_shift = 'A' 
+	AND a.no_mesin = '$mesin3' 
+	AND DATE_FORMAT( b.tgl_buat, '%Y-%m-%d' ) BETWEEN DATE_FORMAT( DATE_SUB(now(), INTERVAL 1 DAY), '%Y-%m-%d' ) 
+	AND DATE_FORMAT( now( ), '%Y-%m-%d' ) 
+ORDER BY
+	b.tgl_buat DESC LIMIT 1");
+				$row3=mysql_fetch_array($qry3);			
+		 ?>
+            <tr>
+              <td align="center"><?php echo $rowd3['no_mesin'];?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['g_shift'];}else{echo $row3['g_shift']; }?></td>
+              <td align="center" bgcolor="<?php if($row3['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row3['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['operator'];}else{echo $row3['operator']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['jenis_kain'];}else{echo $row3['jenis_kain']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['proses'];}else{echo $row3['proses']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['kategori_warna'];}else{echo $row3['kategori_warna']; }?></td>
+			  <td align="center"><?php if($dt['g_shift']!=""){echo $dt['target'];}else{echo $row3['target']; }?></td>	
+              <td align="center" bgcolor="<?php if($row3['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row3['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['lama'];}else{echo $row3['lama']; }?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row3['k_resep'];}?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row3['point'];}?></td>
+              
+            </tr>
+            <?php $no++; } ?>
+          </tbody>
+        </table>  
+                  </div>
+				<div class="item">
+		<table class="table table-bordered table-hover table-striped" style="width:100%">
+          <thead class="bg-blue">
+            <tr>
+			  <th><div align="center">No MC</div></th>
+              <th><div align="center">Shift</div></th>
+              <th><div align="center">Operator</div></th>
+              <th><div align="center">Jenis Kain</div></th>
+              <th><div align="center">Proses</div></th>
+              <th><div align="center">Kategori Warna</div></th>
+              <th><div align="center">Target</div></th>
+              <th><div align="center">Lama Proses</div></th>
+              <th><div align="center">K.R</div></th>
+              <th><div align="center">Point</div></th>
+              </tr>
+          </thead>
+          <tbody>
+            <?php
+  $data4=mysql_query("SELECT * FROM tbl_mesin ORDER BY no_mesin ASC Limit 45,15");
+  while($rowd4=mysql_fetch_array($data4)){
+			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
+	  		$mesin4=$rowd4['no_mesin'];
+				$op=tampil($mesin4,"A");				
+				foreach($op as $dt)
+			$qry4=mysql_query("SELECT
+	a.no_mesin,
+	b.g_shift,
+	b.operator_keluar as operator,
+	a.jenis_kain,
+	a.proses,
+	a.kategori_warna,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),b.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama,
+	b.point,
+	b.k_resep,
+	if(a.target<(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),(HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2)),((HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2))-(HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))+round(MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))/60,2))))),'Over','OK') as ket,
+	a.target,
+	c.tgl_buat AS tgl_in,
+	b.tgl_buat AS tgl_out  
+FROM
+	tbl_schedule a
+	INNER JOIN tbl_montemp c ON a.id = c.id_schedule
+	INNER JOIN tbl_hasilcelup b ON c.id = b.id_montemp 
+WHERE
+	a.`status` = 'selesai' 
+	AND b.g_shift = 'A' 
+	AND a.no_mesin = '$mesin4' 
+	AND DATE_FORMAT( b.tgl_buat, '%Y-%m-%d' ) BETWEEN DATE_FORMAT( DATE_SUB(now(), INTERVAL 1 DAY), '%Y-%m-%d' ) 
+	AND DATE_FORMAT( now( ), '%Y-%m-%d' ) 
+ORDER BY
+	b.tgl_buat DESC LIMIT 1");
+				$row4=mysql_fetch_array($qry4);
+		 ?>
+            <tr>
+              <td align="center"><?php echo $rowd4['no_mesin'];?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['g_shift'];}else{echo $row4['g_shift']; }?></td>
+              <td align="center" bgcolor="<?php if($row4['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row4['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['operator'];}else{echo $row4['operator']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['jenis_kain'];}else{echo $row4['jenis_kain']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['proses'];}else{echo $row4['proses']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['kategori_warna'];}else{echo $row4['kategori_warna']; }?></td>
+			  <td align="center"><?php if($dt['g_shift']!=""){echo $dt['target'];}else{echo $row4['target']; }?></td>	
+              <td align="center" bgcolor="<?php if($row4['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row4['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['lama'];}else{echo $row4['lama']; }?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row4['k_resep'];}?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row4['point'];}?></td>               
+            </tr>
+            <?php $no++; } ?>
+          </tbody>
+        </table>  
+                  </div>			
+				<div class="item">
+		<table class="table table-bordered table-hover table-striped" style="width:100%">
+          <thead class="bg-blue">
+            <tr>
+			  <th><div align="center">No MC</div></th>
+              <th><div align="center">Shift</div></th>
+              <th><div align="center">Operator</div></th>
+              <th><div align="center">Jenis Kain</div></th>
+              <th><div align="center">Proses</div></th>
+              <th><div align="center">Kategori Warna</div></th>
+              <th><div align="center">Target</div></th>
+              <th><div align="center">Lama Proses</div></th>
+              <th><div align="center">K.R</div></th>
+              <th><div align="center">Point</div></th>
+              </tr>
+          </thead>
+          <tbody>
+            <?php
+  $data5=mysql_query("SELECT * FROM tbl_mesin ORDER BY no_mesin ASC Limit 0,15");
+  while($rowd5=mysql_fetch_array($data5)){
+			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
+	        $mesin5=$rowd5['no_mesin'];
+				$op=tampil($mesin5,"B");				
+				foreach($op as $dt)
+			$qry5=mysql_query("SELECT
+	a.no_mesin,
+	b.g_shift,
+	b.operator_keluar as operator,
+	a.jenis_kain,
+	a.proses,
+	a.kategori_warna,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),b.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama,
+	b.point,
+	b.k_resep,
+	if(a.target<(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),(HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2)),((HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2))-(HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))+round(MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))/60,2))))),'Over','OK') as ket,
+	a.target,
+	c.tgl_buat AS tgl_in,
+	b.tgl_buat AS tgl_out  
+FROM
+	tbl_schedule a
+	INNER JOIN tbl_montemp c ON a.id = c.id_schedule
+	INNER JOIN tbl_hasilcelup b ON c.id = b.id_montemp 
+WHERE
+	a.`status` = 'selesai' 
+	AND b.g_shift = 'B' 
+	AND a.no_mesin = '$mesin5' 
+	AND DATE_FORMAT( b.tgl_buat, '%Y-%m-%d' ) BETWEEN DATE_FORMAT( DATE_SUB(now(), INTERVAL 1 DAY), '%Y-%m-%d' ) 
+	AND DATE_FORMAT( now( ), '%Y-%m-%d' ) 
+ORDER BY
+	b.tgl_buat DESC LIMIT 1");
+				$row5=mysql_fetch_array($qry5);
+		 ?>
+            <tr>
+              <td align="center"><?php echo $rowd5['no_mesin'];?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['g_shift'];}else{echo $row5['g_shift']; }?></td>
+              <td align="center" bgcolor="<?php if($row5['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row5['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['operator'];}else{echo $row5['operator']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['jenis_kain'];}else{echo $row5['jenis_kain']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['proses'];}else{echo $row5['proses']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['kategori_warna'];}else{echo $row5['kategori_warna']; }?></td>
+			  <td align="center"><?php if($dt['g_shift']!=""){echo $dt['target'];}else{echo $row5['target']; }?></td>	
+              <td align="center" bgcolor="<?php if($row5['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row5['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['lama'];}else{echo $row5['lama']; }?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row5['k_resep'];}?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row5['point'];}?></td>   
+            </tr>
+            <?php $no++; } ?>
+          </tbody>
+        </table>  
+                  </div>
+				<div class="item">
+		<table class="table table-bordered table-hover table-striped" style="width:100%">
+          <thead class="bg-blue">
+            <tr>
+			  <th><div align="center">No MC</div></th>
+              <th><div align="center">Shift</div></th>
+              <th><div align="center">Operator</div></th>
+              <th><div align="center">Jenis Kain</div></th>
+              <th><div align="center">Proses</div></th>
+              <th><div align="center">Kategori Warna</div></th>
+              <th><div align="center">Target</div></th>
+              <th><div align="center">Lama Proses</div></th>
+              <th><div align="center">K.R</div></th>
+              <th><div align="center">Point</div></th>
+              </tr>
+          </thead>
+          <tbody>
+            <?php
+  $data6=mysql_query("SELECT * FROM tbl_mesin ORDER BY no_mesin ASC Limit 15,15");
+  while($rowd6=mysql_fetch_array($data6)){
+			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
+	  		$mesin6=$rowd6['no_mesin'];
+				$op=tampil($mesin6,"B");				
+				foreach($op as $dt)
+			$qry6=mysql_query("SELECT
+	a.no_mesin,
+	b.g_shift,
+	b.operator_keluar as operator,
+	a.jenis_kain,
+	a.proses,
+	a.kategori_warna,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),b.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama,
+	b.point,
+	b.k_resep,
+	if(a.target<(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),(HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2)),((HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2))-(HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))+round(MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))/60,2))))),'Over','OK') as ket,
+	a.target,
+	c.tgl_buat AS tgl_in,
+	b.tgl_buat AS tgl_out  
+FROM
+	tbl_schedule a
+	INNER JOIN tbl_montemp c ON a.id = c.id_schedule
+	INNER JOIN tbl_hasilcelup b ON c.id = b.id_montemp 
+WHERE
+	a.`status` = 'selesai' 
+	AND b.g_shift = 'B' 
+	AND a.no_mesin = '$mesin6' 
+	AND DATE_FORMAT( b.tgl_buat, '%Y-%m-%d' ) BETWEEN DATE_FORMAT( DATE_SUB(now(), INTERVAL 1 DAY), '%Y-%m-%d' ) 
+	AND DATE_FORMAT( now( ), '%Y-%m-%d' ) 
+ORDER BY
+	b.tgl_buat DESC LIMIT 1");
+				$row6=mysql_fetch_array($qry6);
+		 ?>
+            <tr>
+              <td align="center"><?php echo $rowd6['no_mesin'];?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['g_shift'];}else{echo $row6['g_shift']; }?></td>
+              <td align="center" bgcolor="<?php if($row6['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row6['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['operator'];}else{echo $row6['operator']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['jenis_kain'];}else{echo $row6['jenis_kain']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['proses'];}else{echo $row6['proses']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['kategori_warna'];}else{echo $row6['kategori_warna']; }?></td>
+			  <td align="center"><?php if($dt['g_shift']!=""){echo $dt['target'];}else{echo $row6['target']; }?></td>	
+              <td align="center" bgcolor="<?php if($row6['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row6['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['lama'];}else{echo $row6['lama']; }?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row6['k_resep'];}?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row6['point'];}?></td>
+            </tr>
+            <?php $no++; } ?>
+          </tbody>
+        </table>  
+                  </div>
+				<div class="item">					  
+        <table class="table table-bordered table-hover table-striped" style="width:100%">
+          <thead class="bg-blue">
+            <tr>
+			  <th><div align="center">No MC</div></th>
+              <th><div align="center">Shift</div></th>
+              <th><div align="center">Operator</div></th>
+              <th><div align="center">Jenis Kain</div></th>
+              <th><div align="center">Proses</div></th>
+              <th><div align="center">Kategori Warna</div></th>
+              <th><div align="center">Target</div></th>
+              <th><div align="center">Lama Proses</div></th>
+              <th><div align="center">K.R</div></th>
+              <th><div align="center">Point</div></th>
+              </tr>
+          </thead>
+          <tbody>
+         <?php
+		  $data7=mysql_query("SELECT * FROM tbl_mesin ORDER BY no_mesin ASC Limit 30,15");					
+		  while($rowd7=mysql_fetch_array($data7)){
+			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
+			  $mesin7=$rowd7['no_mesin'];
+				$op=tampil($mesin7,"B");				
+				foreach($op as $dt)
+			$qry7=mysql_query("SELECT
+	a.no_mesin,
+	b.g_shift,
+	b.operator_keluar as operator,
+	a.jenis_kain,
+	a.proses,
+	a.kategori_warna,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),b.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama,
+	b.point,
+	b.k_resep,
+	if(a.target<(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),(HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2)),((HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2))-(HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))+round(MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))/60,2))))),'Over','OK') as ket,
+	a.target,
+	c.tgl_buat AS tgl_in,
+	b.tgl_buat AS tgl_out  
+FROM
+	tbl_schedule a
+	INNER JOIN tbl_montemp c ON a.id = c.id_schedule
+	INNER JOIN tbl_hasilcelup b ON c.id = b.id_montemp 
+WHERE
+	a.`status` = 'selesai' 
+	AND b.g_shift = 'B' 
+	AND a.no_mesin = '$mesin7' 
+	AND DATE_FORMAT( b.tgl_buat, '%Y-%m-%d' ) BETWEEN DATE_FORMAT( DATE_SUB(now(), INTERVAL 1 DAY), '%Y-%m-%d' ) 
+	AND DATE_FORMAT( now( ), '%Y-%m-%d' ) 
+ORDER BY
+	b.tgl_buat DESC LIMIT 1");
+				$row7=mysql_fetch_array($qry7);
+		 ?>
+            <tr>
+              <td align="center"><?php echo $rowd7['no_mesin'];?></td>
+              <td align="center"><?php if($dt['g_shift']!="" ){echo $dt['g_shift'];}else{echo $row7['g_shift']; }?></td>
+              <td align="center" bgcolor="<?php if($row7['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row7['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['operator'];}else{echo $row7['operator']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['jenis_kain'];}else{echo $row7['jenis_kain']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['proses'];}else{echo $row7['proses']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['kategori_warna'];}else{echo $row7['kategori_warna']; }?></td>
+			  <td align="center"><?php if($dt['g_shift']!=""){echo $dt['target'];}else{echo $row7['target']; }?></td>	
+              <td align="center" bgcolor="<?php if($row7['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row7['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['lama'];}else{echo $row7['lama']; }?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row7['k_resep'];}?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row7['point'];}?></td>
+            </tr>
+            <?php	$no++;  } ?>
+          </tbody>
+        </table>  
+		</div>
+         		<div class="item">
+		<table class="table table-bordered table-hover table-striped" style="width:100%">
+          <thead class="bg-blue">
+            <tr>
+			  <th><div align="center">No MC</div></th>
+              <th><div align="center">Shift</div></th>
+              <th><div align="center">Operator</div></th>
+              <th><div align="center">Jenis Kain</div></th>
+              <th><div align="center">Proses</div></th>
+              <th><div align="center">Kategori Warna</div></th>
+              <th><div align="center">Target</div></th>
+              <th><div align="center">Lama Proses</div></th>
+              <th><div align="center">K.R</div></th>
+              <th><div align="center">Point</div></th>
+              </tr>
+          </thead>
+          <tbody>
+            <?php
+  $data8=mysql_query("SELECT * FROM tbl_mesin ORDER BY no_mesin ASC Limit 45,15");
+  while($rowd8=mysql_fetch_array($data8)){
+			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';$mesin=$rowd8['no_mesin'];
+			$mesin8=$rowd8['no_mesin'];	
+	  		$op=tampil($mesin,"B");				
+				foreach($op as $dt)
+			$qry8=mysql_query("SELECT
+	a.no_mesin,
+	b.g_shift,
+	b.operator_keluar as operator,
+	a.jenis_kain,
+	a.proses,
+	a.kategori_warna,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),b.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama,
+	b.point,
+	b.k_resep,
+	if(a.target<(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),(HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2)),((HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2))-(HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))+round(MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))/60,2))))),'Over','OK') as ket,
+	a.target,
+	c.tgl_buat AS tgl_in,
+	b.tgl_buat AS tgl_out 
+FROM
+	tbl_schedule a
+	INNER JOIN tbl_montemp c ON a.id = c.id_schedule
+	INNER JOIN tbl_hasilcelup b ON c.id = b.id_montemp 
+WHERE
+	a.`status` = 'selesai' 
+	AND b.g_shift = 'B' 
+	AND a.no_mesin = '$mesin8' 
+	AND DATE_FORMAT( b.tgl_buat, '%Y-%m-%d' ) BETWEEN DATE_FORMAT( DATE_SUB(now(), INTERVAL 1 DAY), '%Y-%m-%d' ) 
+	AND DATE_FORMAT( now( ), '%Y-%m-%d' ) 
+ORDER BY
+	b.tgl_buat DESC LIMIT 1");
+				$row8=mysql_fetch_array($qry8);
+		 ?>
+            <tr>
+              <td align="center"><?php echo $rowd8['no_mesin'];?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['g_shift'];}else{echo $row8['g_shift']; }?></td>
+              <td align="center" bgcolor="<?php if($row8['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row8['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['operator'];}else{echo $row8['operator']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['jenis_kain'];}else{echo $row8['jenis_kain']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['proses'];}else{echo $row8['proses']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['kategori_warna'];}else{echo $row8['kategori_warna']; }?></td>
+			  <td align="center"><?php if($dt['g_shift']!=""){echo $dt['target'];}else{echo $row8['target']; }?></td>	
+              <td align="center" bgcolor="<?php if($row8['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row8['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['lama'];}else{echo $row8['lama']; }?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row8['k_resep'];}?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row8['point'];}?></td>
+            </tr>
+            <?php $no++; } ?>
+          </tbody>
+        </table>  
+                  </div>
+				<div class="item">
+		<table class="table table-bordered table-hover table-striped" style="width:100%">
+          <thead class="bg-blue">
+            <tr>
+			  <th><div align="center">No MC</div></th>
+              <th><div align="center">Shift</div></th>
+              <th><div align="center">Operator</div></th>
+              <th><div align="center">Jenis Kain</div></th>
+              <th><div align="center">Proses</div></th>
+              <th><div align="center">Kategori Warna</div></th>
+              <th><div align="center">Target</div></th>
+              <th><div align="center">Lama Proses</div></th>
+              <th><div align="center">K.R</div></th>
+              <th><div align="center">Point</div></th>
+              </tr>
+          </thead>
+          <tbody>
+            <?php
+  $data9=mysql_query("SELECT * FROM tbl_mesin ORDER BY no_mesin ASC Limit 0,15");
+  while($rowd9=mysql_fetch_array($data9)){
+			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
+	  		$mesin9=$rowd9['no_mesin'];
+				$op=tampil($mesin9,"C");				
+				foreach($op as $dt)
+			$qry9=mysql_query("SELECT
+	a.no_mesin,
+	b.g_shift,
+	b.operator_keluar as operator,
+	a.jenis_kain,
+	a.proses,
+	a.kategori_warna,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),b.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama,
+	b.point,
+	b.k_resep,
+	if(a.target<(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),(HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2)),((HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2))-(HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))+round(MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))/60,2))))),'Over','OK') as ket,
+	a.target,
+	c.tgl_buat AS tgl_in,
+	b.tgl_buat AS tgl_out 
+FROM
+	tbl_schedule a
+	INNER JOIN tbl_montemp c ON a.id = c.id_schedule
+	INNER JOIN tbl_hasilcelup b ON c.id = b.id_montemp 
+WHERE
+	a.`status` = 'selesai' 
+	AND b.g_shift = 'C' 
+	AND a.no_mesin = '$mesin9' 
+	AND DATE_FORMAT( b.tgl_buat, '%Y-%m-%d' ) BETWEEN DATE_FORMAT( DATE_SUB(now(), INTERVAL 1 DAY), '%Y-%m-%d' ) 
+	AND DATE_FORMAT( now( ), '%Y-%m-%d' ) 
+ORDER BY
+	b.tgl_buat DESC LIMIT 1");
+				$row9=mysql_fetch_array($qry9);
+		 ?>
+            <tr>
+              <td align="center"><?php echo $rowd9['no_mesin'];?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['g_shift'];}else{echo $row9['g_shift']; }?></td>
+              <td align="center" bgcolor="<?php if($row9['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row9['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['operator'];}else{echo $row9['operator']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['jenis_kain'];}else{echo $row9['jenis_kain']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['proses'];}else{echo $row9['proses']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['kategori_warna'];}else{echo $row9['kategori_warna']; }?></td>
+			  <td align="center"><?php if($dt['g_shift']!=""){echo $dt['target'];}else{echo $row9['target']; }?></td>	
+              <td align="center" bgcolor="<?php if($row9['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row9['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['lama'];}else{echo $row9['lama']; }?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row9['k_resep'];}?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row9['point'];}?></td>
+            </tr>
+            <?php $no++; } ?>
+          </tbody>
+        </table>  
+                  </div>			
+				<div class="item">
+		<table class="table table-bordered table-hover table-striped" style="width:100%">
+          <thead class="bg-blue">
+            <tr>
+			  <th><div align="center">No MC</div></th>
+              <th><div align="center">Shift</div></th>
+              <th><div align="center">Operator</div></th>
+              <th><div align="center">Jenis Kain</div></th>
+              <th><div align="center">Proses</div></th>
+              <th><div align="center">Kategori Warna</div></th>
+              <th><div align="center">Target</div></th>
+              <th><div align="center">Lama Proses</div></th>
+              <th><div align="center">K.R</div></th>
+              <th><div align="center">Point</div></th>
+              </tr>
+          </thead>
+          <tbody>
+            <?php
+  $data10=mysql_query("SELECT * FROM tbl_mesin ORDER BY no_mesin ASC Limit 15,15");
+  while($rowd10=mysql_fetch_array($data10)){
+			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
+	  		$mesin10=$rowd10['no_mesin'];
+				$op=tampil($mesin10,"C");				
+				foreach($op as $dt)
+			$qry10=mysql_query("SELECT
+	a.no_mesin,
+	b.g_shift,
+	b.operator_keluar as operator,
+	a.jenis_kain,
+	a.proses,
+	a.kategori_warna,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),b.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama,
+	b.point,
+	b.k_resep,
+	if(a.target<(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),(HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2)),((HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2))-(HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))+round(MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))/60,2))))),'Over','OK') as ket,
+	a.target,
+	c.tgl_buat AS tgl_in,
+	b.tgl_buat AS tgl_out  
+FROM
+	tbl_schedule a
+	INNER JOIN tbl_montemp c ON a.id = c.id_schedule
+	INNER JOIN tbl_hasilcelup b ON c.id = b.id_montemp 
+WHERE
+	a.`status` = 'selesai' 
+	AND b.g_shift = 'C' 
+	AND a.no_mesin = '$mesin10' 
+	AND DATE_FORMAT( b.tgl_buat, '%Y-%m-%d' ) BETWEEN DATE_FORMAT( DATE_SUB(now(), INTERVAL 1 DAY), '%Y-%m-%d' ) 
+	AND DATE_FORMAT( now( ), '%Y-%m-%d' ) 
+ORDER BY
+	b.tgl_buat DESC LIMIT 1");
+				$row10=mysql_fetch_array($qry10);
+		 ?>
+            <tr>
+              <td align="center"><?php echo $rowd10['no_mesin'];?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['g_shift'];}else{echo $row10['g_shift']; }?></td>
+              <td align="center" bgcolor="<?php if($row10['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row10['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['operator'];}else{echo $row10['operator']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['jenis_kain'];}else{echo $row10['jenis_kain']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['proses'];}else{echo $row10['proses']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['kategori_warna'];}else{echo $row10['kategori_warna']; }?></td>
+			  <td align="center"><?php if($dt['g_shift']!=""){echo $dt['target'];}else{echo $row10['target']; }?></td>	
+              <td align="center" bgcolor="<?php if($row10['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row10['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['lama'];}else{echo $row10['lama']; }?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row10['k_resep'];}?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row10['point'];}?></td>
+            </tr>
+            <?php $no++; } ?>
+          </tbody>
+        </table>  
+                  </div>
+				<div class="item">
+		<table class="table table-bordered table-hover table-striped" style="width:100%">
+          <thead class="bg-blue">
+            <tr>
+			  <th><div align="center">No MC</div></th>
+              <th><div align="center">Shift</div></th>
+              <th><div align="center">Operator</div></th>
+              <th><div align="center">Jenis Kain</div></th>
+              <th><div align="center">Proses</div></th>
+              <th><div align="center">Kategori Warna</div></th>
+              <th><div align="center">Target</div></th>
+              <th><div align="center">Lama Proses</div></th>
+              <th><div align="center">K.R</div></th>
+              <th><div align="center">Point</div></th>
+              </tr>
+          </thead>
+          <tbody>
+            <?php
+  $data11=mysql_query("SELECT * FROM tbl_mesin ORDER BY no_mesin ASC Limit 30,15");
+  while($rowd11=mysql_fetch_array($data11)){
+			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
+	  		$mesin11=$rowd11['no_mesin'];
+				$op=tampil($mesin11,"C");				
+				foreach($op as $dt)
+			$qry11=mysql_query("SELECT
+	a.no_mesin,
+	b.g_shift,
+	b.operator_keluar as operator,
+	a.jenis_kain,
+	a.proses,
+	a.kategori_warna,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),b.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama,
+	b.point,
+	b.k_resep,
+	if(a.target<(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),(HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2)),((HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2))-(HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))+round(MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))/60,2))))),'Over','OK') as ket,
+	a.target,
+	c.tgl_buat AS tgl_in,
+	b.tgl_buat AS tgl_out  
+FROM
+	tbl_schedule a
+	INNER JOIN tbl_montemp c ON a.id = c.id_schedule
+	INNER JOIN tbl_hasilcelup b ON c.id = b.id_montemp 
+WHERE
+	a.`status` = 'selesai' 
+	AND b.g_shift = 'C' 
+	AND a.no_mesin = '$mesin11' 
+	AND DATE_FORMAT( b.tgl_buat, '%Y-%m-%d' ) BETWEEN DATE_FORMAT( DATE_SUB(now(), INTERVAL 1 DAY), '%Y-%m-%d' ) 
+	AND DATE_FORMAT( now( ), '%Y-%m-%d' ) 
+ORDER BY
+	b.tgl_buat DESC LIMIT 1");
+				$row11=mysql_fetch_array($qry11);
+		 ?>
+            <tr>
+              <td align="center"><?php echo $rowd11['no_mesin'];?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['g_shift'];}else{echo $row11['g_shift']; }?></td>
+              <td align="center" bgcolor="<?php if($row11['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row11['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['operator'];}else{echo $row11['operator']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['jenis_kain'];}else{echo $row11['jenis_kain']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['proses'];}else{echo $row11['proses']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['kategori_warna'];}else{echo $row11['kategori_warna']; }?></td>
+			  <td align="center"><?php if($dt['g_shift']!=""){echo $dt['target'];}else{echo $row11['target']; }?></td>	
+              <td align="center" bgcolor="<?php if($row11['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row11['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['lama'];}else{echo $row11['lama']; }?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row11['k_resep'];}?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row11['point'];}?></td>
+            </tr>
+            <?php $no++; } ?>
+          </tbody>
+        </table>  
+                  </div>
+				<div class="item">
+		<table class="table table-bordered table-hover table-striped" style="width:100%">
+          <thead class="bg-blue">
+            <tr>
+			  <th><div align="center">No MC</div></th>
+              <th><div align="center">Shift</div></th>
+              <th><div align="center">Operator</div></th>
+              <th><div align="center">Jenis Kain</div></th>
+              <th><div align="center">Proses</div></th>
+              <th><div align="center">Kategori Warna</div></th>
+              <th><div align="center">Target</div></th>
+              <th><div align="center">Lama Proses</div></th>
+              <th><div align="center">K.R</div></th>
+              <th><div align="center">Point</div></th>
+              </tr>
+          </thead>
+          <tbody>
+            <?php
+  $data12=mysql_query("SELECT * FROM tbl_mesin ORDER BY no_mesin ASC Limit 45,15");
+  while($rowd12=mysql_fetch_array($data12)){
+			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
+	  		$mesin12=$rowd12['no_mesin'];
+				$op=tampil($mesin12,"C");				
+				foreach($op as $dt)
+			$qry12=mysql_query("SELECT
+	a.no_mesin,
+	b.g_shift,
+	b.operator_keluar as operator,
+	a.jenis_kain,
+	a.proses,
+	a.kategori_warna,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),b.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama,
+	b.point,
+	b.k_resep,
+	if(a.target<(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),(HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2)),((HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2))-(HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))+round(MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))/60,2))))),'Over','OK') as ket,
+	a.target,
+	c.tgl_buat AS tgl_in,
+	b.tgl_buat AS tgl_out  
+FROM
+	tbl_schedule a
+	INNER JOIN tbl_montemp c ON a.id = c.id_schedule
+	INNER JOIN tbl_hasilcelup b ON c.id = b.id_montemp 
+WHERE
+	a.`status` = 'selesai' 
+	AND b.g_shift = 'C' 
+	AND a.no_mesin = '$mesin12' 
+	AND DATE_FORMAT( b.tgl_buat, '%Y-%m-%d' ) BETWEEN DATE_FORMAT( DATE_SUB(now(), INTERVAL 1 DAY), '%Y-%m-%d' ) 
+	AND DATE_FORMAT( now( ), '%Y-%m-%d' ) 
+ORDER BY
+	b.tgl_buat DESC LIMIT 1");
+				$row12=mysql_fetch_array($qry12);
+		 ?>
+            <tr>
+              <td align="center"><?php echo $rowd12['no_mesin'];?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['g_shift'];}else{echo $row12['g_shift']; }?></td>
+              <td align="center" bgcolor="<?php if($row12['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row12['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['operator'];}else{echo $row12['operator']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['jenis_kain'];}else{echo $row12['jenis_kain']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['proses'];}else{echo $row12['proses']; }?></td>
+              <td align="center"><?php if($dt['g_shift']!=""){echo $dt['kategori_warna'];}else{echo $row12['kategori_warna']; }?></td>
+			  <td align="center"><?php if($dt['g_shift']!=""){echo $dt['target'];}else{echo $row12['target']; }?></td>	
+              <td align="center" bgcolor="<?php if($row12['ket']=="Over" and $dt['g_shift']==""){ echo "#FD5B5B";}else if($row12['ket']=="OK" and $dt['g_shift']==""){echo "#14EF78";} ?>"><?php if($dt['g_shift']!=""){echo $dt['lama'];}else{echo $row12['lama']; }?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row12['k_resep'];}?></td>
+              <td align="center"><?php if($dt['g_shift']==""){echo $row12['point'];}?></td>
+            </tr>
+            <?php $no++; } ?>
+          </tbody>
+        </table>  
+                  </div>			
+					
+                </div> 
+				<a class="left carousel-control" href="#carousel-example-generic" data-slide="prev">
+                  <span class="fa fa-angle-left"></span>
+                </a>
+                <a class="right carousel-control" href="#carousel-example-generic" data-slide="next">
+                  <span class="fa fa-angle-right"></span>
+                </a>   
+              </div>
+            </div>
+            <!-- /.box-body -->
+          </div>
+          <!-- /.box -->
+        </div>
+		</div>	
+<div id="CekDetailStatus" class="modal fade modal-3d-slit" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
+
+	</body>
+	<!-- Tooltips -->
+	<script src="dist/js/tooltips.js"></script>
+	<script>
+		$(document).ready(function() {
+			$('[data-toggle="tooltip"]').tooltip();
+		});
+
+	</script>
+
+</html>

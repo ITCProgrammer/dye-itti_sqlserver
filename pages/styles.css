@@ -1,0 +1,766 @@
+.7_80 { 
+	overflow:hidden;
+}
+.e7_80 { 
+	width:1902.2222900390625px;
+	height:1070px;
+	position:absolute;
+}
+.e7_10 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:51.085205078125px;
+	top:148.146728515625px;
+}
+.e7_12 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:384.06689453125px;
+	top:148.146728515625px;
+}
+.e7_78 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:384.06689453125px;
+	top:148.146728515625px;
+	background-image:url(images/slice_3_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_78_s { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:384.06689453125px;
+	top:148.146728515625px;
+	background-image:url(images/slice_3.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+	animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_78_n { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:384.06689453125px;
+	top:148.146728515625px;
+	background-image:url(images/slice_3_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_79 { 
+    width: 218.27256774902344px;
+    height: 181.11978149414062px;
+    position: absolute;
+    left: 51.085205078125px;
+    top: 148.146728515625px;
+    background-image: url(images/slice_2_1.png);
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+.e7_79_s { 
+    width: 218.27256774902344px;
+    height: 181.11978149414062px;
+    position: absolute;
+    left: 51.085205078125px;
+    top: 148.146728515625px;
+    background-image: url(images/slice_2.png);
+    background-repeat: no-repeat;
+    background-size: cover;
+    animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_79_n { 
+    width: 218.27256774902344px;
+    height: 181.11978149414062px;
+    position: absolute;
+    left: 51.085205078125px;
+    top: 148.146728515625px;
+    background-image: url(images/slice_2_2.png);
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+.e7_38 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:602.33935546875px;
+	top:148.146728515625px;
+}
+.e7_77 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:602.33935546875px;
+	top:148.146728515625px;
+	background-image:url(images/slice_16_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_77_s { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:602.33935546875px;
+	top:148.146728515625px;
+	background-image:url(images/slice_16.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+	animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_77_n { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:602.33935546875px;
+	top:148.146728515625px;
+	background-image:url(images/slice_16_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_14 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:932.5347900390625px;
+	top:148.146728515625px;
+}
+.e7_76 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:932.5347900390625px;
+	top:148.146728515625px;
+	background-image:url(images/slice_4_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_76_s { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:932.5347900390625px;
+	top:148.146728515625px;
+	background-image:url(images/slice_4.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+	animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_76_n { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:932.5347900390625px;
+	top:148.146728515625px;
+	background-image:url(images/slice_4_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_16 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1150.807373046875px;
+	top:148.146728515625px;
+}
+.e7_75 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1150.807373046875px;
+	top:148.146728515625px;
+	background-image:url(images/slice_5_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_75_s { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1150.807373046875px;
+	top:148.146728515625px;
+	background-image:url(images/slice_5.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+	animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_75_n { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1150.807373046875px;
+	top:148.146728515625px;
+	background-image:url(images/slice_5_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_18 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1369.0799560546875px;
+	top:148.146728515625px;
+}
+.e7_74 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1369.0799560546875px;
+	top:148.146728515625px;
+	background-image:url(images/slice_6_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_74_s { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1369.0799560546875px;
+	top:148.146728515625px;
+	background-image:url(images/slice_6.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+	animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_74_n { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1369.0799560546875px;
+	top:148.146728515625px;
+	background-image:url(images/slice_6_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_20 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1587.3524169921875px;
+	top:148.146728515625px;
+}
+.e7_73 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1587.3524169921875px;
+	top:148.146728515625px;
+	background-image:url(images/slice_7_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_73_s { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1587.3524169921875px;
+	top:148.146728515625px;
+	background-image:url(images/slice_7.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+	animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_73_n { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1587.3524169921875px;
+	top:148.146728515625px;
+	background-image:url(images/slice_7_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_22 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:51.085205078125px;
+	top:419.826416015625px;
+}
+.e7_72 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:51.085205078125px;
+	top:419.826416015625px;
+	background-image:url(images/slice_8_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_72_s { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:51.085205078125px;
+	top:419.826416015625px;
+	background-image:url(images/slice_8.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+	animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_72_n { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:51.085205078125px;
+	top:419.826416015625px;
+	background-image:url(images/slice_8_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_24 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:384.06689453125px;
+	top:620.915771484375px;
+}
+.e7_71 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:384.06689453125px;
+	top:620.915771484375px;
+	background-image:url(images/slice_9_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_71_s { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:384.06689453125px;
+	top:620.915771484375px;
+	background-image:url(images/slice_9.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+	animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_71_n { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:384.06689453125px;
+	top:620.915771484375px;
+	background-image:url(images/slice_9_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_26 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:602.33935546875px;
+	top:620.915771484375px;
+}
+.e7_70 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:602.33935546875px;
+	top:620.915771484375px;
+	background-image:url(images/slice_10_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_70_s { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:602.33935546875px;
+	top:620.915771484375px;
+	background-image:url(images/slice_10.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+	animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_70_n { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:602.33935546875px;
+	top:620.915771484375px;
+	background-image:url(images/slice_10_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_28 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:820.6119384765625px;
+	top:620.915771484375px;
+}
+.e7_69 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:820.6119384765625px;
+	top:620.915771484375px;
+	background-image:url(images/slice_11_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_69_s { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:820.6119384765625px;
+	top:620.915771484375px;
+	background-image:url(images/slice_11.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+	animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_69_n { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:820.6119384765625px;
+	top:620.915771484375px;
+	background-image:url(images/slice_11_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_30 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1038.8846435546875px;
+	top:620.915771484375px;
+}
+.e7_68 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1038.8846435546875px;
+	top:620.915771484375px;
+	background-image:url(images/slice_12_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_68_s { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1038.8846435546875px;
+	top:620.915771484375px;
+	background-image:url(images/slice_12.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+	animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_68_n { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1038.8846435546875px;
+	top:620.915771484375px;
+	background-image:url(images/slice_12_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_32 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1369.0799560546875px;
+	top:620.915771484375px;
+}
+.e7_67 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1369.0799560546875px;
+	top:620.915771484375px;
+	background-image:url(images/slice_13_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_67_s { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1369.0799560546875px;
+	top:620.915771484375px;
+	background-image:url(images/slice_13.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+	animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_67_n { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1369.0799560546875px;
+	top:620.915771484375px;
+	background-image:url(images/slice_13_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_34 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1587.3524169921875px;
+	top:620.915771484375px;
+}
+.e7_66 { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1587.3524169921875px;
+	top:620.915771484375px;
+	background-image:url(images/slice_14_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_66_s { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1587.3524169921875px;
+	top:620.915771484375px;
+	background-image:url(images/slice_14.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+	animation: blink 1.5s infinite; /* Menambahkan animasi blink */
+}
+.e7_66_n { 
+	width:218.27256774902344px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1587.3524169921875px;
+	top:620.915771484375px;
+	background-image:url(images/slice_14_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_40 { 
+	width:1902.2222900390625px;
+	height:148.14669799804688px;
+	position:absolute;
+	left:0px;
+	top:0px;
+}
+.e7_65 { 
+	width:1902.2222900390625px;
+	height:148.14669799804688px;
+	position:absolute;
+	left:0px;
+	top:0px;
+	background-image:url(images/slice_17_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+
+.e7_41 { 
+	width:51.0850715637207px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:0px;
+	top:148.146728515625px;
+}
+.e7_64 { 
+	width:51.0850715637207px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:0px;
+	top:148.146728515625px;
+	background-image:url(images/slice_23_2.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_42 { 
+	width:114.7092056274414px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:269.357666015625px;
+	top:148.146728515625px;
+}
+.e7_63 { 
+	width:114.7092056274414px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:269.357666015625px;
+	top:148.146728515625px;
+	background-image:url(images/slice_19_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_43 { 
+	width:111.9227523803711px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:820.6119384765625px;
+	top:148.146728515625px;
+}
+.e7_62 { 
+	width:111.9227523803711px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:820.6119384765625px;
+	top:148.146728515625px;
+	background-image:url(images/slice_20_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_44 { 
+	width:96.59722137451172px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1805.625px;
+	top:148.146728515625px;
+}
+.e7_61 { 
+	width:96.59722137451172px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1805.625px;
+	top:148.146728515625px;
+	background-image:url(images/slice_21_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_45 { 
+	width:1902.2222900390625px;
+	height:90.55989074707031px;
+	position:absolute;
+	left:0px;
+	top:329.2664794921875px;
+}
+.e7_60 { 
+	width:1902.2222900390625px;
+	height:90.55989074707031px;
+	position:absolute;
+	left:0px;
+	top:329.2664794921875px;
+	background-image:url(images/slice_22_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_46 { 
+	width:51.0850715637207px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:0px;
+	top:419.826416015625px;
+}
+.e7_59 { 
+	width:51.0850715637207px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:0px;
+	top:419.826416015625px;
+	background-image:url(images/slice_23_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_47 { 
+	width:1632.8646240234375px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:269.357666015625px;
+	top:419.826416015625px;
+}
+.e7_58 { 
+	width:1632.8646240234375px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:269.357666015625px;
+	top:419.826416015625px;
+	background-image:url(images/slice_24_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_48 { 
+	width:1902.2222900390625px;
+	height:19.96961784362793px;
+	position:absolute;
+	left:0px;
+	top:600.9461669921875px;
+}
+.e7_57 { 
+	width:1902.2222900390625px;
+	height:19.96961784362793px;
+	position:absolute;
+	left:0px;
+	top:600.9461669921875px;
+	background-image:url(images/slice_25_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_49 { 
+	width:384.0668640136719px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:0px;
+	top:620.915771484375px;
+}
+.e7_56 { 
+	width:384.0668640136719px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:0px;
+	top:620.915771484375px;
+	background-image:url(images/slice_26_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_50 { 
+	width:111.9227523803711px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1257.1571044921875px;
+	top:620.915771484375px;
+}
+.e7_55 { 
+	width:111.9227523803711px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1257.1571044921875px;
+	top:620.915771484375px;
+	background-image:url(images/slice_27_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_51 { 
+	width:96.59722137451172px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1805.625px;
+	top:620.915771484375px;
+}
+.e7_54 { 
+	width:96.59722137451172px;
+	height:181.11978149414062px;
+	position:absolute;
+	left:1805.625px;
+	top:620.915771484375px;
+	background-image:url(images/slice_28_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+.e7_52 { 
+	width:1902.2222900390625px;
+	height:267.96441650390625px;
+	position:absolute;
+	left:0px;
+	top:802.0355834960938px;
+}
+.e7_53 { 
+	width:1902.2222900390625px;
+	height:267.96441650390625px;
+	position:absolute;
+	left:0px;
+	top:802.0355834960938px;
+	background-image:url(images/slice_29_1.png);
+	background-repeat:no-repeat;
+	background-size:cover;
+}
+@keyframes blink {
+    0%, 100% { opacity: 1; }  /* Pada awal dan akhir siklus, elemen terlihat sepenuhnya */
+    50% { opacity: 0; }       /* Di tengah siklus, elemen akan menghilang (transparan) */
+}

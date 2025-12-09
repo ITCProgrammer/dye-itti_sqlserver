@@ -1,0 +1,836 @@
+<?php
+$host1="10.0.0.4";
+$username1="timdit";
+$password1="4dm1n";
+$db_name1="TM";
+ set_time_limit(600);
+	$conn1=mssql_connect($host1,$username1,$password1) or die ("Sorry our web is under maintenance. Please visit us later");
+	$db=mssql_select_db($db_name1) or die ("Under maintenance");
+include "koneksiLAB.php";
+db_connect($db_name);
+$con=mysql_connect("10.0.0.10","dit","4dm1n");
+$db=mysql_select_db("db_dying",$con)or die("Gagal Koneksi");
+$nokk=$_GET['nokk'];
+$sqlCek=mysql_query("SELECT * FROM tbl_schedule WHERE nokk='$nokk' ORDER BY id DESC LIMIT 1",$con);
+$cek=mysql_num_rows($sqlCek);
+$rcek=mysql_fetch_array($sqlCek);
+$sqlCek1=mysql_query("SELECT * FROM tbl_montemp WHERE nokk='$nokk' and not status='selesai' ORDER BY id DESC LIMIT 1",$con);
+$cek1=mysql_num_rows($sqlCek1);
+$rcek1=mysql_fetch_array($sqlCek1);
+$sqlcek2=mysql_query("SELECT
+   	id,
+	if(COUNT(lot)>1,'Gabung Kartu','') as ket_kartu,
+	if(COUNT(lot)>1,CONCAT('(',COUNT(lot),'kk',')'),'') as kk,
+	GROUP_CONCAT(nokk SEPARATOR ', ') as g_kk,
+	no_mesin,
+	no_urut,	
+	sum(rol) as rol,
+	sum(bruto) as bruto
+FROM
+	tbl_schedule 
+WHERE
+	NOT `status` = 'selesai' and no_mesin='$rcek[no_mesin]' and no_urut='$rcek[no_urut]'
+GROUP BY
+	no_mesin,
+	no_urut 
+ORDER BY
+	id ASC");
+$cek2=mysql_num_rows($sqlcek2);
+$rcek2=mysql_fetch_array($sqlcek2);
+if($rcek2['ket_kartu']!=""){$ketsts=$rcek2['ket_kartu']."\n(".$rcek2['g_kk'].")";}else{$ketsts="";}
+
+
+?>
+<?php
+$sqlc="select convert(char(10),CreateTime,103) as TglBonResep,convert(char(10),CreateTime,108) as JamBonResep,ID_NO,COLOR_NAME,PROGRAM_NAME,PRODUCT_LOT,VOLUME,PROGRAM_CODE,YARN as NoKK,TOTAL_WT,USER25 from ticket_title where ID_NO='$rcek[no_resep]' order by createtime Desc";
+				 //--lot
+$qryc=mssql_query($sqlc);
+
+$countdata=mssql_num_rows($qryc);
+
+if ($countdata > 0)
+{
+date_default_timezone_set('Asia/Jakarta');
+
+$tglsvr= mssql_query("select CONVERT(VARCHAR(10),GETDATE(),105) AS  tgk");
+$sr=mssql_fetch_array($tglsvr);
+$sqls=mssql_query("select processcontrolJO.SODID,salesorders.ponumber,processcontrol.productid,salesorders.customerid,joborders.documentno,
+salesorders.buyerid,processcontrolbatches.lotno,productcode,productmaster.color,colorno,description,weight,cuttablewidth,SOSampleColor.OtherDesc,SOSampleColor.Flag from Joborders 
+left join processcontrolJO on processcontrolJO.joid = Joborders.id
+left join salesorders on soid= salesorders.id
+Left join SOSampleColor on SOSampleColor.SOID=SalesOrders.id
+left join processcontrol on processcontrolJO.pcid = processcontrol.id
+left join processcontrolbatches on processcontrolbatches.pcid = processcontrol.id
+left join productmaster on productmaster.id= processcontrol.productid
+left join productpartner on productpartner.productid= processcontrol.productid
+where processcontrolbatches.documentno='$rcek[nokk]'",$conn1);
+		$ssr=mssql_fetch_array($sqls);
+		$lgn1=mssql_query("select partnername from partners where id='$ssr[customerid]'",$conn1);
+		$ssr1=mssql_fetch_array($lgn1);
+		$lgn2=mssql_query("select partnername from partners where id='$ssr[buyerid]'",$conn1);
+		$ssr2=mssql_fetch_array($lgn2);
+		$itm=mssql_query("select colorcode,color,productcode from productpartner where productid='$ssr[productid]' and partnerid='$ssr[customerid]'",$conn1);
+		$itm2=mssql_fetch_array($itm);
+ $row=mssql_fetch_assoc($qryc);
+ //
+ $sql=mssql_query("select stockmovement.dono,stockmovement.documentno as no_doku,processcontrolbatches.documentno,lotno,customerid,
+	processcontrol.productid ,processcontrol.id as pcid, 
+  sum(stockmovementdetails.weight) as berat,
+  count(stockmovementdetails.weight) as roll,processcontrolbatches.dated as tgllot
+   from stockmovement 
+LEFT join stockmovementdetails on StockMovement.id=stockmovementdetails.StockmovementID
+left join processcontrolbatches on processcontrolbatches.id=stockmovement.pcbid
+left join processcontrol on processcontrol.id=processcontrolbatches.pcid
+
+
+
+where wid='12' and processcontrolbatches.documentno='$rcek[nokk]' and (transactiontype='7' or transactiontype='4')
+group by stockmovement.DocumentNo,processcontrolbatches.DocumentNo,processcontrolbatches.LotNo,stockmovement.dono,
+processcontrol.CustomerID,processcontrol.ProductID,processcontrol.ID,processcontrolbatches.Dated",$conn1) or die("gagal");
+$c=0;
+ $r=mssql_fetch_array($sql); 
+	 $sqlkko=mssql_query("select SODID from knittingorders  
+	where knittingorders.Kono='$r[dono]'",$conn1) or die("gagal");
+	$rkko=mssql_fetch_array($sqlkko);
+	 $sqlkko1=mssql_query("select joid,productid from processcontroljo  
+	where sodid='$rkko[SODID]'",$conn1) or die("gagal");
+	$rkko1=mssql_fetch_array($sqlkko1);
+	if($r['productid']!=''){$kno1=$r['productid'];}else{$kno1=$rkko1['productid'];}
+	$sql1=mssql_query("select hangerno,color from  productmaster
+	where id='$kno1'",$conn1) or die("gagal"); 
+	 $r1=mssql_fetch_array($sql1);
+	 $sql2=mssql_query("select partnername from Partners
+	where id='$r[customerid]'",$conn1) or die("gagal"); 
+	 $r2=mssql_fetch_array($sql2);
+	 $sql3=mssql_query("select Kono,joid from processcontroljo 
+	where pcid='$r[pcid]'",$conn1) or die("gagal"); 
+	$r3=mssql_fetch_array($sql3);
+	if($r3['Kono']!=''){$kno=$r3['Kono'];}else{$kno=$r['dono'];}
+	 $sql4=mssql_query("select CAST(TM.dbo.knittingorders.[Note] AS VARCHAR(8000))as note,id,supplierid from knittingorders 
+	where kono='$kno'",$conn1) or die("gagal");
+	 $r4=mssql_fetch_array($sql4);
+	 $sql5=mssql_query("select partnername from partners 
+	where id='$r4[supplierid]'",$conn1) or die("gagal");
+	 $r5=mssql_fetch_array($sql5);
+	 if($r3['joid']!=''){$jno=$r3['joid'];}else{$jno=$rkko1['joid'];}
+	 $sql6=mssql_query("select documentno,soid from joborders 
+	where id='$jno'",$conn1) or die("gagal");
+	 $r6=mssql_fetch_array($sql6);
+	  $sql8=mssql_query("select customerid from salesorders where id='$r6[soid]'",$conn1) or die("gagal");
+	 $r8=mssql_fetch_array($sql8);
+	 $sql9=mssql_query("select partnername from partners where id='$r8[customerid]'",$conn1) or die("gagal");
+	 $r9=mssql_fetch_array($sql9);
+	 $sql10=mssql_query("select id,productid from kodetails where koid='$r4[id]'",$conn1) or die("gagal");
+	 $r10=mssql_fetch_array($sql10);
+	 $sql11=mssql_query("select productnumber from productmaster where id='$r10[productid]'",$conn1) or die("gagal");
+	 $r11=mssql_fetch_array($sql11);
+	 
+	 
+	 $s4=mssql_query("select KOdetails.id as KODID,productmaster.id as BOMID ,KnittingOrders.SupplierID,TM.dbo.Partners.PartnerName,ProductNumber,CustomerID,SODID,KnittingOrders.ID as KOID,SalesOrders.ID as SOID from 
+(TM.dbo.KnittingOrders 
+left join TM.dbo.SODetails on TM.dbo.SODetails.ID= TM.dbo.KnittingOrders.SODID
+left join TM.dbo.KODetails on TM.dbo.KODetails.KOid= TM.dbo.KnittingOrders.ID
+left join TM.dbo.Partners on TM.dbo.Partners.ID= TM.dbo.KnittingOrders.SupplierID)
+left join TM.dbo.ProductMaster on TM.dbo.ProductMaster.ID= TM.dbo.KODetails.ProductID
+left join TM.dbo.SalesOrders on TM.dbo.SalesOrders.ID= TM.dbo.SODetails.SOID
+		where KONO='$kno'",$conn1);
+	 $as7=mssql_fetch_array($s4);
+	 $sql12=mssql_query("select SODetailsBom.ProductID from SODetailsBom where SODID='$as7[SODID]' and KODID='$as7[KODID]' and Parentproductid='$as7[BOMID]' order by ID",$conn1);
+	  $sql14=mssql_query("select  count(lotno)as jmllot from processcontrolbatches where pcid='$r[pcid]' and dated='$r[tgllot]'",$conn1);
+	  $lt=mssql_fetch_array($sql14);
+	 $ai=mssql_num_rows($sql12);
+	 $sql15=mssql_query("select Partnername from TM.dbo.Partners where TM.dbo.Partners.ID='$as7[CustomerID]'",$conn1);
+	$as8=mssql_fetch_array($sql15);
+$i=0;
+
+
+
+ do{
+	$as5=mssql_fetch_array($sql12);
+	$sql13=mssql_query("select ShortDescription from  ProductMaster where ID='$as5[ProductID]'",$conn1);
+	$as6=mssql_fetch_array($sql13);
+	$ar[$i]=$as6['ShortDescription'];
+
+$i++;
+}while($ai>=$i);
+$jb1=$ar[0];
+$jb2=$ar[1];
+$jb3=$ar[2];
+$jb4=$ar[3];
+if($ai<2){$jb1=$ar[0];
+$jb2='';
+$jb3='';
+}
+	$bng=$jb1.",".$jb2.",".$jb3.",".$jb4;
+}
+if($nokk!="" and $rcek2[bruto]!="" and $rcek2[bruto]>0 ){
+$lr=round($row['VOLUME']/$rcek2[bruto]);
+}else{$lr="";}
+function cekDesimal($angka){
+	$bulat=round($angka);
+	if($bulat>$angka){
+		$jam=$bulat-1;
+		$waktu=$jam.":30";
+	}else{
+		$jam=$bulat;
+		$waktu=$jam.":00";
+	}
+	return $waktu;
+}
+?>
+<?php
+$Kapasitas	= isset($_POST['kapasitas']) ? $_POST['kapasitas'] : '';
+$TglMasuk	= isset($_POST['tglmsk']) ? $_POST['tglmsk'] : '';
+$Item		= isset($_POST['item']) ? $_POST['item'] : '';
+$Warna		= isset($_POST['warna']) ? $_POST['warna'] : '';
+$Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
+?>
+<form class="form-horizontal" action="" method="post" enctype="multipart/form-data" name="form1">
+ <div class="box box-info">
+  	<div class="box-header with-border">
+    <h3 class="box-title">Input Data Kartu Kerja</h3>
+    <div class="box-tools pull-right">
+      <button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+    </div>
+  </div>
+ 	<div class="box-body"> 
+	  <div class="col-md-6">
+		<div class="form-group">
+                  <label for="no_po" class="col-sm-3 control-label">No KK</label>
+                  <div class="col-sm-4">
+				  <input name="nokk" type="text" class="form-control" id="nokk" 
+                     onchange="window.location='?p=Form-Monitoring-Washing&nokk='+this.value" value="<?php echo $_GET[nokk];?>" placeholder="No KK" required >
+		          </div>
+			      <div class="col-sm-4">
+				  <input name="id" type="hidden" class="form-control" id="id" value="<?php echo $rcek[id];?>" placeholder="ID">
+		          </div>
+        </div>		
+		<div class="form-group">
+			  <label for="l_g" class="col-sm-3 control-label">L X Grm Permintaan</label>
+			  <div class="col-sm-2">
+				<input name="lebar" type="text" class="form-control" id="lebar" 
+				value="<?php if($cek>0){echo $rcek[lebar];}else{echo round($r[Lebar]);} ?>" placeholder="0" required>
+			  </div>
+			  <div class="col-sm-2">
+				<input name="grms" type="text" class="form-control" id="grms" 
+				value="<?php if($cek>0){echo $rcek[gramasi];}else{echo round($r[Gramasi]);} ?>" placeholder="0" required>
+			  </div>		
+		</div>		
+		<div class="form-group">
+                  <label for="qty_order" class="col-sm-3 control-label">Qty Order</label>
+                  <div class="col-sm-3">
+					<div class="input-group">  
+                    <input name="qty1" type="text" class="form-control" id="qty1" 
+                    value="<?php if($cek>0){echo $rcek[qty_order];}else{echo round($r[BatchQuantity],2);} ?>" placeholder="0.00" required>
+					  <span class="input-group-addon">KGs</span></div>  
+                  </div>
+				  <div class="col-sm-4">
+					<div class="input-group">  
+                    <input name="qty2" type="text" class="form-control" id="qty2" 
+                    value="<?php if($cek>0){echo $rcek[pjng_order];}else{echo round($r[Quantity],2);} ?>" placeholder="0.00" style="text-align: right;" required>
+                    <span class="input-group-addon">
+						  <select name="satuan1" style="font-size: 12px;">
+							<option value="Yard" <?php if($rcek[satuan_order]=="Yard"){ echo "SELECTED"; }?>>Yard</option>
+							<option value="Meter" <?php if($rcek[satuan_order]=="Meter"){ echo "SELECTED"; }?>>Meter</option>
+							<option value="PCS" <?php if($rcek[satuan_order]=="PCS"){ echo "SELECTED"; }?>>PCS</option>
+						  </select>
+				      </span>
+					</div>	
+                  </div>		
+        </div>
+		<div class="form-group">
+                  <label for="lot" class="col-sm-3 control-label">Lot</label>
+                  <div class="col-sm-2">
+                    <input name="lot" type="text" class="form-control" id="lot" 
+                    value="<?php if($cek>0){echo $rcek[lot];}else{if($nomorLot!=""){echo $lotno;}else if($nokk!=""){echo $cekM[lot];} } ?>" placeholder="Lot" >
+                  </div>				   
+        </div>
+		<div class="form-group">
+			  <label for="jml_bruto" class="col-sm-3 control-label">Rol &amp; Qty</label>
+			  <div class="col-sm-2">
+				<input name="qty3" type="text" class="form-control" id="qty3" 
+				value="<?php if($cek2>0){echo $rcek2[rol].$rcek2[kk];} ?>" placeholder="0.00" required>
+			  </div>
+			  <div class="col-sm-3">
+				<div class="input-group">  
+				<input name="qty4" type="text" class="form-control" id="qty4" 
+				value="<?php if($cek2>0){echo $rcek2[bruto];} ?>" placeholder="0.00" style="text-align: right;" required>
+				<span class="input-group-addon">KGs</span>
+				</div>	
+			  </div>		
+		</div>		  
+		<div class="form-group">
+                  <label for="no_resep" class="col-sm-3 control-label">No Bon Resep</label>
+                  <div class="col-sm-3">
+                    <input name="no_resep" type="text" class="form-control" id="no_resep" 
+                    value="<?php if($cek>0){echo $rcek[no_resep];} ?>" placeholder="No Bon Resep" >
+                  </div>				   
+        </div>
+		<div class="form-group">
+                  <label for="a_dingin" class="col-sm-3 control-label">Pemakaian Air</label>
+                  <div class="col-sm-3">
+					<div class="input-group">  
+                    <input name="pakai_air" type="text" class="form-control" id="pakai_air" 
+                    value="<?php echo $row['VOLUME']; ?>" placeholder="0.00" style="text-align: right;">
+					<span class="input-group-addon">L</span></div>  
+          </div>				   
+        </div>
+		<div class="form-group">
+		  <label for="benang" class="col-sm-3 control-label">Benang</label>                  
+<div class="col-sm-8">
+            <input name="benang" type="text" class="form-control" id="benang" 
+                    value="<?php echo $bng; ?>" placeholder="Benang" >
+          </div>				   
+        </div>
+		<div class="form-group">
+          <label for="std_cok_wrn" class="col-sm-3 control-label">Standar Cocok Warna</label>                  
+<div class="col-sm-6">
+            <input name="std_cok_wrn" type="text" class="form-control" id="std_cok_wrn" 
+                    value="<?php if ($ssr['Flag']==" 1") { echo "Original Color" ; } elseif ($ssr['Flag']=="2" ) { echo "Color LD" ; } else { echo
+											  $ssr['OtherDesc']; }?>" placeholder="Standar Cocok Warna" >
+          </div>				   
+        </div> 	  
+		<div class="form-group">
+                  <label for="shift" class="col-sm-3 control-label">Shift</label>
+                  <div class="col-sm-2">					  
+						  <select name="shift" class="form-control" required>
+							  	<option value="">Pilih</option>
+							  	<option value="1">1</option>
+							    <option value="2">2</option>
+							  	<option value="3">3</option>
+					  </select>
+				  </div>
+					  
+		</div>
+		<div class="form-group">
+                  <label for="g_shift" class="col-sm-3 control-label">Group Shift</label>
+                  <div class="col-sm-2">					  
+						  <select name="g_shift" class="form-control" required>
+							  	<option value="">Pilih</option>
+							  	<option value="A">A</option>
+							    <option value="B">B</option>
+							  	<option value="C">C</option>
+					  </select>
+				  </div>
+					  
+		</div>  	    
+		<div class="form-group">
+          <label for="operator" class="col-sm-3 control-label">Operator </label>
+                  <div class="col-sm-5">					  
+				    <select name="operator" class="form-control" required>
+							  	<option value="">Pilih</option>
+							  <?php 
+							  $sqlKap=mysql_query("SELECT nama FROM tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC",$con);
+							  while($rK=mysql_fetch_array($sqlKap)){
+							  ?>
+								  <option value="<?php echo $rK[nama]; ?>"><?php echo $rK[nama]; ?></option>
+							 <?php } ?>	  
+					  </select>
+				  </div>
+					  
+	    </div>
+		<!--  
+		<div class="form-group">
+          <label for="colorist" class="col-sm-3 control-label">Colorist </label>
+                  <div class="col-sm-5">					  
+				    <select name="colorist" class="form-control" required>
+							  	<option value="">Pilih</option>
+							  <?php 
+							  $sqlKap=mysql_query("SELECT nama FROM tbl_staff WHERE jabatan='Colorist' ORDER BY nama ASC",$con);
+							  while($rK=mysql_fetch_array($sqlKap)){
+							  ?>
+								  <option value="<?php echo $rK[nama]; ?>"><?php echo $rK[nama]; ?></option>
+							 <?php } ?>	  
+					  </select>
+				  </div>
+					  
+	    </div>
+		-->	
+		<div class="form-group">
+          <label for="leader" class="col-sm-3 control-label">Leader </label>
+                  <div class="col-sm-5">					  
+				    <select name="leader" class="form-control" required>
+							  	<option value="">Pilih</option>
+							  <?php 
+							  $sqlKap=mysql_query("SELECT nama FROM tbl_staff WHERE jabatan='Leader' ORDER BY nama ASC",$con);
+							  while($rK=mysql_fetch_array($sqlKap)){
+							  ?>
+								  <option value="<?php echo $rK[nama]; ?>"><?php echo $rK[nama]; ?></option>
+							 <?php } ?>	  
+					  </select>
+				  </div>
+					  
+	    </div>  
+		<div class="form-group">
+                  <label for="a_dingin" class="col-sm-3 control-label">No. Program</label>
+                  <div class="col-sm-3">
+                    <input name="no_program" type="text" class="form-control" id="no_program" 
+                    value="" placeholder="No. Program" >
+                  </div>				   
+        </div>
+		<div class="form-group">
+			  <label for="l_g" class="col-sm-3 control-label">L X Grm Sebelum</label>
+			  <div class="col-sm-2">
+				<input name="lebar_a" type="text" class="form-control" id="lebar_a" 
+				value="" placeholder="0" required>
+			  </div>
+			  <div class="col-sm-2">
+				<input name="grms_a" type="text" class="form-control" id="grms_a" 
+				value="" placeholder="0" required onChange="hitung();">
+			  </div>		
+		</div>
+		<div class="form-group">
+			  <label for="l_g1" class="col-sm-3 control-label">L X Grm Sesudah</label>
+			  <div class="col-sm-2">
+				<input name="lebar1_a" type="text" class="form-control" id="lebar1_a" 
+				value="" placeholder="0" required onChange="susut();">
+			  </div>
+			  <div class="col-sm-2">
+				<input name="grms1_a" type="text" class="form-control" id="grms1_a" 
+				value="" placeholder="0" required>
+			  </div>		
+		</div> 
+		<div class="form-group">
+                  <label for="susut_lebar" class="col-sm-3 control-label">Susut Lebar</label>
+                  <div class="col-sm-3">
+					<div class="input-group">  
+                    <input name="susut_lebar" type="text" style="text-align: right;" class="form-control" id="susut_lebar" 
+                    value="" placeholder="0.00" >
+					<span class="input-group-addon">%</span>
+				</div>	
+                  </div>				   
+        </div>
+		<div class="form-group">
+                  <label for="susut_panjang" class="col-sm-3 control-label">Susut Panjang</label>
+                  <div class="col-sm-3">
+					<div class="input-group">  
+                    <input name="susut_panjang" type="text" style="text-align: right;" class="form-control" id="susut_panjang" 
+                    value="" placeholder="0.00" >
+					<span class="input-group-addon">%</span>
+				</div>	
+                  </div>				   
+        </div> 
+		<div class="form-group">
+                  <label for="pjng_kain" class="col-sm-3 control-label">Panjang Kain</label>
+                  <div class="col-sm-3">
+                    <input name="pjng_kain" type="text" class="form-control" id="pjng_kain" 
+                    value="<?php if($cek>0){echo $rcek[pnjg_kain];} ?>" placeholder="0.00" style="text-align: right;" readonly>
+                  </div>				   
+        </div>
+		<div class="form-group">
+                  <label for="speed" class="col-sm-3 control-label">speed</label>
+                  <div class="col-sm-3">
+					<div class="input-group">  
+                    <input name="speed" type="text" style="text-align: right;" class="form-control" id="speed" 
+                    value="" placeholder="0.00" >
+					<span class="input-group-addon">m/mnt</span>
+				</div>	
+                  </div>				   
+        </div>
+		<div class="form-group">
+                  <label for="vacum" class="col-sm-3 control-label">Vacuum Pump</label>
+                  <div class="col-sm-3">
+					<div class="input-group">  
+                    <input name="vacum" type="text" style="text-align: right;" class="form-control" id="vacum" 
+                    value="" placeholder="0.00" >
+					<span class="input-group-addon">%</span>
+				</div>	
+                  </div>				   
+        </div>  
+	  </div>
+	  	
+	  		<!-- col --> 
+	  <div class="col-md-6">		
+		<div class="form-group">
+                  <label for="ch1" class="col-sm-3 control-label">Chamber 1</label>
+                  <div class="col-sm-2">
+				   <div class="input-group">	  
+                    <input name="ch1" type="text" class="form-control" id="ch1" 
+                    value="" placeholder="0" >
+					<span class="input-group-addon">&deg;</span>
+			       </div>  
+                  </div>				   
+        </div>
+		<div class="form-group">
+                  <label for="ch2" class="col-sm-3 control-label">Chamber 2</label>
+                  <div class="col-sm-2">
+                    <div class="input-group">	  
+                    <input name="ch2" type="text" class="form-control" id="ch2" 
+                    value="" placeholder="0" >
+					<span class="input-group-addon">&deg;</span>
+			       </div>
+                  </div>				   
+        </div>
+		<div class="form-group">
+                  <label for="ch3" class="col-sm-3 control-label">Chamber 3</label>
+                  <div class="col-sm-2">
+                    <div class="input-group">	  
+                    <input name="ch3" type="text" class="form-control" id="ch3" 
+                    value="" placeholder="0" >
+					<span class="input-group-addon">&deg;</span>
+			       </div>
+                  </div>				   
+        </div>
+		<div class="form-group">
+                  <label for="ch4" class="col-sm-3 control-label">Chamber 4</label>
+                  <div class="col-sm-2">
+                    <div class="input-group">	  
+                    <input name="ch4" type="text" class="form-control" id="ch4" 
+                    value="" placeholder="0" >
+					<span class="input-group-addon">&deg;</span>
+			       </div>
+                  </div>				   
+        </div>
+		<div class="form-group">
+                  <label for="ch5" class="col-sm-3 control-label">Chamber 5</label>
+                  <div class="col-sm-2">
+                    <div class="input-group">	  
+                    <input name="ch5" type="text" class="form-control" id="ch5" 
+                    value="" placeholder="0" >
+					<span class="input-group-addon">&deg;</span>
+			       </div>
+                  </div>				   
+        </div>
+		<div class="form-group">
+                  <label for="ch6" class="col-sm-3 control-label">Chamber 6</label>
+                  <div class="col-sm-2">
+                    <div class="input-group">	  
+                    <input name="ch6" type="text" class="form-control" id="ch6" 
+                    value="" placeholder="0" >
+					<span class="input-group-addon">&deg;</span>
+                  </div>
+				  </div>	  
+        </div> 
+			
+	  	<div class="form-group">
+                  <label for="vr1" class="col-sm-3 control-label">VR 1</label>
+                  <div class="col-sm-2">
+                    <input name="vr1" type="text" class="form-control" id="vr1" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>  
+		<div class="form-group">
+                  <label for="vr2" class="col-sm-3 control-label">VR 2</label>
+                  <div class="col-sm-2">
+                    <input name="vr2" type="text" class="form-control" id="vr2" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>
+		<div class="form-group">
+          		  <label for="vr3" class="col-sm-3 control-label">VR 3</label>
+                  <div class="col-sm-2">
+                    <input name="vr3" type="text" class="form-control" id="vr3" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>  
+		<div class="form-group">
+                  <label for="vr4" class="col-sm-3 control-label">VR 4</label>
+                  <div class="col-sm-2">
+                    <input name="vr4" type="text" class="form-control" id="vr4" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>  
+		<div class="form-group">
+                  <label for="vr5" class="col-sm-3 control-label">VR 5</label>
+                  <div class="col-sm-2">
+                    <input name="vr5" type="text" class="form-control" id="vr5" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>  
+		<div class="form-group">
+                  <label for="vr6" class="col-sm-3 control-label">VR 6</label>
+                  <div class="col-sm-2">
+                    <input name="vr6" type="text" class="form-control" id="vr6" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>
+		<div class="form-group">
+                  <label for="vr7" class="col-sm-3 control-label">VR 7</label>
+                  <div class="col-sm-2">
+                    <input name="vr7" type="text" class="form-control" id="vr7" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>  
+		<div class="form-group">
+                  <label for="vr8" class="col-sm-3 control-label">VR 8</label>
+                  <div class="col-sm-2">
+                    <input name="vr8" type="text" class="form-control" id="vr8" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>
+		<div class="form-group">
+                  <label for="vr9" class="col-sm-3 control-label">VR 9</label>
+                  <div class="col-sm-2">
+                    <input name="vr9" type="text" class="form-control" id="vr9" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>  
+		<div class="form-group">
+                  <label for="vr10" class="col-sm-3 control-label">VR 10</label>
+                  <div class="col-sm-2">
+                    <input name="vr10" type="text" class="form-control" id="vr10" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>
+		<div class="form-group">
+                  <label for="vr11" class="col-sm-3 control-label">VR 11</label>
+                  <div class="col-sm-2">
+                    <input name="vr11" type="text" class="form-control" id="vr11" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>  
+		<div class="form-group">
+                  <label for="vr12" class="col-sm-3 control-label">VR 12</label>
+                  <div class="col-sm-2">
+                    <input name="vr12" type="text" class="form-control" id="vr12" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>  
+		<div class="form-group">
+                  <label for="vr13" class="col-sm-3 control-label">VR 13</label>
+                  <div class="col-sm-2">
+                    <input name="vr13" type="text" class="form-control" id="vr13" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>  
+		<div class="form-group">
+                  <label for="vr14" class="col-sm-3 control-label">VR 14</label>
+                  <div class="col-sm-2">
+                    <input name="vr14" type="text" class="form-control" id="vr14" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>
+		<div class="form-group">
+                  <label for="vr15" class="col-sm-3 control-label">VR 15</label>
+                  <div class="col-sm-2">
+                    <input name="vr15" type="text" class="form-control" id="vr15" 
+                    value="" placeholder="0" >
+                  </div>				   
+        </div>
+		  <!--
+		  <div class="form-group">
+                  <label for="tgl_buat" class="col-sm-3 control-label">Jam Masuk Kain</label>
+			      <div class="col-sm-3">
+				  <div class="input-group">
+                    <input type="text" class="form-control timepicker" name="waktu_buat" id="waktu_buat" placeholder="00:00" required>				  
+                    <div class="input-group-addon">
+                      <i class="fa fa-clock-o"></i>
+                   </div>
+                  </div>
+			</div>	  
+                  <div class="col-sm-4">					  
+						  <div class="input-group date">
+            <div class="input-group-addon"> <i class="fa fa-calendar"></i> </div>
+            <input name="tgl_buat" type="text" class="form-control pull-right" id="datepicker3" placeholder="0000-00-00" value="" required/>
+          </div>
+				  </div>
+					  
+		</div> 
+		  -->
+		<div class="form-group">
+                  <label for="ket" class="col-sm-3 control-label">Keterangan</label>
+                  <div class="col-sm-8">					  
+						  <textarea name="ket" class="form-control"><?php echo $ketsts;?></textarea>
+				  </div>
+					  
+		</div>  
+      </div>
+	  		
+	 
+		  <input type="hidden" value="<?php if($cek>0){echo $rcek[no_ko];}else{echo $rKO[KONo];}?>" name="no_ko">
+		  <input type="hidden" value="<?php if($cek>0){echo cekDesimal($rcek[target]);}else{echo cekDesimal($rKO[target]);}?>" name="target">	
+		  
+ 	</div>
+   	<div class="box-footer">
+	<button type="button" class="btn btn-default pull-left" name="back" value="kembali" onClick="window.location='?p=Monitoring-Tempelan'">Kembali <i class="fa fa-arrow-circle-o-left"></i></button>	
+   <?php if($cek1>0){ 
+	echo "<script>swal({
+  title: 'No Kartu Sudah diinput dan belum selesai proses',
+  text: 'Klik Ok untuk input kembali',
+  type: 'warning',
+  }).then((result) => {
+  if (result.value) {
+    window.location='index1.php?p=Form-Monitoring-Washing';
+  }
+});</script>";	
+   } else if($rcek[no_urut]!="1" and $nokk!=""){
+	echo "<script>swal({
+  title: 'Harus No Urut `1` ',
+  text: 'Klik Ok untuk input kembali',
+  type: 'warning',
+  }).then((result) => {
+  if (result.value) {
+    window.location='index1.php?p=Form-Monitoring-Washing';
+  }
+});</script>"; }else{ ?>	   
+   <button type="submit" class="btn btn-primary pull-right" name="save" value="save">Simpan <i class="fa fa-save"></i></button> 
+   <?php } ?>
+   
+   </div>
+    <!-- /.box-footer -->
+ </div>
+</form>
+    
+						
+                    
+
+<?php 
+	if($_POST['save']=="save"){
+	  $benang=str_replace("'","''",$_POST['benang']);
+	  $tglbuat=$_POST[tgl_buat]." ".$_POST[waktu_buat];	
+  	  $sqlData=mysql_query("INSERT INTO tbl_montemp SET
+	  	id_schedule='$_POST[id]',
+		nokk='$_POST[nokk]',
+		operator='$_POST[operator]',
+		colorist='$_POST[colorist]',
+		leader='$_POST[leader]',
+		pakai_air='$_POST[pakai_air]',
+		carry_over='$_POST[carry_over]',
+		shift='$_POST[shift]',
+		gramasi_a='$_POST[grms_a]',
+		lebar_a='$_POST[lebar_a]',
+		gramasi_s='$_POST[grms1_a]',
+		lebar_s='$_POST[lebar1_a]',
+		pjng_kain='$_POST[pjng_kain]',
+		rol='$_POST[qty3]',
+		bruto='$_POST[qty4]',
+		g_shift='$_POST[g_shift]',
+		no_program='$_POST[no_program]',
+		benang='$benang',
+		std_cok_wrn='$_POST[std_cok_wrn]',
+		speed='$_POST[speed]',
+		susut_lebar='$_POST[susut_lebar]',
+		susut_panjang='$_POST[susut_panjang]',
+		vacum='$_POST[vacum]',
+		ch1='$_POST[ch1]',
+		ch2='$_POST[ch2]',
+		ch3='$_POST[ch3]',
+		ch4='$_POST[ch4]',
+		ch5='$_POST[ch5]',
+		ch6='$_POST[ch6]',
+		vr1='$_POST[vr1]',
+		vr2='$_POST[vr2]',
+		vr3='$_POST[vr3]',
+		vr4='$_POST[vr4]',
+		vr5='$_POST[vr5]',
+		vr6='$_POST[vr6]',
+		vr7='$_POST[vr7]',
+		vr8='$_POST[vr8]',
+		vr9='$_POST[vr9]',
+		vr10='$_POST[vr10]',
+		vr11='$_POST[vr11]',
+		vr12='$_POST[vr12]',
+		vr13='$_POST[vr13]',
+		vr14='$_POST[vr14]',
+		vr15='$_POST[vr15]',
+		ket='$_POST[ket]',
+		tgl_buat=now(),
+		tgl_target=ADDDATE(now(), INTERVAL '$_POST[target]' HOUR_MINUTE),
+		tgl_update=now()",$con); 	  
+	  
+		if($sqlData){
+			$sqlD=mysql_query("UPDATE tbl_schedule SET 
+		  status='sedang jalan',
+		  tgl_update=now()
+		  WHERE id='$_POST[id]'",$con);
+			echo "<script>swal({
+  title: 'Data Tersimpan',   
+  text: 'Klik Ok untuk input data kembali',
+  type: 'success',
+  }).then((result) => {
+  if (result.value) {
+    
+	 window.location.href='?p=Monitoring-Tempelan'; 
+  }
+});</script>";
+		}
+		
+			
+	}
+    if($_POST[update]=="update"){
+	  $warna=str_replace("'","''",$_POST['warna']);
+	  $nowarna=str_replace("'","''",$_POST['no_warna']);	
+	  $jns=str_replace("'","''",$_POST['jns_kain']);
+	  $po=str_replace("'","''",$_POST['no_po']);
+	  $lot=trim($_POST[lot]);	
+  	  $sqlData=mysql_query("UPDATE tbl_montemp SET 
+		  operator='$_POST[operator]',
+		  colorist='$_POST[colorist]',
+		  leader='$_POST[leader]',
+		  shift='$_POST[shift]',
+		  gramasi_a='$_POST[grms_a]',
+		  lebar_a='$_POST[lebar_a]',
+		  rol='$_POST[qty3]',
+		  bruto='$_POST[qty4]',
+		  pjng_kain='$_POST[pjng_kain]',
+		  g_shift='$_POST[g_shift]',
+		  no_program='$_POST[no_program]',
+		  speed='$_POST[speed]',
+		  susut_lebar='$_POST[susut_lebar]',
+		  susut_panjang='$_POST[susut_panjang]',
+		  vacum='$_POST[vacum]',
+		  ch1='$_POST[ch1]',
+		  ch2='$_POST[ch2]',
+		  ch3='$_POST[ch3]',
+		  ch4='$_POST[ch4]',
+		  ch5='$_POST[ch5]',
+		  ch6='$_POST[ch6]',
+		  vr1='$_POST[vr1]',
+		  vr2='$_POST[vr2]',
+		  vr3='$_POST[vr3]',
+		  vr4='$_POST[vr4]',
+		  vr5='$_POST[vr5]',
+		  vr6='$_POST[vr6]',
+		  vr7='$_POST[vr7]',
+		  vr8='$_POST[vr8]',
+		  vr9='$_POST[vr9]',
+		  vr10='$_POST[vr10]',
+		  vr11='$_POST[vr11]',
+		  vr12='$_POST[vr12]',
+		  vr13='$_POST[vr13]',
+		  vr14='$_POST[vr14]',
+		  vr15='$_POST[vr15]',
+		  ket='$_POST[ket]',
+		  tgl_update=now()
+		  WHERE nokk='$_POST[nokk]'",$con);	 	  
+	  
+		if($sqlData){
+			// echo "<script>alert('Data Telah Diubah');</script>";
+			// echo "<script>window.location.href='?p=Input-Data-KJ;</script>";
+			echo "<script>swal({
+  title: 'Data Telah DiUbah',   
+  text: 'Klik Ok untuk input data kembali',
+  type: 'success',
+  }).then((result) => {
+  if (result.value) {
+    
+	 window.location.href='?p=Monitoring-Tempelan'; 
+  }
+});</script>";
+		}
+		
+			
+	}
+?>
+<script>
+function roundToTwo(num) {    
+    return +(Math.round(num + "e+2")  + "e-2");
+}	
+function hitung(){
+		if(document.forms['form1']['lebar_a'].value != "" && document.forms['form1']['grms_a'].value != ""){
+			var brtKain=document.forms['form1']['qty4'].value;
+			var lebar=document.forms['form1']['lebar_a'].value;
+			var grms=document.forms['form1']['grms_a'].value;
+			var m;
+			m=roundToTwo((brtKain*39.37*1000)/(lebar*grms));
+			document.forms['form1']['pjng_kain'].value=m;
+		}
+	}
+function susut(){
+	var sebelum=document.forms['form1']['lebar_a'].value;
+	var sesudah=document.forms['form1']['lebar1_a'].value;
+	var susut_lebar;
+	susut_lebar=roundToTwo((sesudah-sebelum)*100/sebelum);
+	document.forms['form1']['susut_lebar'].value=susut_lebar;
+}	
+</script>

@@ -1,0 +1,12 @@
+RewriteEngine On
+
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+
+RewriteRule ^login$ ./login.php [L]
+RewriteRule ^login$ ./index.php [L]
+RewriteRule ^lockscreen$ ./lockscreen.php [L]
+RewriteRule ^logout$ ./login.php?act=logout [L]
+RewriteRule ^Blank$ ./index1.php?p=Blank [L]
+
+Options All -Indexes
