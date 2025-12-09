@@ -200,8 +200,12 @@ $shft = $_GET['shft'];
         $sql_ITXVIEWKK  = db2_exec($conn2, "SELECT * FROM ITXVIEWKK WHERE PRODUCTIONORDERCODE = '$rowd[nokk]' LIMIT 1");
         $dt_ITXVIEWKK    = db2_fetch_assoc($sql_ITXVIEWKK);
 
-        $q_uploadspectro    = mysqli_query($con_nowprd, "SELECT * FROM `upload_spectro` WHERE SUBSTR(batch_name, 1,8) = '$rowd[nokk]'");
-        $data_uploadspectro = mysqli_fetch_assoc($q_uploadspectro);
+        $data_uploadspectro = array();
+        $sql_uploadspectro  = "SELECT TOP 1 * FROM upload_spectro WHERE SUBSTRING(batch_name, 1, 8) = ?";
+        $q_uploadspectro    = sqlsrv_query($con_nowprd, $sql_uploadspectro, array($rowd['nokk']));
+        if ($q_uploadspectro !== false) {
+          $data_uploadspectro = sqlsrv_fetch_array($q_uploadspectro, SQLSRV_FETCH_ASSOC);
+        }
 
         if (!empty($data_uploadspectro)) {
           $q_rsv_link_group   = db2_exec($conn2, "SELECT

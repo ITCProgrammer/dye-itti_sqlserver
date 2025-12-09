@@ -8,7 +8,19 @@ date_default_timezone_set('Asia/Jakarta');
 // $conn     = sqlsrv_connect( $host, $connInfo);
 $con=mysqli_connect("10.0.0.10","dit","4dm1n","db_dying");
 $cond=mysqli_connect("10.0.0.10","dit","4dm1n","db_qc");
-$con_nowprd     = mysqli_connect("10.0.0.10","dit","4dm1n","nowprd");
+
+// SQL Server: database nowprd (migrated from MySQL)
+$nowprdServer = "10.0.0.10,1433";
+$nowprdOptions = array(
+    "Database" => "nowprd",
+    "UID" => "dit",
+    "PWD" => "4dm1n",
+    "CharacterSet" => "UTF-8"
+);
+$con_nowprd = sqlsrv_connect($nowprdServer, $nowprdOptions);
+if ($con_nowprd === false) {
+    exit("SQL Server (nowprd) connection failed: " . print_r(sqlsrv_errors(), true));
+}
 if (mysqli_connect_errno()) {
     printf("Connect failed: %s\n", mysqli_connect_error());
     exit();
