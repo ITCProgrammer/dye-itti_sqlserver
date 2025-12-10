@@ -10,8 +10,14 @@ ini_set("error_reporting", 1);
 include "../../koneksi.php";
 $Awal = $_GET['Awal'];
 $Akhir = $_GET['Akhir'];
-$qTgl = mysqli_query($con, "SELECT DATE_FORMAT(now(),'%Y-%m-%d %H:%i') as tgl_skrg, DATE_FORMAT(now(),'%Y-%m-%d')+ INTERVAL 1 DAY as tgl_besok");
-$rTgl = mysqli_fetch_array($qTgl);
+$qTgl = sqlsrv_query(
+  $con,
+  "SELECT
+     CONVERT(varchar(16), GETDATE(), 120) AS tgl_skrg,
+     CONVERT(varchar(10), DATEADD(DAY, 1, GETDATE()), 120) AS tgl_besok,
+     CONVERT(varchar(8), GETDATE(), 108) AS jam_skrg"
+);
+$rTgl = sqlsrv_fetch_array($qTgl, SQLSRV_FETCH_ASSOC);
 if ($Awal != "") {
   $tgl = substr($Awal, 0, 10);
   $jam = $Awal;
@@ -22,6 +28,14 @@ if ($Awal != "") {
 ?>
 
 <body>
+<?php
+function format_tanggal_sqlsrv($value) {
+	if ($value instanceof DateTime) {
+		return $value->format('Y-m-d');
+	}
+	return $value;
+}
+?>
   <strong>Tgl: <?php echo $tgl . " " . $jam; ?></strong><br />
   <table width="100%" border="1">
     <tr>
@@ -48,56 +62,61 @@ if ($Awal != "") {
       <th bgcolor="#99FF99">JML GEROBAK</th>
     </tr>
     <?php
-      if ($awal != "") {
-        $where = " AND DATE_FORMAT( tgl_update, '%Y-%m-%d %H:%i:%s' ) BETWEEN '$awal' AND '$akhir' ";
-      } else {
-        $where = " ";
+      $sqlText = "SELECT
+                    kapasitas,
+                    no_mesin,
+                    no_urut,
+                    STRING_AGG(lot, '/') AS lot,
+                    CASE WHEN COUNT(lot) > 1 THEN 'Gabung Kartu' ELSE '' END AS ket_kartu,
+                    CASE WHEN COUNT(lot) > 1 THEN '(' + CAST(COUNT(lot) AS varchar(10)) + 'kk)' ELSE '' END AS kk,
+                    MAX(buyer) AS buyer,
+                    MAX(langganan) AS langganan,
+                    MAX(po) AS po,
+                    STRING_AGG(no_order, '-') AS no_order,
+                    MAX(no_resep) AS no_resep,
+                    MAX(nokk) AS nokk,
+                    MAX(jenis_kain) AS jenis_kain,
+                    MAX(warna) AS warna,
+                    MAX(no_warna) AS no_warna,
+                    SUM(rol) AS rol,
+                    SUM(bruto) AS bruto,
+                    MAX(proses) AS proses,
+                    MAX(ket_status) AS ket_status,
+                    MAX(tgl_delivery) AS tgl_delivery,
+                    MAX(ket_kain) AS ket_kain,
+                    STRING_AGG(personil, ',') AS personil,
+                    MAX(mc_from) AS mc_from,
+                    MAX(suffix) AS suffix,
+                    MAX(suffix2) AS suffix2,
+                    MAX(no_hanger) AS no_hanger,
+                    MAX(nodemand) AS nodemand
+                  FROM
+                    db_dying.tbl_schedule
+                  WHERE
+                    status <> 'selesai'";
+
+      $params = array();
+      if ($Awal != "") {
+        $sqlText .= " AND tgl_update BETWEEN ? AND ?";
+        $params[] = $Awal;
+        $params[] = $Akhir;
       }
-      $sql = mysqli_query($con, "SELECT
-                                    kapasitas,
-                                    no_mesin,
-                                    no_urut,
-                                    GROUP_CONCAT( lot SEPARATOR '/' ) AS lot,
-                                    if(COUNT(lot)>1,'Gabung Kartu','') as ket_kartu,
-                                    if(COUNT(lot)>1,CONCAT('(',COUNT(lot),'kk',')'),'') as kk,
-                                    buyer,
-                                    langganan,
-                                    po,
-                                    GROUP_CONCAT(DISTINCT no_order SEPARATOR '-' ) AS no_order,
-                                    no_resep,
-                                    nokk,
-                                    jenis_kain,
-                                    warna,
-                                    no_warna,
-                                    sum(rol) as rol,
-                                    sum(bruto) as bruto,
-                                    proses,
-                                    ket_status,
-                                    tgl_delivery,
-                                    ket_kain,
-                                    GROUP_CONCAT(DISTINCT personil SEPARATOR ',' ) AS personil,
-                                    mc_from,
-                                    suffix,
-                                    suffix2,
-                                    no_hanger,
-                                    nodemand
-                                  FROM
-                                    tbl_schedule 
-                                  WHERE
-                                    NOT STATUS = 'selesai' $where
-                                  GROUP BY
-                                    no_mesin,
-                                    no_urut 
-                                  ORDER BY
-                                    kapasitas DESC,no_mesin ASC");
 
+      $sqlText .= "
+                  GROUP BY
+                    kapasitas,
+                    no_mesin,
+                    no_urut
+                  ORDER BY
+                    kapasitas DESC, no_mesin ASC";
+
+      $sql = sqlsrv_query($con, $sqlText, $params);
       $no = 1;
-
       $c = 0;
       $totrol = 0;
       $totberat = 0;
 
-      while ($rowd = mysqli_fetch_array($sql)) {
+      while ($rowd = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)) {
     ?>
       <tr valign="top">
         <td valign="top"><?php echo $rowd['kapasitas']; ?></td>
@@ -111,7 +130,7 @@ if ($Awal != "") {
         <td valign="top"><?php echo $rowd['warna']; ?></td>
         <td valign="top"><?php echo $rowd['no_hanger']; ?>/<?php echo $rowd['no_warna']; ?></td>
         <td valign="top">'<?php echo $rowd['lot']; ?></td>
-        <td valign="top"><?php echo $rowd['tgl_delivery']; ?></td>
+        <td valign="top"><?php echo format_tanggal_sqlsrv($rowd['tgl_delivery']); ?></td>
         <td align="right" valign="top"><?php echo $rowd['rol'] . $rowd['kk']; ?></td>
         <td align="right" valign="top"><?php echo $rowd['bruto']; ?></td>
         <td><?php echo $rowd['ket_status']; ?><br>

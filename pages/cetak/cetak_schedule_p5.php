@@ -8,8 +8,12 @@ $act=$_GET['g'];
 //-
 $Awal=$_GET['Awal'];
 $Akhir=$_GET['Akhir'];
-$qTgl=mysqli_query($con,"SELECT DATE_FORMAT(now(),'%Y-%m-%d') as tgl_skrg,DATE_FORMAT(now(),'%H:%i:%s') as jam_skrg");
-$rTgl=mysqli_fetch_array($qTgl);
+$qTgl = sqlsrv_query(
+  $con,
+  "SELECT CONVERT(varchar(10), GETDATE(), 120) AS tgl_skrg,
+          CONVERT(varchar(8), GETDATE(), 108) AS jam_skrg"
+);
+$rTgl = sqlsrv_fetch_array($qTgl, SQLSRV_FETCH_ASSOC);
 if($Awal!=""){$tgl=substr($Awal,0,10); $jam=$Awal;}else{$tgl=$rTgl['tgl_skrg']; $jam=$rTgl['jam_skrg'];}
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -101,6 +105,14 @@ border:hidden;
 </head>
 
 <body>
+<?php
+function format_tanggal_sqlsrv($value) {
+	if ($value instanceof DateTime) {
+		return $value->format('Y-m-d');
+	}
+	return $value;
+}
+?>
 <table width="100%">
   <thead>
     <tr>
@@ -144,56 +156,76 @@ border:hidden;
     </tr>
 		  </thead>
 	<?php
-	function tampil($mc,$no,$awal,$akhir){
-    include "../../koneksi.php";		
-		if($awal!=""){$where=" AND DATE_FORMAT( tgl_update, '%Y-%m-%d %H:%i:%s' ) BETWEEN '$awal' AND '$akhir' ";}
-		else{$where=" ";}
-		$qCek=mysqli_query($con,"SELECT
-   	id,
-	GROUP_CONCAT( lot SEPARATOR '/' ) AS lot,
-	if(COUNT(lot)>1,'Gabung Kartu','') as ket_kartu,
-	no_mesin,
-	no_urut,
-	buyer,
-	langganan,
-	GROUP_CONCAT(DISTINCT no_order SEPARATOR '-' ) AS no_order,
-	no_resep,
-	nokk,
-	jenis_kain,
-	warna,
-	no_warna,
-	sum(rol) as rol,
-	sum(bruto) as bruto,
-	proses,
-	ket_status,
-	tgl_delivery,
-	GROUP_CONCAT(DISTINCT personil SEPARATOR ',' ) AS personil,
-	ket_kain,
-	mc_from
-FROM
-	tbl_schedule 
-WHERE
-	NOT STATUS = 'selesai' and no_urut='$no' and no_mesin='$mc' $where
-GROUP BY
-	no_mesin,
-	no_urut 
-ORDER BY
-	id ASC");
-	  	$row=mysqli_fetch_array($qCek);
+	function tampil($mc, $no, $awal, $akhir){
+		global $con;
+
+		$sql = "
+			SELECT
+				MIN(id) AS id,
+				STRING_AGG(lot, '/') AS lot,
+				CASE WHEN COUNT(lot) > 1 THEN 'Gabung Kartu' ELSE '' END AS ket_kartu,
+				no_mesin,
+				no_urut,
+				MAX(buyer) AS buyer,
+				MAX(langganan) AS langganan,
+				STRING_AGG(no_order, '-') AS no_order,
+				MAX(no_resep) AS no_resep,
+				MAX(nokk) AS nokk,
+				MAX(jenis_kain) AS jenis_kain,
+				MAX(warna) AS warna,
+				MAX(no_warna) AS no_warna,
+				SUM(rol) AS rol,
+				SUM(bruto) AS bruto,
+				MAX(proses) AS proses,
+				MAX(ket_status) AS ket_status,
+				MAX(tgl_delivery) AS tgl_delivery,
+				STRING_AGG(personil, ',') AS personil,
+				MAX(ket_kain) AS ket_kain,
+				MAX(mc_from) AS mc_from
+			FROM
+				db_dying.tbl_schedule
+			WHERE
+				status <> 'selesai'
+				AND no_urut = ?
+				AND no_mesin = ?";
+
+		$params = array($no, $mc);
+
+		if ($awal != "") {
+			$sql .= " AND tgl_update BETWEEN ? AND ?";
+			$params[] = $awal;
+			$params[] = $akhir;
+		}
+
+		$sql .= "
+			GROUP BY
+				no_mesin,
+				no_urut
+			ORDER BY
+				MIN(id) ASC";
+
+	  	$qCek = sqlsrv_query($con, $sql, $params);
+	  	$row  = sqlsrv_fetch_array($qCek, SQLSRV_FETCH_ASSOC);
 		$dt[]=$row;
 		return $dt;
 					
 	}
-   /* $data=mysqli_query("SELECT b.* from tbl_schedule a
+	   /* $data=mysqli_query("SELECT b.* from tbl_schedule a
 LEFT JOIN tbl_mesin b ON a.no_mesin=b.no_mesin WHERE not a.`status`='selesai' GROUP BY a.no_mesin ORDER BY a.kapasitas DESC,a.no_mesin ASC"); */
-	$data=mysqli_query($con,"SELECT b.* from tbl_mesin b ORDER BY b.kapasitas DESC,b.no_mesin ASC LIMIT 15,4");
+		$data = sqlsrv_query(
+			$con,
+			"SELECT *
+			 FROM db_dying.tbl_mesin
+			 ORDER BY kapasitas DESC, no_mesin ASC
+			 OFFSET 15 ROWS FETCH NEXT 4 ROWS ONLY"
+	);
 	$no=1;
 	$n=1;
 	$c=0;
 	 ?>
 	<?php
 	  $col=0;
-  while($rowd=mysqli_fetch_array($data)){
+  while($rowd = sqlsrv_fetch_array($data, SQLSRV_FETCH_ASSOC)){
 			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
 		 ?>
     <tr>
@@ -215,7 +247,7 @@ LEFT JOIN tbl_mesin b ON a.no_mesin=b.no_mesin WHERE not a.`status`='selesai' GR
       </div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd['no_warna']; ?></div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd['lot']; ?></div></td>
-      <td align="center" valign="top"><?php if($dd['tgl_delivery']!="0000-00-00"){echo $dd['tgl_delivery'];} ?></td>
+      <td align="center" valign="top"><?php if($dd['tgl_delivery']!="0000-00-00"){echo format_tanggal_sqlsrv($dd['tgl_delivery']);} ?></td>
       <td align="center" valign="top"><?php if($dd['rol']!="0"){echo $dd['rol'];} ?></td>
       <td align="right" valign="top"><?php if($dd['bruto']!="0"){echo $dd['bruto'];} ?></td>
       <td valign="top"><?php echo $dd['ket_status']; ?><br />
@@ -234,7 +266,7 @@ LEFT JOIN tbl_mesin b ON a.no_mesin=b.no_mesin WHERE not a.`status`='selesai' GR
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd1['warna']; ?></div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd1['no_warna']; ?></div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd1['lot']; ?></div></td>
-      <td align="center" valign="top"><?php echo $dd1['tgl_delivery']; ?></td>
+      <td align="center" valign="top"><?php echo format_tanggal_sqlsrv($dd1['tgl_delivery']); ?></td>
       <td align="center" valign="top"><?php echo $dd1['rol']; ?></td>
       <td align="right" valign="top"><?php echo $dd1['bruto']; ?></td>
       <td valign="top"><?php echo $dd1['ket_status']; ?><br />
@@ -253,7 +285,7 @@ LEFT JOIN tbl_mesin b ON a.no_mesin=b.no_mesin WHERE not a.`status`='selesai' GR
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd2['warna']; ?></div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd2['no_warna']; ?></div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd2['lot']; ?></div></td>
-      <td align="center" valign="top"><?php echo $dd2['tgl_delivery']; ?></td>
+      <td align="center" valign="top"><?php echo format_tanggal_sqlsrv($dd2['tgl_delivery']); ?></td>
       <td align="center" valign="top"><?php echo $dd2['rol']; ?></td>
       <td align="right" valign="top"><?php echo $dd2['bruto']; ?></td>
       <td valign="top"><?php echo $dd2['ket_status']; ?><br />
@@ -272,7 +304,7 @@ LEFT JOIN tbl_mesin b ON a.no_mesin=b.no_mesin WHERE not a.`status`='selesai' GR
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd3['warna']; ?></div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd3['no_warna']; ?></div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd3['lot']; ?></div></td>
-      <td align="center" valign="top"><?php echo $dd3['tgl_delivery']; ?></td>
+      <td align="center" valign="top"><?php echo format_tanggal_sqlsrv($dd3['tgl_delivery']); ?></td>
       <td align="center" valign="top"><?php echo $dd3['rol']; ?></td>
       <td align="right" valign="top"><?php echo $dd3['bruto']; ?></td>
       <td valign="top"><?php echo $dd3['ket_status']; ?><br />
@@ -291,7 +323,7 @@ LEFT JOIN tbl_mesin b ON a.no_mesin=b.no_mesin WHERE not a.`status`='selesai' GR
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd4['warna']; ?></div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd4['no_warna']; ?></div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd4['lot']; ?></div></td>
-      <td align="center" valign="top"><?php echo $dd4['tgl_delivery']; ?></td>
+      <td align="center" valign="top"><?php echo format_tanggal_sqlsrv($dd4['tgl_delivery']); ?></td>
       <td align="center" valign="top"><?php echo $dd4['rol']; ?></td>
       <td align="right" valign="top"><?php echo $dd4['bruto']; ?></td>
       <td valign="top"><?php echo $dd4['ket_status']; ?><br />
@@ -310,7 +342,7 @@ LEFT JOIN tbl_mesin b ON a.no_mesin=b.no_mesin WHERE not a.`status`='selesai' GR
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd5['warna']; ?></div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd5['no_warna']; ?></div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd5['lot']; ?></div></td>
-      <td align="center" valign="top"><?php echo $dd5['tgl_delivery']; ?></td>
+      <td align="center" valign="top"><?php echo format_tanggal_sqlsrv($dd5['tgl_delivery']); ?></td>
       <td align="center" valign="top"><?php echo $dd5['rol']; ?></td>
       <td align="right" valign="top"><?php echo $dd5['bruto']; ?></td>
       <td valign="top"><?php echo $dd5['ket_status']; ?><br />
@@ -329,7 +361,7 @@ LEFT JOIN tbl_mesin b ON a.no_mesin=b.no_mesin WHERE not a.`status`='selesai' GR
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd6['warna']; ?></div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd6['no_warna']; ?></div></td>
       <td align="center" valign="top"><div style="font-size: 8px;"><?php echo $dd6['lot']; ?></div></td>
-      <td align="center" valign="top"><?php echo $dd6['tgl_delivery']; ?></td>
+      <td align="center" valign="top"><?php echo format_tanggal_sqlsrv($dd6['tgl_delivery']); ?></td>
       <td align="center" valign="top"><?php echo $dd6['rol']; ?></td>
       <td align="right" valign="top"><?php echo $dd6['bruto']; ?></td>
       <td valign="top"><?php echo $dd6['ket_status']; ?><br />

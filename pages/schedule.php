@@ -31,42 +31,47 @@
 
 <body>
 	<?php
-	$data = mysqli_query($con, "SELECT
-										id,
-										GROUP_CONCAT( lot SEPARATOR '/' ) AS lot,
-										if(COUNT(lot)>1,'Gabung Kartu','') as ket_kartu,
-										if(COUNT(lot)>1,CONCAT('(',COUNT(lot),'kk',')'),'') as kk,
-										no_mesin,
-										no_urut,
-										nodemand,
-										buyer,
-										langganan,
-										no_order,
-										no_item,
-										no_hanger,
-										no_resep,
-										nokk,
-										jenis_kain,
-										warna,
-										no_warna,
-										sum(rol) as rol,
-										sum(bruto) as bruto,
-										proses,
-										ket_status,
-										ket_kain,
-										tgl_delivery,
-										suffix,
-										suffix2,
-										high_temp
-									FROM
-										tbl_schedule 
-									WHERE
-										`status` = 'antri mesin' or `status` = 'sedang jalan' 
-									GROUP BY
-										no_mesin,
-										no_urut 
-									ORDER BY
-										no_mesin ASC,no_urut ASC");
+	// Query schedule menggunakan SQL Server (schema db_dying)
+	$sqlSchedule = "
+		SELECT
+			MIN(id) AS id,
+			STRING_AGG(lot, '/') AS lot,
+			CASE WHEN COUNT(lot) > 1 THEN 'Gabung Kartu' ELSE '' END AS ket_kartu,
+			CASE WHEN COUNT(lot) > 1 THEN '(' + CAST(COUNT(lot) AS varchar(10)) + 'kk)' ELSE '' END AS kk,
+			no_mesin,
+			no_urut,
+			MAX(nodemand) AS nodemand,
+			MAX(buyer) AS buyer,
+			MAX(langganan) AS langganan,
+			MAX(no_order) AS no_order,
+			MAX(no_item) AS no_item,
+			MAX(no_hanger) AS no_hanger,
+			MAX(no_resep) AS no_resep,
+			MAX(nokk) AS nokk,
+			MAX(jenis_kain) AS jenis_kain,
+			MAX(warna) AS warna,
+			MAX(no_warna) AS no_warna,
+			SUM(rol) AS rol,
+			SUM(bruto) AS bruto,
+			MAX(proses) AS proses,
+			MAX(ket_status) AS ket_status,
+			MAX(ket_kain) AS ket_kain,
+			MAX(tgl_delivery) AS tgl_delivery,
+			MAX(suffix) AS suffix,
+			MAX(suffix2) AS suffix2,
+			MAX(high_temp) AS high_temp
+		FROM
+			db_dying.tbl_schedule
+		WHERE
+			status IN ('antri mesin', 'sedang jalan')
+		GROUP BY
+			no_mesin,
+			no_urut
+		ORDER BY
+			no_mesin ASC,
+			no_urut ASC";
+
+	$data = sqlsrv_query($con, $sqlSchedule);
 	$no = 1;
 	$n = 1;
 	$c = 0;
@@ -145,10 +150,12 @@
 						<tbody>
 							<?php
 								$col = 0;
-								while ($rowd = mysqli_fetch_array($data)) {
+								while ($rowd = sqlsrv_fetch_array($data, SQLSRV_FETCH_ASSOC)) {
 									$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
-									$qCek = mysqli_query($con, "SELECT id as idb FROM tbl_montemp WHERE id_schedule='$rowd[id]' LIMIT 1");
-									$rCEk = mysqli_fetch_array($qCek);
+									$sqlCek = "SELECT TOP 1 id AS idb FROM db_dying.tbl_montemp WHERE id_schedule = ?";
+									$paramsCek = array($rowd['id']);
+									$qCek = sqlsrv_query($con, $sqlCek, $paramsCek);
+									$rCEk = sqlsrv_fetch_array($qCek, SQLSRV_FETCH_ASSOC);
 							?>
 								<tr bgcolor="<?php echo $bgcolor; ?>">
 									<td align="center">
@@ -171,7 +178,7 @@
 									<td align="center"><?= $rowd['suffix']; ?></td>
 									<td align="center"><?= $rowd['suffix2']; ?></td>
 									<td align="center"><a href="#"><?php echo $rowd['lot']; ?></a></td>
-									<td align="center"><?php echo $rowd['tgl_delivery']; ?></td>
+									<td align="center"><?php echo ($rowd['tgl_delivery'] instanceof DateTime) ? $rowd['tgl_delivery']->format('Y-m-d') : $rowd['tgl_delivery']; ?></td>
 									<td align="center"><?php echo $rowd['rol'] . $rowd['kk']; ?></td>
 									<td align="center"><?php echo $rowd['bruto']; ?></td>
 									<td>

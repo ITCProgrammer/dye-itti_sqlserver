@@ -180,13 +180,20 @@ include "koneksi.php";
 <?php
 if ($_POST) { //login user
   extract($_POST);
-  $username = mysqli_real_escape_string($con, $_POST['username']);
-  $password = mysqli_real_escape_string($con, $_POST['password']);
-  $sql = mysqli_query($con, "select * from tbl_user where username='$username' and password='$password' and (dept='DYE' or dept='DIT' or dept='QCF' or dept='PPC' or dept='KNT' or dept='BRS' or dept='TAS' or dept='FIN' or dept='LAB' or dept='GKG') limit 1");
-  if (mysqli_num_rows($sql) > 0) {
+  $username = isset($_POST['username']) ? $_POST['username'] : '';
+  $password = isset($_POST['password']) ? $_POST['password'] : '';
+
+  $sql = "SELECT TOP 1 * 
+          FROM db_dying.tbl_user 
+          WHERE username = ? 
+            AND password = ? 
+            AND (dept='DYE' or dept='DIT' or dept='QCF' or dept='PPC' or dept='KNT' or dept='BRS' or dept='TAS' or dept='FIN' or dept='LAB' or dept='GKG')";
+  $params = array($username, $password);
+  $stmt = sqlsrv_query($con, $sql, $params);
+
+  if ($stmt !== false && ($r = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC))) {
     $_SESSION['user_id10'] = $username;
     $_SESSION['pass_id10'] = $password;
-    $r = mysqli_fetch_array($sql);
     $_SESSION['id10'] = $r['id'];
     $_SESSION['nama10'] = $r['nama'];
     $_SESSION['lvl_id10'] = $r['level'];

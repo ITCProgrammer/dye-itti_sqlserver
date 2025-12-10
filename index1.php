@@ -182,7 +182,7 @@ desired effect
                     <span class="sr-only">Toggle navigation</span>
                 </a>
                 <!-- Navbar Right Menu -->
-                <div class="navbar-custom-menu">
+                        <div class="navbar-custom-menu">
                     <ul class="nav navbar-nav">
                         <?php
                         $qryNCP = mysqli_query($cond, "SELECT COUNT(*) as jml from tbl_ncp_qcf_new WHERE dept='DYE' AND ncp_in_dye='0'");
@@ -220,10 +220,8 @@ desired effect
                                 </li>
                                 <li class="footer"><a href="index1.php?p=Form-NCP">Tampil Semua</a></li>
                             </ul>
-                        </li>
-                        <?php $qryNCP2 = mysqli_query($con, "SELECT COUNT(*) as jml from tbl_ncp_memo
-			WHERE  (penyelesaian='' OR ISNULL(penyelesaian))");
-                        $rNCP2 = mysqli_fetch_array($qryNCP2);
+                        <?php $qryNCP2 = sqlsrv_query($con, "SELECT COUNT(*) as jml from db_dying.tbl_ncp_memo WHERE (penyelesaian='' OR penyelesaian IS NULL)");
+                        $rNCP2 = sqlsrv_fetch_array($qryNCP2);
                         ?>
                         <!-- Tasks Menu -->
                         <li class="dropdown tasks-menu">

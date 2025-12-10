@@ -114,15 +114,22 @@
                                 if(!empty($_POST['start_date']) && !empty($_POST['end_date'])) {
                                     $start_date = $_POST['start_date'];
                                     $end_date = $_POST['end_date'];
-                                    $q_bukaresep = mysqli_query($con, "SELECT * FROM tbl_bukaresep WHERE cek_resep is null AND date(createdatetime) BETWEEN '$start_date' AND '$end_date'");
+                                    $sql_bukaresep = "SELECT * FROM db_dying.tbl_bukaresep 
+                                                      WHERE cek_resep IS NULL 
+                                                        AND CONVERT(date, createdatetime) BETWEEN ? AND ?";
+                                    $params_bukaresep = array($start_date, $end_date);
+                                    $q_bukaresep = sqlsrv_query($con, $sql_bukaresep, $params_bukaresep);
                                 } else {
                                     $start_date = date('Y-m-d');
-                                    $q_bukaresep = mysqli_query($con, "SELECT * FROM tbl_bukaresep WHERE cek_resep is null AND date(createdatetime) = '$start_date'");
+                                    $sql_bukaresep = "SELECT * FROM db_dying.tbl_bukaresep 
+                                                      WHERE cek_resep IS NULL 
+                                                        AND CONVERT(date, createdatetime) = ?";
+                                    $params_bukaresep = array($start_date);
+                                    $q_bukaresep = sqlsrv_query($con, $sql_bukaresep, $params_bukaresep);
                                 }
-                                // $q_bukaresep    = mysqli_query($con, "SELECT * FROM tbl_bukaresep WHERE cek_resep is null Limit 150");
                                 $no = 1;
                             ?>
-                            <?php while ($row_bukaresep = mysqli_fetch_array($q_bukaresep)) { ?>
+                            <?php while ($row_bukaresep = sqlsrv_fetch_array($q_bukaresep, SQLSRV_FETCH_ASSOC)) { ?>
                                 <tr bgcolor="antiquewhite">
                                     <td align="center"><?= $no++; ?></td>
                                     <td align="center"><?= $row_bukaresep['nokk'] ?></td>
@@ -187,9 +194,15 @@
                                                                     <option selected disabled value="-">Dipilih</option>
                                                                     <option value="TAS">TAS</option>
                                                                     <?php
-                                                                        $q_staff = mysqli_query($con, "SELECT * FROM tbl_staff WHERE NOT jabatan = 'Operator' AND NOT jabatan = 'Staff' AND NOT jabatan = 'Leader' AND NOT jabatan = 'Colorist' AND NOT jabatan = 'Asst. SPV'");
+                                                                        $sql_staff = "SELECT * FROM db_dying.tbl_staff 
+                                                                                      WHERE NOT jabatan = 'Operator' 
+                                                                                        AND NOT jabatan = 'Staff' 
+                                                                                        AND NOT jabatan = 'Leader' 
+                                                                                        AND NOT jabatan = 'Colorist' 
+                                                                                        AND NOT jabatan = 'Asst. SPV'";
+                                                                        $q_staff = sqlsrv_query($con, $sql_staff);
                                                                     ?>
-                                                                    <?php while ($row_staff 	= mysqli_fetch_array($q_staff)) { ?>
+                                                                    <?php while ($row_staff = sqlsrv_fetch_array($q_staff, SQLSRV_FETCH_ASSOC)) { ?>
                                                                         <option value="<?= $row_staff['nama']; ?>"><?= $row_staff['nama']; ?></option>
                                                                     <?php } ?>
                                                                 </select>
@@ -218,13 +231,19 @@
 </body>
 </html>
 <?php
-	if ($_POST['save'] == "save") {
-        $q_simpan   = mysqli_query($con, "UPDATE tbl_bukaresep SET 
-                                                cek_resep = '$_POST[cek_resep]',
-                                                ket_resep = '$_POST[ket_resep]',
-                                                diperiksa_oleh = '$_POST[diperiksa_oleh]'
-                                            WHERE  
-                                                id = '$_POST[id]'");
+	if (isset($_POST['save']) && $_POST['save'] == "save") {
+        $sql_simpan = "UPDATE db_dying.tbl_bukaresep SET 
+                            cek_resep = ?,
+                            ket_resep = ?,
+                            diperiksa_oleh = ?
+                        WHERE id = ?";
+        $params_simpan = array(
+            $_POST['cek_resep'],
+            $_POST['ket_resep'],
+            $_POST['diperiksa_oleh'],
+            $_POST['id']
+        );
+        $q_simpan = sqlsrv_query($con, $sql_simpan, $params_simpan);
         if($q_simpan){
             echo "<script>swal({
                     title: 'Data Tersimpan',   

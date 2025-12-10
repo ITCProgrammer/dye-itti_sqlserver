@@ -426,29 +426,79 @@ $row_prod_reservation   = db2_fetch_assoc($sql_prod_reservation);
 </form>
 
 <?php
-if ($_POST['save'] == "save") {
-	$q_simpan   = mysqli_query($con, "INSERT INTO tbl_bukaresep 
-                                                SET nokk 		= '$_POST[nokk]',
-                                                    nodemand 	= '$_POST[demand]',
-													no_order 	= '$_POST[no_order]',
-													langganan 	= '$_POST[langganan]',
-													jenis_kain 	= '$_POST[jns_kain]',
-													no_warna 	= '$_POST[no_warna]',
-													warna 		= '$_POST[warna]',
-													buyer 		= '$_POST[buyer]',
-                                                    shift 		= '$_POST[shift]',
-                                                    gshift 		= '$_POST[g_shift]',
-                                                    noresep1 	= '$_POST[no_resep]',
-                                                    suffix1 	= '$_POST[suffix]',
-                                                    noresep2 	= '$_POST[no_resep2]',
-                                                    suffix2 	= '$_POST[suffix2]',
-                                                    resep 		= '$_POST[resep]',
-                                                    ket 		= '$_POST[ket]',
-                                                    personil 	= '$_POST[personil]',
-                                                    jml_gerobak = '$_POST[jml_gerobak]',
-                                                    proses 		= '$_POST[proses]',
-													kapasitas 	= '$_POST[kapasitas]',
-                                                    createdatetime = now()");
+if (isset($_POST['save']) && $_POST['save'] == "save") {
+	$sql_simpan = "INSERT INTO db_dying.tbl_bukaresep
+					(
+						nokk,
+						nodemand,
+						no_order,
+						langganan,
+						jenis_kain,
+						no_warna,
+						warna,
+						buyer,
+						shift,
+						gshift,
+						noresep1,
+						suffix1,
+						noresep2,
+						suffix2,
+						resep,
+						ket,
+						personil,
+						jml_gerobak,
+						proses,
+						kapasitas,
+						createdatetime
+					)
+					VALUES
+					(
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						?,
+						GETDATE()
+					)";
+	$params_simpan = array(
+		$_POST['nokk'],
+		$_POST['demand'],
+		$_POST['no_order'],
+		$_POST['langganan'],
+		$_POST['jns_kain'],
+		$_POST['no_warna'],
+		$_POST['warna'],
+		$_POST['buyer'],
+		$_POST['shift'],
+		$_POST['g_shift'],
+		$_POST['no_resep'],
+		$_POST['suffix'],
+		$_POST['no_resep2'],
+		$_POST['suffix2'],
+		$_POST['resep'],
+		$_POST['ket'],
+		$_POST['personil'],
+		$_POST['jml_gerobak'],
+		$_POST['proses'],
+		$_POST['kapasitas']
+	);
+	$q_simpan = sqlsrv_query($con, $sql_simpan, $params_simpan);
+
 	if ($q_simpan) {
 		echo "<script>swal({
                     title: 'Data Tersimpan',   

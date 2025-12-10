@@ -6,9 +6,25 @@ date_default_timezone_set('Asia/Jakarta');
 // $db_name="TM";
 // $connInfo = array( "Database"=>$db_name, "UID"=>$username, "PWD"=>$password);
 // $conn     = sqlsrv_connect( $host, $connInfo);
-$con=mysqli_connect("10.0.0.10","dit","4dm1n","db_dying");
+// $con=mysqli_connect("10.0.0.10","dit","4dm1n","db_dying");
 $cond=mysqli_connect("10.0.0.10","dit","4dm1n","db_qc");
+// Koneksi SQL Server baru (dye-itti)
+$hostSVR19    = "10.0.0.221";
+$usernameSVR19 = "sa";
+$passwordSVR19 = "Ind@taichen2024";
+$dbnow_gdb     = "db_dying";
 
+$db_dbnow_gdb = array(
+    "Database" => $dbnow_gdb,
+    "UID"      => $usernameSVR19,
+    "PWD"      => $passwordSVR19,
+);
+
+$con = sqlsrv_connect($hostSVR19, $db_dbnow_gdb);
+
+if ($con === false) {
+    die(print_r(sqlsrv_errors(), true));
+}
 // SQL Server: database nowprd (migrated from MySQL)
 $nowprdServer = "10.0.0.221";
 $nowprdOptions = array(

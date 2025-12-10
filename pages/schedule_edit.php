@@ -3,8 +3,10 @@ ini_set("error_reporting", 1);
 session_start();
 include("../koneksi.php");
 $modal_id = $_GET['id'];
-$modal = mysqli_query($con, "SELECT * FROM `tbl_schedule` WHERE id='$modal_id' ");
-while ($r = mysqli_fetch_array($modal)) {
+$sqlModal = "SELECT * FROM db_dying.tbl_schedule WHERE id = ?";
+$paramsModal = array($modal_id);
+$modal = sqlsrv_query($con, $sqlModal, $paramsModal);
+while ($r = sqlsrv_fetch_array($modal, SQLSRV_FETCH_ASSOC)) {
 ?>
 
 	<div class="modal-dialog modal1">
@@ -26,8 +28,8 @@ while ($r = mysqli_fetch_array($modal)) {
 							<select name="no_mesin" class="form-control">
 								<option value="">Pilih</option>
 								<?php
-								$sqlKap = mysqli_query($con, "SELECT no_mesin FROM tbl_mesin ORDER BY no_mesin ASC");
-								while ($rK = mysqli_fetch_array($sqlKap)) {
+								$sqlKap = sqlsrv_query($con, "SELECT no_mesin FROM db_dying.tbl_mesin ORDER BY no_mesin ASC");
+								while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 								?>
 									<option value="<?php echo $rK['no_mesin']; ?>" <?php if ($rK['no_mesin'] == $r['no_mesin']) {
 																						echo "SELECTED";
@@ -43,8 +45,8 @@ while ($r = mysqli_fetch_array($modal)) {
 							<select name="no_urut" class="form-control">
 								<option value="">Pilih</option>
 								<?php
-								$sqlKap = mysqli_query($con, "SELECT no_urut FROM tbl_urut ORDER BY no_urut ASC");
-								while ($rK = mysqli_fetch_array($sqlKap)) {
+								$sqlKap = sqlsrv_query($con, "SELECT no_urut FROM db_dying.tbl_urut ORDER BY no_urut ASC");
+								while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 								?>
 									<option value="<?php echo $rK['no_urut']; ?>" <?php if ($rK['no_urut'] == $r['no_urut']) {
 																						echo "SELECTED";
@@ -60,8 +62,8 @@ while ($r = mysqli_fetch_array($modal)) {
 							<select name="proses" class="form-control">
 								<option value="">Pilih</option>
 								<?php
-								$sqlKap = mysqli_query($con, "SELECT proses FROM tbl_proses ORDER BY proses ASC");
-								while ($rK = mysqli_fetch_array($sqlKap)) {
+								$sqlKap = sqlsrv_query($con, "SELECT proses FROM db_dying.tbl_proses ORDER BY proses ASC");
+								while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 								?>
 									<option value="<?php echo $rK['proses']; ?>" <?php if ($rK['proses'] == $r['proses']) {
 																						echo "SELECTED";
@@ -185,8 +187,8 @@ while ($r = mysqli_fetch_array($modal)) {
 							<select name="mc_from" class="form-control" id="mc_from">
 								<option value="">Pilih</option>
 								<?php
-								$sqlKap = mysqli_query($con, "SELECT no_mesin FROM tbl_mesin ORDER BY no_mesin ASC");
-								while ($rK = mysqli_fetch_array($sqlKap)) {
+								$sqlKap = sqlsrv_query($con, "SELECT no_mesin FROM db_dying.tbl_mesin ORDER BY no_mesin ASC");
+								while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 								?>
 									<option value="<?php echo $rK['no_mesin']; ?>" <?php if ($rK['no_mesin'] == $r['mc_from']) {
 																						echo "SELECTED";
@@ -277,7 +279,7 @@ while ($r = mysqli_fetch_array($modal)) {
 				showMeridian: false,
 				defaultTime: false
 
-			}),
+			});
 
 	});
 

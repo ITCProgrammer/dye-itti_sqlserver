@@ -169,12 +169,19 @@ include_once('koneksi.php');
 if ($_POST) { //login user
     extract($_POST);
     $username = $_SESSION['user_id10'];
-    $password = mysqli_real_escape_string($con,$_POST['password']);
-    $sql=mysqli_query($con,"select * from tbl_user where username='$username' and password='$password'  and (dept='DYE' or dept='DIT') limit 1", $con);
-    if (mysqli_num_rows($sql)>0) {
+    $password = isset($_POST['password']) ? $_POST['password'] : '';
+
+    $sql = "SELECT TOP 1 * 
+            FROM db_dying.tbl_user 
+            WHERE username = ? 
+              AND password = ?  
+              AND (dept='DYE' or dept='DIT')";
+    $params = array($username, $password);
+    $stmt = sqlsrv_query($con, $sql, $params);
+
+    if ($stmt !== false && ($r = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC))) {
         $_SESSION['user_id10']=$username;
         $_SESSION['pass_id10']=$password;
-        $r = mysqli_fetch_array($sql);
 		$_SESSION['nama10']=$r['nama'];
         $_SESSION['lvl_id10']=$r['level'];
         $_SESSION['status10']=$r['status'];

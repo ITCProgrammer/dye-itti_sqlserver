@@ -1,7 +1,7 @@
 <?php
 ini_set("error_reporting", 1);
 session_start();
-include"koneksi.php";
+include "koneksi.php";
 //include_once('koneksi.php');
 //include 'ajax/logic_chart.php';
 ?>
@@ -113,12 +113,23 @@ $page  = strtolower($page);
       <!-- small box -->
       <div class="small-box bg-red">
         <div class="inner">
-          <?php
-          $sql = mysqli_query($con,"SELECT count(*) as jml,DATE_FORMAT(now(),'%Y') as thn FROM tbl_monitoring a 
-                              INNER JOIN tbl_sample b ON a.id_sample=b.id
-                              WHERE DATE_FORMAT(tgl_monitor,'%Y')=DATE_FORMAT(now(),'%Y')");
-          $r = mysqli_fetch_array($sql);
-          ?>
+            <?php
+            $sql = sqlsrv_query(
+              $con,
+              "SELECT COUNT(*) AS jml, YEAR(GETDATE()) AS thn
+               FROM tbl_monitoring a
+               INNER JOIN tbl_sample b ON a.id_sample = b.id
+               WHERE YEAR(a.tgl_monitor) = YEAR(GETDATE())"
+            );
+            if ($sql === false) {
+              $r = array(
+                'jml' => 0,
+                'thn' => date('Y')
+              );
+            } else {
+              $r = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC);
+            }
+            ?>
           <h3><?php echo $r['jml']; ?></h3>
 
           <p>MPC Tahun <?php echo $r['thn']; ?></p>
