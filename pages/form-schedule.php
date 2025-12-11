@@ -310,12 +310,16 @@
 		include "koneksi.php";
 		function nourut(){
 			include "koneksi.php";
+			global $con;
 			$format = date("ymd");
-			$sql = mysqli_query($con, "SELECT nokk FROM tbl_schedule WHERE substr(nokk,1,6) like '%" . $format . "%' ORDER BY nokk DESC LIMIT 1 ") or die(mysqli_error());
-			$d = mysqli_num_rows($sql);
-			if ($d > 0) {
-				$r = mysqli_fetch_array($sql);
-				$d = $r['nokk'];
+			$sql = "SELECT TOP 1 nokk
+					FROM db_dying.tbl_schedule
+					WHERE SUBSTRING(nokk, 1, 6) LIKE ?
+					ORDER BY nokk DESC";
+			$params = array('%' . $format . '%');
+			$stmt = sqlsrv_query($con, $sql, $params);
+			if ($stmt && ($r = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC))) {
+				$d   = $r['nokk'];
 				$str = substr($d, 6, 2);
 				$Urut = (int)$str;
 			} else {
@@ -337,8 +341,11 @@
 		if ($nokk != "") {
 			
 		}
-		$sqlCek1 = mysqli_query($con, "SELECT * FROM tbl_schedule WHERE nokk='$nokk' AND (status='antri mesin' or status='sedang jalan') ORDER BY id DESC LIMIT 1");
-		$cek1 = mysqli_num_rows($sqlCek1);
+		$sqlCek1 = "SELECT COUNT(*) AS jml FROM db_dying.tbl_schedule WHERE nokk = ? AND (status = 'antri mesin' OR status = 'sedang jalan')";
+		$paramsCek1 = array($nokk);
+		$stmtCek1 = sqlsrv_query($con, $sqlCek1, $paramsCek1);
+		$rowCek1 = sqlsrv_fetch_array($stmtCek1, SQLSRV_FETCH_ASSOC);
+		$cek1 = $rowCek1 ? (int)$rowCek1['jml'] : 0;
 
 		// NOW
 			$sql_ITXVIEWKK  = db2_exec($conn2, "SELECT
@@ -795,26 +802,14 @@
 			<div class="col-md-6">
 				<div class="form-group">
 					<label for="kapasitas" class="col-sm-3 control-label">Kapasitas Mesin</label>
-					<!-- <div class="col-sm-3">
-						<select name="kapasitas" class="form-control" id="kapasitas" onChange="no_msn();hload();">
-							<option value="">Pilih</option>
-							<?php
-							$sqlKap = mysqli_query($con, "SELECT kapasitas FROM tbl_mesin GROUP BY kapasitas ORDER BY kapasitas DESC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
-							?>
-								<option value="<?php echo $rK['kapasitas']; ?>" <?php if ($_GET['kap'] == $rK['kapasitas']) {
-																					echo "SELECTED";
-																				} ?>><?php echo $rK['kapasitas']; ?> KGs</option>
-							<?php } ?>
-						</select>
-					</div> -->
+				
 					<?php // if($_SERVER['REMOTE_ADDR'] == '10.0.5.132') : ?>
 						<div class="col-sm-3">
 							<select name="kapasitas" onchange="window.location='?p=Form-Schedule&nokk='+document.getElementById('nokk').value+'&kap='+this.value" class="form-control">
 								<option value="">Pilih</option>
 								<?php
-								$sqlKap = mysqli_query($con, "SELECT kapasitas FROM tbl_mesin GROUP BY kapasitas ORDER BY kapasitas DESC");
-								while ($rK = mysqli_fetch_array($sqlKap)) {
+								$sqlKap = sqlsrv_query($con, "SELECT DISTINCT kapasitas FROM db_dying.tbl_mesin ORDER BY kapasitas DESC");
+								while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 								?>
 									<option value="<?php echo $rK['kapasitas']; ?>" <?php if ($_GET['kap'] == $rK['kapasitas']) {
 																						echo "SELECTED";
@@ -826,30 +821,19 @@
 				</div>
 				<div class="form-group">
 					<label for="no_mc" class="col-sm-3 control-label">No MC</label>
-					<!-- <div class="col-sm-2">
-						<select name="no_mc" class="form-control" id="no_mc" onchange="select_resep();" required>
-							<option value="">Pilih</option>
-							  <?php
-								$sqlKap = mysqli_query($con, "SELECT no_mesin FROM tbl_mesin WHERE kapasitas='" . $_GET['kap'] . "' ORDER BY no_mesin ASC");
-								while ($rK = mysqli_fetch_array($sqlKap)) {
-								?>
-								  <option value="<?php echo $rK['no_mesin']; ?>"><?php echo $rK['no_mesin']; ?></option>
-							 <?php } ?>	 
-						</select>
-					</div> -->
 					<?php // if($_SERVER['REMOTE_ADDR'] == '10.0.5.132') : ?>
 						<div class="col-sm-2">
 							<select name="no_mc" class="form-control" required>
 								<option value="">Pilih</option>
 								<?php
-									$sqlKap = mysqli_query($con, "SELECT no_mesin FROM tbl_mesin WHERE kapasitas='" . $_GET['kap'] . "' ORDER BY no_mesin ASC");
-									while ($rK = mysqli_fetch_array($sqlKap)) {
+									$sqlKap = sqlsrv_query($con, "SELECT no_mesin FROM db_dying.tbl_mesin WHERE kapasitas = ? ORDER BY no_mesin ASC", array($_GET['kap']));
+									while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 									?>
 									<option value="<?php echo $rK['no_mesin']; ?>"><?php echo $rK['no_mesin']; ?></option>
 								<?php } ?>	 
 							</select>
 						</div>
-					<?php// endif; ?>
+					<?php // endif; ?>
 				</div>
 				<div class="form-group">
 					<label for="no_urut" class="col-sm-3 control-label">No Urut</label>
@@ -857,8 +841,8 @@
 						<select name="no_urut" class="form-control" id="no_urut" required>
 							<option value="">Pilih</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT no_urut FROM tbl_urut ORDER BY no_urut ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT no_urut FROM db_dying.tbl_urut ORDER BY no_urut ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['no_urut']; ?>"><?php echo $rK['no_urut']; ?></option>
 							<?php } ?>
@@ -911,8 +895,8 @@
 						<select name="proses" class="form-control" id="proses" onChange="cekpro(); cekpro1(); cekpro2(); aktif_staff();" required>
 							<option value="">Pilih</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT proses FROM tbl_proses ORDER BY proses ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT proses FROM db_dying.tbl_proses ORDER BY proses ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['proses']; ?>"><?php echo $rK['proses']; ?></option>
 							<?php } ?>
@@ -1076,8 +1060,8 @@
 						<select name="energi" class="form-control" disabled>
 							<option value="">Pilih</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT kode FROM tbl_energi ORDER BY kode ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT kode FROM db_dying.tbl_energi ORDER BY kode ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['kode']; ?>"><?php echo $rK['kode']; ?></option>
 							<?php } ?>
@@ -1085,33 +1069,6 @@
 					</div>
 
 				</div>
-				<!--  
-				<div class="form-group">
-                  <label for="target" class="col-md-3 control-label">Std Target</label>
-                  <div class="col-md-3">
-					  <select name="personil" class="form-control" required>
-							  	<option value="">Pilih</option>
-							  <?php
-								$sqlKap = mysqli_query($con, "SELECT target FROM tbl_std_jam  ORDER BY target ASC");
-								while ($rK = mysqli_fetch_array($sqlKap)) {
-								?>
-								  <option value="<?php echo $rK['target']; ?>"><?php echo $rK['target']; ?> Jam</option>
-							 <?php } ?>	  
-					  </select>					  	  
-                  <span class="help-block with-errors"></span>
-                  </div>
-				</div>  
-				-->
-				<!-- <div class="form-group">
-					<label for="target" class="col-md-3 control-label">Std Target</label>
-					<div class="col-md-3">
-						<div class="input-group">
-							<input name="target" type="text" class="form-control" id="target" value="" placeholder="0" style="text-align: right;">
-							<span class="input-group-addon">Jam</span>
-							<span class="help-block with-errors"></span>
-						</div>
-					</div>
-				</div> -->
 				<div class="form-group">
 					<label for="personil" class="col-sm-3 control-label">Personil</label>
 					<div class="col-sm-5">
@@ -1126,8 +1083,8 @@
 							<option value="">Pilih</option>
 							<option value="-">-</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT nama FROM tbl_staff WHERE jabatan='SPV' or jabatan='Asst. Manager' or jabatan='Manager' or jabatan='Senior Manager' or jabatan='DMF' ORDER BY nama ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_staff WHERE jabatan IN ('SPV','Asst. Manager','Manager','Senior Manager','DMF') ORDER BY nama ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['nama']; ?>"><?php echo $rK['nama']; ?></option>
 							<?php } ?>
@@ -1201,8 +1158,12 @@
 
 <?php
 	if ($_POST['save'] == "save") {
-		$qryCek = mysqli_query($con, "SELECT * from tbl_schedule WHERE `status`='sedang jalan' and  no_mesin='$_POST[no_mc]'");
-		$row = mysqli_num_rows($qryCek);
+		// Cek mesin sedang jalan untuk no_urut 1
+		$sqlCekMesin = "SELECT COUNT(*) AS jml FROM db_dying.tbl_schedule WHERE status = 'sedang jalan' AND no_mesin = ?";
+		$paramsCekMesin = array($_POST['no_mc']);
+		$qryCek = sqlsrv_query($con, $sqlCekMesin, $paramsCekMesin);
+		$rowCek = sqlsrv_fetch_array($qryCek, SQLSRV_FETCH_ASSOC);
+		$row = $rowCek ? (int)$rowCek['jml'] : 0;
 		if ($row > 0 and $_POST['no_urut'] == "1") {
 			echo "<script> swal({
 				title: 'Tidak bisa input urutan ke-`1`, mesin masih jalan',
@@ -1222,11 +1183,6 @@
 			$jns = str_replace("'", "''", $_POST['jns_kain']);
 			$po = str_replace("'", "''", $_POST['no_po']);
 			$lot = trim($_POST['lot']);
-			if(!empty($_POST['qty4']) && !empty($_POST['kapasitas'])){
-				$loading1 = round($_POST['qty4'] / $_POST['kapasitas'], 4) * 100;
-			}else{
-				$loading1 = '0';
-			}
 			if ($_POST['kk_kestabilan'] == "1") {
 				$kk_kestabilan = "1";
 			} else {
@@ -1237,56 +1193,87 @@
 			} else {
 				$kk_normal = "0";
 			}
-			$sqlData = mysqli_query($con, "INSERT INTO tbl_schedule SET
-														nokk='$kartu',
-														nodemand='$_POST[demand]',
-														langganan='$_POST[langganan]',
-														buyer='$_POST[buyer]',
-														no_order='$_POST[no_order]',
-														po='$po',
-														no_hanger='$_POST[no_hanger]',
-														no_item='$_POST[no_item]',
-														jenis_kain='$jns',
-														tgl_delivery='$_POST[tgl_delivery]',
-														lebar='$_POST[lebar]',
-														gramasi='$_POST[grms]',
-														warna='$warna',
-														no_warna='$nowarna',
-														qty_order='$_POST[qty1]',
-														pjng_order='$_POST[qty2]',
-														satuan_order='$_POST[satuan1]',
-														lot='$lot',
-														rol='$_POST[qty3]',
-														bruto='$_POST[qty4]',
-														no_rajut='$_POST[no_rajut]',
-														shift='$_POST[shift]',
-														g_shift='$_POST[g_shift]',
-														kapasitas='$_POST[kapasitas]',
-														no_mesin='$_POST[no_mc]',
-														no_urut='$_POST[no_urut]',
-														no_sch='$_POST[no_urut]',
-														loading='$loading1',
-														resep='$_POST[resep]',
-														no_resep='$_POST[no_resep]',
-														no_resep2='$_POST[no_resep2]',
-														suffix='$_POST[suffix]',
-														suffix2='$_POST[suffix2]',
-														energi='$_POST[energi]',
-														dyestuff='$_POST[dyestuff]',
-														proses='$_POST[proses]',
-														revisi='$_POST[revisi]',
-														kategori_warna='$_POST[kategori_warna]',
-														ket_status='$_POST[ket]',
-														ket_kain='$_POST[ket_kain]',
-														tgl_masuk=now(),
-														personil='$_POST[personil]',
-														target='$_POST[target]',
-														kk_kestabilan='$kk_kestabilan',
-														kk_normal='$kk_normal',
-														tgl_update=now()");
+			// batasi panjang sesuai definisi kolom varchar(19) di SQL Server
+			$ket_status_db = isset($_POST['ket']) ? substr($_POST['ket'], 0, 19) : null;
+			$ket_kain_db   = isset($_POST['ket_kain']) ? substr($_POST['ket_kain'], 0, 19) : null;
+			// normalisasi tgl_delivery agar tidak kirim '0000-00-00' ke SQL Server
+			$paramTglDelivery = $_POST['tgl_delivery'];
+			if ($paramTglDelivery === '0000-00-00' || $paramTglDelivery === '' || $paramTglDelivery === '0000-00-00 00:00:00') {
+				$paramTglDelivery = null;
+			}
+			$sqlInsert = "INSERT INTO db_dying.tbl_schedule
+				(nokk, 
+				nodemand, 
+				langganan, 
+				buyer, 
+				no_order, 
+				po, 
+				no_hanger, 
+				no_item, 
+				jenis_kain,
+				tgl_delivery, 
+				lebar, 
+				gramasi, 
+				warna, 
+				no_warna, 
+				qty_order, 
+				pjng_order, 
+				satuan_order,
+				lot, rol, bruto, no_rajut, shift, g_shift, kapasitas, no_mesin, no_urut, no_sch,
+				 loading, resep, no_resep, no_resep2, suffix, suffix2, energi, dyestuff, proses,
+				 revisi, kategori_warna, ket_status, ket_kain, tgl_masuk,
+				 kk_kestabilan, kk_normal, tgl_update)
+				VALUES
+				(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+				 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,  GETDATE(), ?, ?, GETDATE())";
+
+			$paramsInsert = array(
+				$kartu,
+				$_POST['demand'],
+				$_POST['langganan'],
+				$_POST['buyer'],
+				$_POST['no_order'],
+				$po,
+				$_POST['no_hanger'],
+				$_POST['no_item'],
+				$jns,
+				$paramTglDelivery,
+				(int)$_POST['lebar'],
+				(int)$_POST['grms'],
+				$warna,
+				$nowarna,
+				(float)$_POST['qty1'],
+				(float)$_POST['qty2'],
+				$_POST['satuan1'],
+				$lot,
+				$_POST['qty3'],
+				$_POST['qty4'],
+				$_POST['no_rajut'],
+				$_POST['shift'],
+				$_POST['g_shift'],
+				$_POST['kapasitas'],
+				$_POST['no_mc'],
+				$_POST['no_urut'],
+				$_POST['no_urut'],
+				$loading1,
+				$_POST['resep'],
+				$_POST['no_resep'],
+				$_POST['no_resep2'],
+				$_POST['suffix'],
+				$_POST['suffix2'],
+				$_POST['energi'],
+				$_POST['dyestuff'],
+				$_POST['proses'],
+				$_POST['revisi'],
+				$_POST['kategori_warna'],
+				$ket_status_db,
+				$ket_kain_db,
+				$kk_kestabilan,
+				$kk_normal
+			);
+
+			$sqlData = sqlsrv_query($con, $sqlInsert, $paramsInsert);
 			if ($sqlData) {
-				// echo "<script>alert('Data Tersimpan');</script>";
-				// echo "<script>window.location.href='?p=Input-Data-KJ;</script>";
 				echo "<script>swal({
 				title: 'Data Tersimpan',   
 				text: 'Klik Ok untuk input data kembali',
@@ -1296,6 +1283,16 @@
 					window.location.href='?p=Schedule'; 
 				}
 				});</script>";
+			} else {
+				// Debug error SQL Server jika insert gagal
+				$errors = sqlsrv_errors();
+				if ($errors) {
+					echo '<pre>SQL Insert Error:\n';
+					foreach ($errors as $err) {
+						echo 'SQLSTATE: ' . $err['SQLSTATE'] . ' - Code: ' . $err['code'] . ' - ' . $err['message'] . "\n";
+					}
+					echo '</pre>';
+				}
 			}
 		}
 	}
@@ -1320,39 +1317,75 @@
 		} else {
 			$kk_normal = "0";
 		}
-		$sqlData = mysqli_query($con, "UPDATE tbl_schedule SET 
-				nodemand='$_POST[demand]',
-				kapasitas='$_POST[kapasitas]',
-				no_mesin='$_POST[no_mc]',
-				no_urut='$_POST[no_urut]',
-				no_sch='$_POST[no_urut]',
-				loading='$loading1',
-				resep='$_POST[resep]',
-				no_resep='$_POST[no_resep]',
-				no_resep2='$_POST[no_resep2]',
-				suffix='$_POST[suffix]',
-				suffix2='$_POST[suffix2]',
-				energi='$_POST[energi]',
-				dyestuff='$_POST[dyestuff]',
-				proses='$_POST[proses]',
-				revisi='$_POST[revisi]',
-				kategori_warna='$_POST[kategori_warna]',
-				shift='$_POST[shift]',
-				g_shift='$_POST[g_shift]',
-				no_rajut='$_POST[no_rajut]',
-				ket_status='$_POST[ket]',
-				ket_kain='$_POST[ket_kain]',
-				personil='$_POST[personil]',
-				target='$_POST[target]',
-				tgl_stop=now(),
-				kk_kestabilan='$kk_kestabilan',
-				kk_normal='$kk_normal',
-				tgl_update=now()
-			WHERE nokk='$_POST[nokk]'");
+		// batasi panjang teks ket_status & ket_kain
+		$ket_status_db = isset($_POST['ket']) ? substr($_POST['ket'], 0, 19) : null;
+		$ket_kain_db   = isset($_POST['ket_kain']) ? substr($_POST['ket_kain'], 0, 19) : null;
+		$paramTglDelivery = $_POST['tgl_delivery'];
+		if ($paramTglDelivery === '0000-00-00' || $paramTglDelivery === '' || $paramTglDelivery === '0000-00-00 00:00:00') {
+			$paramTglDelivery = null;
+		}
+		$sqlUpdate = "UPDATE db_dying.tbl_schedule SET 
+				nodemand = ?,
+				kapasitas = ?,
+				no_mesin = ?,
+				no_urut = ?,
+				no_sch = ?,
+				loading = ?,
+				resep = ?,
+				no_resep = ?,
+				no_resep2 = ?,
+				suffix = ?,
+				suffix2 = ?,
+				energi = ?,
+				dyestuff = ?,
+				proses = ?,
+				revisi = ?,
+				kategori_warna = ?,
+				shift = ?,
+				g_shift = ?,
+				no_rajut = ?,
+				ket_status = ?,
+				ket_kain = ?,
+				personil = ?,
+				target = ?,
+				tgl_stop = GETDATE(),
+				kk_kestabilan = ?,
+				kk_normal = ?,
+				tgl_update = GETDATE()
+			WHERE nokk = ?";
+
+		$paramsUpdate = array(
+			$_POST['demand'],
+			$_POST['kapasitas'],
+			$_POST['no_mc'],
+			$_POST['no_urut'],
+			$_POST['no_urut'],
+			$loading1,
+			$_POST['resep'],
+			$_POST['no_resep'],
+			$_POST['no_resep2'],
+			$_POST['suffix'],
+			$_POST['suffix2'],
+			$_POST['energi'],
+			$_POST['dyestuff'],
+			$_POST['proses'],
+			$_POST['revisi'],
+			$_POST['kategori_warna'],
+			$_POST['shift'],
+			$_POST['g_shift'],
+			$_POST['no_rajut'],
+			$ket_status_db,
+			$ket_kain_db,
+			$_POST['personil'],
+			$_POST['target'],
+			$kk_kestabilan,
+			$kk_normal,
+			$_POST['nokk']
+		);
+
+		$sqlData = sqlsrv_query($con, $sqlUpdate, $paramsUpdate);
 
 		if ($sqlData) {
-			// echo "<script>alert('Data Telah Diubah');</script>";
-			// echo "<script>window.location.href='?p=Input-Data-KJ;</script>";
 			echo "<script>swal({
 				title: 'Data Telah DiUbah',   
 				text: 'Klik Ok untuk input data kembali',
@@ -1363,6 +1396,15 @@
 					window.location.href='?p=Schedule'; 
 				}
 				});</script>";
+		} else {
+			$errors = sqlsrv_errors();
+			if ($errors) {
+				echo '<pre>SQL Update Error:\n';
+				foreach ($errors as $err) {
+					echo 'SQLSTATE: ' . $err['SQLSTATE'] . ' - Code: ' . $err['code'] . ' - ' . $err['message'] . "\n";
+				}
+				echo '</pre>';
+			}
 		}
 	}
 ?>

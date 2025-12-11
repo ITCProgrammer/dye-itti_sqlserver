@@ -44,18 +44,23 @@
                             $where1 = " ";
                         }
 
-                        $qry = mysqli_query($con, "SELECT
-                                                        *,
-                                                        IF(DATEDIFF( now(), tgl_delivery ) > 0, 'Urgent',
-                                                        IF(DATEDIFF( now(), tgl_delivery ) > - 4, 'Potensi Delay', '' )) AS `sts` 
-                                                    FROM
-                                                        tbl_schedule a
-                                                    WHERE a.no_mesin='" . $_GET['id'] . "' AND NOT `status` = 'selesai' $where 
-                                                    ORDER BY a.no_urut ASC");
+                        $sql = "SELECT
+                                    a.*,
+                                    CASE 
+                                        WHEN DATEDIFF(DAY, a.tgl_delivery, GETDATE()) > 0 THEN 'Urgent'
+                                        WHEN DATEDIFF(DAY, a.tgl_delivery, GETDATE()) > -4 THEN 'Potensi Delay'
+                                        ELSE ''
+                                    END AS sts
+                                FROM
+                                    db_dying.tbl_schedule a
+                                WHERE a.no_mesin = ? AND a.status <> 'selesai' $where
+                                ORDER BY a.no_urut ASC";
+                        $params = array($_GET['id']);
+                        $qry = sqlsrv_query($con, $sql, $params);
                         $no = 1;
 
                         $c = 0;
-                        while ($rowd = mysqli_fetch_array($qry)) {
+                        while ($rowd = sqlsrv_fetch_array($qry, SQLSRV_FETCH_ASSOC)) {
                             $bgcolor = ($c++ & 1) ? '#33CCFF' : '#FFCC99';
                         ?>
                             <tr>
@@ -72,8 +77,8 @@
                                         <select name="no_urut[<?php echo $rowd['id']; ?>]" class="form-control">
                                             <option value="">Pilih</option>
                                             <?php
-                                            $sqlKap = mysqli_query($con, "SELECT no_urut FROM tbl_urut $where1 ORDER BY no_urut ASC");
-                                            while ($rK = mysqli_fetch_array($sqlKap)) {
+                                            $sqlKap = sqlsrv_query($con, "SELECT no_urut FROM db_dying.tbl_urut $where1 ORDER BY no_urut ASC");
+                                            while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
                                                 $selected = ($rK['no_urut'] == $rowd['no_urut']) ? 'SELECTED' : '';
                                                 echo "<option value='{$rK['no_urut']}' $selected>{$rK['no_urut']}</option>";
                                             }
@@ -111,7 +116,13 @@
                                 <td><?= $rowd['warna']; ?></td>
                                 <td><?= $rowd['proses']; ?></td>
                                 <td>
-                                    <?php echo $rowd['tgl_delivery']; ?>
+                                    <?php
+                                    if ($rowd['tgl_delivery'] instanceof DateTime) {
+                                        echo $rowd['tgl_delivery']->format('Y-m-d');
+                                    } else {
+                                        echo $rowd['tgl_delivery'];
+                                    }
+                                    ?>
                                 </td>
                                 <td bgcolor="<?= $bg; ?>">
                                     <?php echo $rowd['ket_status']; ?>
