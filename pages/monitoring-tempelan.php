@@ -120,6 +120,8 @@ include "koneksi.php";
                                             <?php } ?>
                                             <a href="pages/cetak/cetak_setting_mesin.php?idstm=<?php echo $rowd['idstm']; ?>&nokk=<?php echo $rowd['nokk']; ?>" target="_blank" class="btn btn-xs btn-danger">Setting Mesin</a>
                                             <a href="pages/cetak/aktivitas.php?idkk=<?php echo $rowd['nokk']; ?>&no=<?php echo $rowd['no_resep']; ?>&idm=<?php echo $rowd['idm']; ?>&ids=<?php echo $rowd['ids']; ?>" target="_blank" class="btn btn-xs btn-primary">Form Aktivitas</a>
+                                            <a href="pages/cetak/Monitoring_air.php?idkk=<?php echo $rowd['nokk']; ?>&nodemand=<?php echo $rowd['nodemand']; ?>&idm=<?php echo $rowd['idm']; ?>&ids=<?php echo $rowd['ids']; ?>&ids=<?php echo $rowd['ids']; ?>"
+                                                target="_blank" class="btn btn-xs btn-primary bg-purple">Form Monitoring AIR</a>
                                         </div>
                                     </td>
                                     <td align="center"><?php echo $rowd['buyer']; ?></td>
