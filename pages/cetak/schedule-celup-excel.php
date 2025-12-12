@@ -74,7 +74,7 @@ function format_tanggal_sqlsrv($value) {
                     MAX(po) AS po,
                     STRING_AGG(no_order, '-') AS no_order,
                     MAX(no_resep) AS no_resep,
-                    MAX(nokk) AS nokk,
+                    nokk,
                     MAX(jenis_kain) AS jenis_kain,
                     MAX(warna) AS warna,
                     MAX(no_warna) AS no_warna,
@@ -89,7 +89,7 @@ function format_tanggal_sqlsrv($value) {
                     MAX(suffix) AS suffix,
                     MAX(suffix2) AS suffix2,
                     MAX(no_hanger) AS no_hanger,
-                    MAX(nodemand) AS nodemand
+                    nodemand
                   FROM
                     db_dying.tbl_schedule
                   WHERE
@@ -106,7 +106,9 @@ function format_tanggal_sqlsrv($value) {
                   GROUP BY
                     kapasitas,
                     no_mesin,
-                    no_urut
+                    no_urut,
+                    nokk,
+                    nodemand
                   ORDER BY
                     kapasitas DESC, no_mesin ASC";
 

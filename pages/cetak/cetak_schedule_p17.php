@@ -159,8 +159,7 @@ function format_tanggal_sqlsrv($value) {
 	function tampil($mc,$no,$awal,$akhir){
 		global $con;		
 
-		$sql = "
-			SELECT
+		$sql = "SELECT
 				MIN(id) AS id,
 				STRING_AGG( lot, '/' ) AS lot,
 				CASE WHEN COUNT(lot)>1 THEN 'Gabung Kartu' ELSE '' END as ket_kartu,
@@ -170,7 +169,8 @@ function format_tanggal_sqlsrv($value) {
 				MAX(langganan) as langganan,
 				STRING_AGG(no_order, '-' ) AS no_order,
 				MAX(no_resep) as no_resep,
-				MAX(nokk) as nokk,
+				nokk,
+        nodemand,
 				MAX(jenis_kain) as jenis_kain,
 				MAX(warna) as warna,
 				MAX(no_warna) as no_warna,
@@ -198,7 +198,9 @@ function format_tanggal_sqlsrv($value) {
 		$sql .= "
 			GROUP BY
 				no_mesin,
-				no_urut 
+				no_urut,
+        nokk,
+        nodemand
 			ORDER BY
 				MIN(id) ASC";
 

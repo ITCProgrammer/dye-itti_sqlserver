@@ -32,22 +32,21 @@
 <body>
 	<?php
 	// Query schedule menggunakan SQL Server (schema db_dying)
-	$sqlSchedule = "
-		SELECT
+	$sqlSchedule = "SELECT
 			MIN(id) AS id,
 			STRING_AGG(lot, '/') AS lot,
 			CASE WHEN COUNT(lot) > 1 THEN 'Gabung Kartu' ELSE '' END AS ket_kartu,
 			CASE WHEN COUNT(lot) > 1 THEN '(' + CAST(COUNT(lot) AS varchar(10)) + 'kk)' ELSE '' END AS kk,
 			no_mesin,
 			no_urut,
-			MAX(nodemand) AS nodemand,
+			nodemand,
 			MAX(buyer) AS buyer,
 			MAX(langganan) AS langganan,
 			MAX(no_order) AS no_order,
 			MAX(no_item) AS no_item,
 			MAX(no_hanger) AS no_hanger,
 			MAX(no_resep) AS no_resep,
-			MAX(nokk) AS nokk,
+			nokk,
 			MAX(jenis_kain) AS jenis_kain,
 			MAX(warna) AS warna,
 			MAX(no_warna) AS no_warna,
@@ -66,7 +65,9 @@
 			status IN ('antri mesin', 'sedang jalan')
 		GROUP BY
 			no_mesin,
-			no_urut
+			no_urut,
+			nodemand,
+			nokk
 		ORDER BY
 			no_mesin ASC,
 			no_urut ASC";
@@ -254,7 +255,7 @@
 						<a href="pages/cetak/cetak_schedule_p16.php" class="btn btn-info" target="_blank"><i class="fa fa-print"></i> Page 16</a>
 						<a href="pages/cetak/cetak_schedule_p17.php" class="btn btn-info" target="_blank"><i class="fa fa-print"></i> Page 17</a><br><br>
 						<!-- <a href="pages/cetak/cetak_schedule.php" class="btn btn-warning" target="_blank"><i class="fa fa-print"></i> All Page</a>  -->
-						<a href="http://10.0.5.178/dye-itti/pages/cetak/cetak_schedule.php" class="btn btn-warning" target="_blank"><i class="fa fa-print"></i> All Page</a> 
+						<a href="pages/cetak/cetak_schedule.php" class="btn btn-warning" target="_blank"><i class="fa fa-print"></i> All Page</a>
 						<a href="pages/cetak/schedule-celup-excel.php" class="btn btn-success" target="_blank"><i class="fa fa-file-excel-o"></i> All Page Excel</a>
 					</div>
 					<div class="modal-footer">

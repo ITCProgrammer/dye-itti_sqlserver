@@ -97,7 +97,7 @@
                                         <?php else : ?>
                                             <?php $typetext = "readonly"; ?>
                                         <?php endif; ?>
-                                            <input name="target[<?php echo $rowd['id']; ?>]" type="Texxt" <?= $typetext; ?> class="form-control" value="<?= $rowd['target']; ?>" placeholder="0" style="text-align: right;">
+                                            <input name="target[<?php echo $rowd['id']; ?>]" type="number" min="0" max="99" step="0.01" <?= $typetext; ?> class="form-control" value="<?= $rowd['target']; ?>" placeholder="0" style="text-align: right;">
                                             <span class="input-group-addon">Jam</span>
                                             <span class="help-block with-errors"></span>
                                         </div>

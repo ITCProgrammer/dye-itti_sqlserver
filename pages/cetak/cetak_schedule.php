@@ -221,13 +221,13 @@ function format_tanggal_sqlsrv($value) {
                         STRING_AGG(lot, '/') AS lot,
                         CASE WHEN COUNT(lot) > 1 THEN 'Gabung Kartu' ELSE '' END AS ket_kartu,
                         no_mesin,
-                        MAX(nodemand) AS nodemand,
+                        (nodemand) AS nodemand,
                         no_urut,
                         MAX(buyer) AS buyer,
                         MAX(langganan) AS langganan,
                         STRING_AGG(no_order, '-') AS no_order,
                         MAX(no_resep) AS no_resep,
-                        MAX(nokk) AS nokk,
+                        (nokk) AS nokk,
                         MAX(jenis_kain) AS jenis_kain,
                         MAX(warna) AS warna,
                         MAX(no_warna) AS no_warna,
@@ -257,7 +257,9 @@ function format_tanggal_sqlsrv($value) {
               $sql .= "
                       GROUP BY
                         no_mesin,
-                        no_urut
+                        no_urut,
+                        nodemand,
+                        nokk
                       ORDER BY
                         MIN(id) ASC";
 
