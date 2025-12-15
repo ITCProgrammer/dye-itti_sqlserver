@@ -38,28 +38,43 @@ include("../koneksi.php");
           <?php
 
 
-          $qry = mysqli_query($con, "SELECT *,
-                                          IF(DATEDIFF( now(), tgl_delivery ) > 0, 'Urgent',
-                                          IF( DATEDIFF( now(), tgl_delivery ) > - 4, 'Potensi Delay', '' )) AS `sts`,
-                                          CASE
-                                            WHEN b.tgl_stop IS NOT NULL AND b.tgl_mulai IS NULL THEN 'stop mesin'
-                                            ELSE a.status
-                                          END AS status_aktual,
-                                          b.ket_stopmesin
-                                        FROM
-                                          tbl_schedule a 
-                                        LEFT JOIN tbl_montemp b ON b.id_schedule = a.id
-                                        WHERE
-                                          a.no_mesin = '$_GET[id]' 
-                                          AND NOT a.`status` = 'selesai' 
-                                        ORDER BY
-                                          a.no_urut ASC ");
-          $no = 1;
+            $qry = sqlsrv_query(
+                $con,
+                "SELECT 
+                    a.*,
+                    b.*,
+                    CASE 
+                        WHEN DATEDIFF(DAY, a.tgl_delivery, GETDATE()) > 0 THEN 'Urgent'
+                        WHEN DATEDIFF(DAY, a.tgl_delivery, GETDATE()) > -4 THEN 'Potensi Delay'
+                        ELSE ''
+                    END AS sts,
+                    CASE
+                        WHEN b.tgl_stop IS NOT NULL AND b.tgl_mulai IS NULL THEN 'stop mesin'
+                        ELSE a.status
+                    END AS status_aktual,
+                    b.ket_stopmesin
+                FROM db_dying.tbl_schedule a
+                LEFT JOIN db_dying.tbl_montemp b ON b.id_schedule = a.id
+                WHERE 
+                    a.no_mesin = ? 
+                    AND a.status <> 'selesai'
+                ORDER BY 
+                    a.no_urut ASC",
+                [$_GET['id']]
+            );
 
-          $c = 0;
-          while ($rowd = mysqli_fetch_array($qry)) {
-            $bgcolor = ($c++ & 1) ? '#33CCFF' : '#FFCC99';
 
+            $no = 1;
+            $c  = 0;
+            function format_tanggal_sqlsrv($value) {
+              if ($value instanceof DateTime) {
+                return $value->format('Y-m-d');
+              }
+              return $value;
+            }
+
+            while ($rowd = sqlsrv_fetch_array($qry, SQLSRV_FETCH_ASSOC)) {
+                $bgcolor = ($c++ & 1) ? '#33CCFF' : '#FFCC99';
           ?>
             <tr>
               <td>
@@ -80,7 +95,7 @@ include("../koneksi.php");
               <td><?php echo $rowd['qty_order']; ?></td>
               <td><?php echo $rowd['proses']; ?></td>
               <td>
-                <?php echo $rowd['tgl_delivery']; ?>
+                <?php echo format_tanggal_sqlsrv($rowd['tgl_delivery']); ?>
               </td>
               <td bgcolor="<?php echo $bg; ?>">
                 <?php echo $rowd['ket_status']; ?>
