@@ -105,8 +105,13 @@ include "koneksi.php";
 
 									$qLama = sqlsrv_query(
 										$con,
-										"SELECT 
-											DATEDIFF(HOUR, GETDATE(), b.tgl_target) AS lama 
+										"SELECT TOP 1
+											CAST(
+												ROUND(
+													DATEDIFF(MINUTE, GETDATE(), b.tgl_target) / 60.0,
+													0
+												) AS INT
+											) AS lama
 										FROM db_dying.tbl_schedule a
 										LEFT JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule
 										WHERE a.no_mesin = ? 
@@ -297,62 +302,33 @@ include "koneksi.php";
 								{
 									include "koneksi.php";
 
-									// Hitung sisa waktu proses (lama) menggunakan SQL Server
+									// Port dari MySQL: TIME_FORMAT(TIMEDIFF(b.tgl_target, NOW()), '%H:%i')
 									$qLama = sqlsrv_query(
 										$con,
 										"SELECT TOP 1
-											b.tgl_buat,
-											a.target,
-											DATEADD(
-												MINUTE,
-												(CAST(FLOOR(a.target) AS INT) * 60) + CAST(ROUND((a.target - FLOOR(a.target)) * 100, 0) AS INT),
-												b.tgl_buat
-											) AS tgl_buat_target,
-											CASE 
-												WHEN b.tgl_mulai IS NOT NULL AND b.tgl_stop IS NOT NULL THEN
-													a.target - 
-													CAST(
-														DATEDIFF(
-															MINUTE,
-															DATEADD(
-																MINUTE,
-																(CAST(FLOOR(a.target) AS INT) * 60) + CAST(ROUND((a.target - FLOOR(a.target)) * 100, 0) AS INT),
-																b.tgl_buat
-															),
-															GETDATE()
-														) - DATEDIFF(MINUTE, b.tgl_mulai, b.tgl_stop)
-													AS FLOAT) / 60.0
-												ELSE
-													CAST(
-														DATEDIFF(
-															MINUTE,
-															GETDATE(),
-															DATEADD(
-																MINUTE,
-																(CAST(FLOOR(a.target) AS INT) * 60) + CAST(ROUND((a.target - FLOOR(a.target)) * 100, 0) AS INT),
-																b.tgl_buat
-															)
-														)
-													AS FLOAT) / 60.0
-											END AS lama
+											DATEDIFF(MINUTE, GETDATE(), b.tgl_target) AS diff_minute
 										FROM db_dying.tbl_schedule a
 										LEFT JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule
 										WHERE a.no_mesin = ?
 										  AND b.status = 'sedang jalan'
+										  AND (b.tgl_stop IS NULL OR b.tgl_mulai IS NOT NULL)
 										ORDER BY a.no_urut ASC",
 										array($mc)
 									);
 
 									$dLama = sqlsrv_fetch_array($qLama, SQLSRV_FETCH_ASSOC);
 
-									if ($dLama && $dLama['lama'] !== null && $dLama['lama'] !== '') {
-										// Format ke jam:menit (HH:MM) di PHP
-										$minutes = (int)round($dLama['lama'] * 60);
-										$hours = floor($minutes / 60);
-										$mins = $minutes % 60;
-										echo sprintf('%02d:%02d', $hours, $mins);
+									if ($dLama && $dLama['diff_minute'] !== null) {
+										$diffMinutes = (int)$dLama['diff_minute'];
+
+										$sign = $diffMinutes < 0 ? '-' : '';
+										$totalMinutes = abs($diffMinutes);
+										$hours = intdiv($totalMinutes, 60);
+										$minutes = $totalMinutes % 60;
+
+										echo $sign . sprintf('%02d:%02d', $hours, $minutes);
 									} else {
-										echo '';
+										echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ";
 									}
 								}
 
