@@ -302,11 +302,37 @@ include "koneksi.php";
 								{
 									include "koneksi.php";
 
-									// Port dari MySQL: TIME_FORMAT(TIMEDIFF(b.tgl_target, NOW()), '%H:%i')
+									// Port dari logika MySQL kompleks: gunakan tgl_buat + target dan kurangi waktu stop
 									$qLama = sqlsrv_query(
 										$con,
 										"SELECT TOP 1
-											DATEDIFF(MINUTE, GETDATE(), b.tgl_target) AS diff_minute
+											-- waktu target proses = tgl_buat + target (jam & menit)
+											DATEADD(
+												MINUTE,
+												(CAST(FLOOR(a.target) AS INT) * 60)
+													+ CAST(ROUND((a.target - FLOOR(a.target)) * 100, 0) AS INT),
+												b.tgl_buat
+											) AS tgl_buat_target,
+											-- selisih menit antara sekarang dan target (nilai absolut)
+											ABS(
+												DATEDIFF(
+													MINUTE,
+													GETDATE(),
+													DATEADD(
+														MINUTE,
+														(CAST(FLOOR(a.target) AS INT) * 60)
+															+ CAST(ROUND((a.target - FLOOR(a.target)) * 100, 0) AS INT),
+														b.tgl_buat
+													)
+												)
+											)
+											-
+											-- kurangi menit downtime jika ada (tgl_mulai & tgl_stop terisi)
+											CASE 
+												WHEN b.tgl_mulai IS NOT NULL AND b.tgl_stop IS NOT NULL THEN 
+													DATEDIFF(MINUTE, b.tgl_mulai, b.tgl_stop)
+												ELSE 0
+											END AS lama_minute
 										FROM db_dying.tbl_schedule a
 										LEFT JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule
 										WHERE a.no_mesin = ?
@@ -318,15 +344,15 @@ include "koneksi.php";
 
 									$dLama = sqlsrv_fetch_array($qLama, SQLSRV_FETCH_ASSOC);
 
-									if ($dLama && $dLama['diff_minute'] !== null) {
-										$diffMinutes = (int)$dLama['diff_minute'];
+									if ($dLama && $dLama['lama_minute'] !== null) {
+										$minutesTotal = (int)$dLama['lama_minute'];
+										if ($minutesTotal < 0) {
+											$minutesTotal = 0;
+										}
+										$hours = intdiv($minutesTotal, 60);
+										$minutes = $minutesTotal % 60;
 
-										$sign = $diffMinutes < 0 ? '-' : '';
-										$totalMinutes = abs($diffMinutes);
-										$hours = intdiv($totalMinutes, 60);
-										$minutes = $totalMinutes % 60;
-
-										echo $sign . sprintf('%02d:%02d', $hours, $minutes);
+										echo sprintf('%02d:%02d', $hours, $minutes);
 									} else {
 										echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ";
 									}
