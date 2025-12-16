@@ -194,17 +194,19 @@ When ms.RunState = 5 Then 'Manual Operation' When ms.RunState = 6 Then 'Finished
     return $wkt; // Kembalikan nilai DyelotRefNo saja		
     }
 
-$result = mysqli_query($con, "SELECT DISTINCT kapasitas FROM tbl_mesin ORDER BY kapasitas DESC");
+$machinesByCapacity = array();
 
-								while ($row = mysqli_fetch_assoc($result)) {
+								$result = sqlsrv_query($con, "SELECT DISTINCT kapasitas FROM db_dying.tbl_mesin ORDER BY kapasitas DESC");
+
+								while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
 									$kapasitas = $row['kapasitas'];
 
 									$machinesByCapacity[$kapasitas] = array();
 								}
 
-								$dataMesin = mysqli_query($con, "SELECT no_mesin, kapasitas FROM tbl_mesin");
+								$dataMesin = sqlsrv_query($con, "SELECT no_mesin, kapasitas FROM db_dying.tbl_mesin");
 
-								while ($row = mysqli_fetch_assoc($dataMesin)) {
+								while ($row = sqlsrv_fetch_array($dataMesin, SQLSRV_FETCH_ASSOC)) {
 									$kapasitas = $row['kapasitas'];
 									$machinesByCapacity[$kapasitas][] = $row;
 								}
@@ -292,17 +294,17 @@ $result = mysqli_query($con, "SELECT DISTINCT kapasitas FROM tbl_mesin ORDER BY 
 								<?php
 								$machinesByCapacity = array();
 
-								$result = mysqli_query($con, "SELECT DISTINCT kapasitas FROM tbl_mesin ORDER BY kapasitas DESC");
+								$result = sqlsrv_query($con, "SELECT DISTINCT kapasitas FROM db_dying.tbl_mesin ORDER BY kapasitas DESC");
 
-								while ($row = mysqli_fetch_assoc($result)) {
+								while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
 									$kapasitas = $row['kapasitas'];
 
 									$machinesByCapacity[$kapasitas] = array();
 								}
 
-								$dataMesin = mysqli_query($con, "SELECT no_mesin, kapasitas FROM tbl_mesin");
+								$dataMesin = sqlsrv_query($con, "SELECT no_mesin, kapasitas FROM db_dying.tbl_mesin");
 
-								while ($row = mysqli_fetch_assoc($dataMesin)) {
+								while ($row = sqlsrv_fetch_array($dataMesin, SQLSRV_FETCH_ASSOC)) {
 									$kapasitas = $row['kapasitas'];
 									$machinesByCapacity[$kapasitas][] = $row;
 								}
@@ -373,8 +375,8 @@ $result = mysqli_query($con, "SELECT DISTINCT kapasitas FROM tbl_mesin ORDER BY 
 
 					<marquee class="teks-berjalan" behavior="scroll" direction="left" onmouseover="this.stop();" onmouseout="this.start();">
 						<?php
-						$news = mysqli_query($con, "SELECT GROUP_CONCAT(news_line SEPARATOR ' :: ') as news_line FROM tbl_news_line WHERE gedung='LT 1' AND status='Tampil'");
-						$rNews = mysqli_fetch_array($news);
+						$news = sqlsrv_query($con, "SELECT STRING_AGG(news_line, ' :: ') as news_line FROM db_dying.tbl_news_line WHERE gedung = 'LT 1' AND status = 'Tampil'");
+						$rNews = sqlsrv_fetch_array($news, SQLSRV_FETCH_ASSOC);
 						$totMesin = '0';
 						?>
 						<?php echo $rNews['news_line']; ?>
