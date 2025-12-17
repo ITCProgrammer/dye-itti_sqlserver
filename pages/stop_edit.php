@@ -3,41 +3,53 @@
     session_start();
     include("../koneksi.php");
     $modal_id = $_GET['id'];
-    $modal = mysqli_query($con, "SELECT
+    $modal = sqlsrv_query($con, "SELECT
                                     *,
-                                    DATE_FORMAT( tgl_stop, '%Y-%m-%d' ) AS tglS,
-                                    DATE_FORMAT( tgl_stop, '%H:%i' ) AS jamS,
-                                    DATE_FORMAT( tgl_mulai, '%Y-%m-%d' ) AS tglM,
-                                    DATE_FORMAT( tgl_mulai, '%H:%i' ) AS jamM,
-                                    DATE_FORMAT( tgl_stop2, '%Y-%m-%d' ) AS tglS2,
-                                    DATE_FORMAT( tgl_stop2, '%H:%i' ) AS jamS2,
-                                    DATE_FORMAT( tgl_mulai2, '%Y-%m-%d' ) AS tglM2,
-                                    DATE_FORMAT( tgl_mulai2, '%H:%i' ) AS jamM2,
-                                    DATE_FORMAT( tgl_stop3, '%Y-%m-%d' ) AS tglS3,
-                                    DATE_FORMAT( tgl_stop3, '%H:%i' ) AS jamS3,
-                                    DATE_FORMAT( tgl_mulai3, '%Y-%m-%d' ) AS tglM3,
-                                    DATE_FORMAT( tgl_mulai3, '%H:%i' ) AS jamM3,
-                                    DATE_FORMAT( tgl_stop4, '%Y-%m-%d' ) AS tglS4,
-                                    DATE_FORMAT( tgl_stop4, '%H:%i' ) AS jamS4,
-                                    DATE_FORMAT( tgl_mulai4, '%Y-%m-%d' ) AS tglM4,
-                                    DATE_FORMAT( tgl_mulai4, '%H:%i' ) AS jamM4
+                                    FORMAT(tgl_stop, 'yyyy-MM-dd') AS tglS,
+                                    FORMAT( tgl_stop, 'HH:mm' ) AS jamS,
+                                    FORMAT( tgl_mulai, 'yyyy-MM-dd' ) AS tglM,
+                                    FORMAT( tgl_mulai, 'HH:mm' ) AS jamM,
+                                    FORMAT( tgl_stop2, 'yyyy-MM-dd' ) AS tglS2,
+                                    FORMAT( tgl_stop2, 'HH:mm' ) AS jamS2,
+                                    FORMAT( tgl_mulai2, 'yyyy-MM-dd' ) AS tglM2,
+                                    FORMAT( tgl_mulai2, 'HH:mm' ) AS jamM2,
+                                    FORMAT( tgl_stop3, 'yyyy-MM-dd' ) AS tglS3,
+                                    FORMAT( tgl_stop3, 'HH:mm' ) AS jamS3,
+                                    FORMAT( tgl_mulai3, 'yyyy-MM-dd' ) AS tglM3,
+                                    FORMAT( tgl_mulai3, 'HH:mm' ) AS jamM3,
+                                    FORMAT( tgl_stop4, 'yyyy-MM-dd' ) AS tglS4,
+                                    FORMAT( tgl_stop4, 'HH:mm' ) AS jamS4,
+                                    FORMAT( tgl_mulai4, 'yyyy-MM-dd' ) AS tglM4,
+                                    FORMAT( tgl_mulai4, 'HH:mm' ) AS jamM4
                                 FROM
-                                    `tbl_montemp` 
+                                    db_dying.tbl_montemp
                                 WHERE
                                     id = '$modal_id'");
-    while ($r = mysqli_fetch_array($modal)) {
-        $qLama = mysqli_query($con, "SELECT
-                                        TIME_FORMAT( timediff( b.tgl_target, now()), '%H:%i' ) AS lama,
-                                        b.id 
-                                    FROM
-                                        tbl_schedule a
-                                        LEFT JOIN tbl_montemp b ON a.id = b.id_schedule 
-                                    WHERE
-                                        b.id = '$modal_id' 
-                                        AND b.STATUS = 'sedang jalan' 
-                                    ORDER BY
-                                        a.no_urut ASC");
-        $dLama = mysqli_fetch_array($qLama);
+    while ($r = sqlsrv_fetch_array($modal)) {
+        $query_lama = "SELECT
+                            b.tgl_target,
+                            CASE 
+                                WHEN b.tgl_target < GETDATE() THEN
+                                    '-' +
+                                    RIGHT('0' + CAST(ABS(DATEDIFF(SECOND, b.tgl_target, GETDATE())) / 3600 AS VARCHAR(2)), 2)
+                                    + ':' +
+                                    RIGHT('0' + CAST((ABS(DATEDIFF(SECOND, b.tgl_target, GETDATE())) % 3600) / 60 AS VARCHAR(2)), 2)
+                                ELSE
+                                    RIGHT('0' + CAST(DATEDIFF(SECOND, b.tgl_target, GETDATE()) / 3600 AS VARCHAR(2)), 2)
+                                    + ':' +
+                                    RIGHT('0' + CAST((DATEDIFF(SECOND, b.tgl_target, GETDATE()) % 3600) / 60 AS VARCHAR(2)), 2)
+                            END AS lama,
+                            b.id 
+                        FROM
+                            db_dying.tbl_schedule a
+                            LEFT JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule 
+                        WHERE
+                            b.id = '$modal_id' 
+                            AND b.STATUS = 'sedang jalan' 
+                        ORDER BY
+                            a.no_urut ASC";
+        $qLama = sqlsrv_query($con, $query_lama);
+        $dLama = sqlsrv_fetch_array($qLama);
 ?>
     <style>
         /* Gaya untuk judul */
@@ -134,8 +146,14 @@
                                 <select class="form-control" name="ket_stopmesin" id="ket_stopmesin">
                                   <option value="" disabled <?= empty($r['ket_stopmesin']) ? 'selected' : '' ?>>-</option>
                                   <?php
-                                    $q_ket_stopmesin = mysqli_query($con, "SELECT * FROM tbl_ket_stopmesin ORDER BY id ASC");
-                                    while ($row_ket_stopmesin = mysqli_fetch_array($q_ket_stopmesin)) {
+                                    $query_stop = "SELECT 
+                                                    * 
+                                                  FROM 
+                                                    db_dying.tbl_ket_stopmesin 
+                                                  ORDER BY 
+                                                    id ASC";
+                                    $q_ket_stopmesin = sqlsrv_query($con, $query_stop);
+                                    while ($row_ket_stopmesin = sqlsrv_fetch_array($q_ket_stopmesin)) {
                                       $val = htmlspecialchars($row_ket_stopmesin['ket_stopmesin'], ENT_QUOTES, 'UTF-8');
                                       $sel = (!empty($r['ket_stopmesin']) && $r['ket_stopmesin'] == $row_ket_stopmesin['ket_stopmesin']) ? 'selected' : '';
                                       echo "<option value=\"$val\" $sel>$val</option>";
@@ -196,8 +214,14 @@
                                 <select class="form-control" name="ket_stopmesin2" id="ket_stopmesin2">
                                   <option value="" disabled <?= empty($r['ket_stopmesin2']) ? 'selected' : '' ?>>-</option>
                                   <?php
-                                    $q_ket_stopmesin = mysqli_query($con, "SELECT * FROM tbl_ket_stopmesin ORDER BY id ASC");
-                                    while ($row_ket_stopmesin = mysqli_fetch_array($q_ket_stopmesin)) {
+                                    $query_stop = "SELECT 
+                                                    * 
+                                                  FROM 
+                                                    db_dying.tbl_ket_stopmesin 
+                                                  ORDER BY 
+                                                    id ASC";
+                                    $q_ket_stopmesin = sqlsrv_query($con, $query_stop);
+                                    while ($row_ket_stopmesin = sqlsrv_fetch_array($q_ket_stopmesin)) {
                                       $val = htmlspecialchars($row_ket_stopmesin['ket_stopmesin'], ENT_QUOTES, 'UTF-8');
                                       $sel = (!empty($r['ket_stopmesin2']) && $r['ket_stopmesin2'] == $row_ket_stopmesin['ket_stopmesin']) ? 'selected' : '';
                                       echo "<option value=\"$val\" $sel>$val</option>";
@@ -257,10 +281,20 @@
                             <div class="input-group">
                                 <select class="form-control" name="ket_stopmesin3">
                                     <option value="" disabled selected>-</option>
-                                    <?php $q_ket_stopmesin      = mysqli_query($con, "SELECT * FROM tbl_ket_stopmesin ORDER BY id ASC"); ?>
-                                    <?php while ($row_ket_stopmesin  = mysqli_fetch_array($q_ket_stopmesin)) { ?>
-                                        <option value="<?= $row_ket_stopmesin['ket_stopmesin']; ?>" <?php if($r['ket_stopmesin3'] == $row_ket_stopmesin['ket_stopmesin']) ?>><?= $row_ket_stopmesin['ket_stopmesin']; ?></option>
-                                    <?php } ?>
+                                    <?php
+                                        $query_stop = "SELECT 
+                                                        * 
+                                                    FROM 
+                                                        db_dying.tbl_ket_stopmesin 
+                                                    ORDER BY 
+                                                        id ASC";
+                                        $q_ket_stopmesin = sqlsrv_query($con, $query_stop);
+                                        while ($row_ket_stopmesin = sqlsrv_fetch_array($q_ket_stopmesin)) {
+                                        $val = htmlspecialchars($row_ket_stopmesin['ket_stopmesin'], ENT_QUOTES, 'UTF-8');
+                                        $sel = (!empty($r['ket_stopmesin3']) && $r['ket_stopmesin3'] == $row_ket_stopmesin['ket_stopmesin']) ? 'selected' : '';
+                                        echo "<option value=\"$val\" $sel>$val</option>";
+                                        }
+                                    ?>
                                 </select>
                                 <span class="input-group-btn"><a target="_blank" href="?p=tambah_ketstopmesin" class="btn btn-default">...</a></span>
                             </div>
@@ -315,10 +349,20 @@
                             <div class="input-group">
                                 <select class="form-control" name="ket_stopmesin4">
                                     <option value="" disabled selected>-</option>
-                                    <?php $q_ket_stopmesin      = mysqli_query($con, "SELECT * FROM tbl_ket_stopmesin ORDER BY id ASC"); ?>
-                                    <?php while ($row_ket_stopmesin  = mysqli_fetch_array($q_ket_stopmesin)) { ?>
-                                        <option value="<?= $row_ket_stopmesin['ket_stopmesin']; ?>" <?php if($r['ket_stopmesin4'] == $row_ket_stopmesin['ket_stopmesin']) ?>><?= $row_ket_stopmesin['ket_stopmesin']; ?></option>
-                                    <?php } ?>
+                                    <?php
+                                        $query_stop = "SELECT 
+                                                        * 
+                                                    FROM 
+                                                        db_dying.tbl_ket_stopmesin 
+                                                    ORDER BY 
+                                                        id ASC";
+                                        $q_ket_stopmesin = sqlsrv_query($con, $query_stop);
+                                        while ($row_ket_stopmesin = sqlsrv_fetch_array($q_ket_stopmesin)) {
+                                        $val = htmlspecialchars($row_ket_stopmesin['ket_stopmesin'], ENT_QUOTES, 'UTF-8');
+                                        $sel = (!empty($r['ket_stopmesin4']) && $r['ket_stopmesin4'] == $row_ket_stopmesin['ket_stopmesin']) ? 'selected' : '';
+                                        echo "<option value=\"$val\" $sel>$val</option>";
+                                        }
+                                    ?>
                                 </select>
                                 <span class="input-group-btn"><a target="_blank" href="?p=tambah_ketstopmesin" class="btn btn-default">...</a></span>
                             </div>

@@ -2,6 +2,7 @@
 ini_set("error_reporting", 1);
 session_start();
 include "koneksi.php";
+include "helpers.php";
 ?>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -14,28 +15,34 @@ include "koneksi.php";
 
 <body>
     <?php
-    $data = mysqli_query($con, "SELECT
-                                        *,
-                                        b.buyer,
-                                        b.no_order,
-                                        b.warna,
-                                        b.nokk,
-	                                    b.nodemand,
-                                        a.tgl_update,
-                                        a.id AS idm,
-                                        b.id AS ids,
-                                        c.id AS idstm,
-                                        a.g_shift AS sft 
-                                    FROM
-                                        db_dying.tbl_montemp a
-                                        LEFT JOIN db_dying.tbl_schedule b ON a.id_schedule = b.id
-                                        LEFT JOIN db_dying.tbl_setting_mesin c ON b.nokk = c.nokk
-                                        LEFT JOIN db_dying.tbl_bakbul d ON c.nokk = d.no_kk
-                                    WHERE
-                                        ( a.`status` = 'antri mesin' OR a.`status` = 'sedang jalan' ) 
-                                        AND ( b.`status` = 'antri mesin' OR b.`status` = 'sedang jalan' ) 
-                                    ORDER BY
-                                        a.id ASC");
+    $query_main = "SELECT
+                        *,
+                        b.buyer,
+                        b.no_order,
+                        b.warna,
+                        b.nokk,
+                        b.nodemand,
+                        a.tgl_update,
+                        a.id AS idm,
+                        b.id AS ids,
+                        c.id AS idstm,
+                        a.g_shift AS sft
+                    FROM
+                        db_dying.tbl_montemp a
+                    LEFT JOIN db_dying.tbl_schedule b ON
+                        a.id_schedule = b.id
+                    LEFT JOIN db_dying.tbl_setting_mesin c ON
+                        b.nokk = c.nokk
+                    LEFT JOIN db_dying.tbl_bakbul d ON
+                        c.nokk = d.no_kk
+                    WHERE
+                        ( a.status = 'antri mesin'
+                            OR a.status = 'sedang jalan' )
+                        AND ( b.status = 'antri mesin'
+                            OR b.status = 'sedang jalan' )
+                    ORDER BY
+                        a.id ASC";
+    $data = sqlsrv_query($con, $query_main);
     $no = 1;
     $n = 1;
     $c = 0;
@@ -88,10 +95,17 @@ include "koneksi.php";
                         <tbody>
                             <?php
                             $col = 0;
-                            while ($rowd = mysqli_fetch_array($data)) {
+                            while ($rowd = sqlsrv_fetch_array($data)) {
                                 $bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
-                                $qCek = mysqli_query($con, "SELECT id as idb FROM tbl_hasilcelup WHERE id_montemp='$rowd[idm]' LIMIT 1");
-                                $rCEk = mysqli_fetch_array($qCek);
+                                $query_cek = "SELECT TOP 1 
+                                                    id as idb 
+                                                FROM 
+                                                    db_dying.tbl_hasilcelup 
+                                                WHERE 
+                                                    id_montemp='$rowd[idm]'";
+                                // echo $query_cek;
+                                $qCek = sqlsrv_query($con, $query_cek);
+                                $rCEk = sqlsrv_fetch_array($qCek);
                             ?>
                                 <tr bgcolor="<?php echo $bgcolor; ?>">
                                     <td align="center"><?php echo $rowd['no_mesin']; ?></td>
@@ -130,14 +144,14 @@ include "koneksi.php";
                                     <td align="left">
                                         <?php if ($_SESSION['lvl_id10'] == "5") : ?>
                                             <a href="#" id='<?php echo $rowd['idm']; ?>' class="btn btn-xs bg-purple edit_jammasukkain">
-                                                <?php echo $rowd['jammasukkain']; ?>
+                                                <?php echo formatDateTime($rowd['jammasukkain'], "Y-m-d H:i:s"); ?>
                                             </a>
                                         <?php else : ?>
-                                            <?php echo $rowd['jammasukkain']; ?>
+                                            <?php echo formatDateTime($rowd['jammasukkain'],"Y-m-d H:i:s"); ?>
                                         <?php endif; ?>
                                         <br><br>
                                         <span class="label bg-red">
-                                            <?php echo $rowd['tgl_update']; ?>
+                                            <?php echo formatDateTime($rowd['tgl_update'],"Y-m-d H:i:s"); ?>
                                         </span>
                                     </td>
                                     <td><?php echo $rowd['proses']; ?><br><i><?php echo $rowd['tgl_buat']; ?></i><br><i class="btn btn-xs bg-hijau"><?php echo $rowd['operator']; ?></i></td>
@@ -148,9 +162,7 @@ include "koneksi.php";
                                                                                                                                 } ?>">
                                                 <i class="fa fa-edit"></i>
                                             </a>
-                                            <a href="#" onclick="confirm_del('?p=mtr_hapus&id=<?php echo $rowd['idm'] ?>');" class="btn btn-xs btn-danger <?php if ($_SESSION['lvl_id10'] == "3" or $rCEk['idb'] != "") {
-                                                                                                                                                                echo "disabled";
-                                                                                                                                                            } ?>">
+                                            <a href="#" onclick="confirm_del2('?p=mtr_hapus&id=<?php echo $rowd['idm'] ?>');" class="btn btn-xs btn-danger">
                                                 <i class="fa fa-trash"></i>
                                             </a>
                                             <?php if ($_SESSION['lvl_id10'] == "5") : ?>
@@ -204,4 +216,7 @@ include "koneksi.php";
         });
         document.getElementById('del_link').setAttribute('href', delete_url);
     }
+
+    function confirm_del2(url) { swal({ title: "Yakin ingin menghapus?", text: "Data yang dihapus tidak dapat dikembalikan", icon: "warning", buttons: { cancel: { text: "Batal", value: false, visible: true, className: "", closeModal: true, }, confirm: { text: "Ya, hapus!", value: true, visible: true, className: "", closeModal: true } }, dangerMode: true, }).then((willDelete) => { if (willDelete) { window.location.href = url; } }); }
+
 </script>
