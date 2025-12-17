@@ -38,10 +38,10 @@
                 </thead>
                 <tbody>
                     <?php
-                        $q_ket_stopmesin    = mysqli_query($con, "SELECT * FROM tbl_ket_stopmesin ORDER BY id ASC");
+                        $q_ket_stopmesin    = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_ket_stopmesin ORDER BY id ASC");
                         $no = 1;
                     ?>
-                    <?php while ($row_ket_stopmesin = mysqli_fetch_array($q_ket_stopmesin)) { ?>
+                    <?php while ($row_ket_stopmesin = sqlsrv_fetch_array($q_ket_stopmesin)) { ?>
                         <tr bgcolor="antiquewhite">
                             <td align="center"><?= $row_ket_stopmesin['ket_stopmesin'] ?></td>
                             <td align="center">
@@ -60,31 +60,47 @@
 
 <?php
 	if ($_POST['save'] == "save") {
-        $q_simpan = mysqli_query($con, "INSERT INTO tbl_ket_stopmesin SET ket_stopmesin = '$_POST[ket_stopmesin]'");
-        if($q_simpan){
-            echo "<script>swal({
+        $sql = "INSERT INTO db_dying.tbl_ket_stopmesin (ket_stopmesin) VALUES (?)";
+        $params = [$_POST['ket_stopmesin']];
+        $q_simpan = sqlsrv_query($con, $sql, $params);
+    if ($q_simpan) {
+        echo "<script>
+                swal({
                     title: 'Data Tersimpan',   
                     text: 'Klik Ok untuk input data kembali',
                     type: 'success',
-                    }).then((result) => {
+                }).then((result) => {
                     if (result.value) {
                         window.location.href='?p=tambah_ketstopmesin'; 
                     }
-                });</script>";
-        }
-    }elseif($_POST['delete'] == 'delete'){
-        $q_hapus = mysqli_query($con, "DELETE FROM tbl_ket_stopmesin WHERE id='$_POST[id]'");
-        if($q_hapus){
-            echo "<script>swal({
-                    title: 'Data telah terhapus',   
-                    text: 'Klik Ok untuk input data kembali',
-                    type: 'danger',
+                });
+              </script>";
+    } else {
+        echo "<pre>INSERT ERROR:\n";
+        print_r(sqlsrv_errors());
+        echo "</pre>";
+    }
+    } else if($_POST['delete'] == 'delete'){
+        $sql = "DELETE FROM db_dying.tbl_ket_stopmesin WHERE id = ?";
+        $params = [$_POST['id']];
+        $q_hapus = sqlsrv_query($con, $sql, $params);
+
+        if ($q_hapus) {
+            echo "<script>
+                    swal({
+                        title: 'Data telah terhapus',   
+                        text: 'Klik Ok untuk input data kembali',
+                        type: 'success',
                     }).then((result) => {
-                    if (result.value) {
-                        window.location.href='?p=tambah_ketstopmesin'; 
-                    }
-                });</script>";
+                        if (result.value) {
+                            window.location.href='?p=tambah_ketstopmesin'; 
+                        }
+                    });
+                </script>";
+        } else {
+            echo "<pre>DELETE ERROR:\n";
+            print_r(sqlsrv_errors());
+            echo "</pre>";
         }
-        // echo "DELETE FROM tbl_ket_stopmesin WHERE id='$_POST[id]'";
     }
 ?>
