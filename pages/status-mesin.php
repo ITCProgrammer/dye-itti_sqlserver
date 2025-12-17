@@ -9,7 +9,7 @@ include "koneksi.php";
 
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	<!-- <meta http-equiv="refresh" content="180"> -->
+	<meta http-equiv="refresh" content="180">
 	<title>Status Mesin</title>
 
 	<style>
