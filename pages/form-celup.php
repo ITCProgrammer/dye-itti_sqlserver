@@ -809,7 +809,7 @@ function format_tanggal_sqlsrv($value) {
 				<div class="form-group">
 					<label for="rcode1" class="col-sm-3 control-label">Rcode</label>
 					<div class="col-sm-3">
-						<!-- <input name="rcode1" type="text" class="form-control" id="rcode1" value="<?= trim(rcode($nokk, $rRcode['no_resep'])); ?>"> -->
+						<!-- <input name="rcode1" type="text" class="form-control" id="rcode1" value="<?php //trim(rcode($nokk, $rRcode['no_resep'])); ?>"> -->
 						<?php
 							if($_GET['nokk']){
 							$nokk = $_GET['nokk'];
