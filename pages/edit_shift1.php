@@ -4,17 +4,17 @@ session_start();
 include("../koneksi.php");
 if($_POST){ 
 	extract($_POST);
-	$id 	= mysqli_real_escape_string($con,$_POST['id']);
-	$shift 	= mysqli_real_escape_string($con,$_POST['shift']);
-	$gshift = mysqli_real_escape_string($con,$_POST['gshift']); 
-				$sqlupdate=mysqli_query($con,"UPDATE `tbl_hasilcelup` SET 
+	$id 	= isset($_POST['id']) ? $_POST['id'] : '';
+	$shift 	= isset($_POST['shift']) ? $_POST['shift'] : '';
+	$gshift = isset($_POST['gshift']) ? $_POST['gshift'] : '';
+				$sqlupdate=sqlsrv_query($con,"UPDATE db_dying.tbl_hasilcelup SET 
+				g_shift='$gshift',
+				shift='$shift'
+				WHERE id='$id'");
+				$sqlupdate1=sqlsrv_query($con,"UPDATE db_dying.tbl_potongcelup SET 
 				`g_shift`='$gshift',
 				`shift`='$shift'
-				WHERE `id`='$id' LIMIT 1");
-				$sqlupdate1=mysqli_query($con,"UPDATE `tbl_potongcelup` SET 
-				`g_shift`='$gshift',
-				`shift`='$shift'
-				WHERE `id_hasilcelup`='$id' LIMIT 1");
+				WHERE `id_hasilcelup`='$id'");
 				echo " <script>window.location='?p=Hasil-Celup';</script>";
 						
 		}

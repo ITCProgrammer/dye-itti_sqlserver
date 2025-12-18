@@ -2,13 +2,23 @@
 // hapus-celup.php
 include '../koneksi.php';
 if (isset($_POST['id'])) {
-    $id = mysqli_real_escape_string($con, $_POST['id']);
-    $query = mysqli_query($con, "DELETE FROM tbl_analisa WHERE id='$id'");
-    if ($query) {
-        echo 'success';
+    $id = trim($_POST['id']);
+
+    if ($id !== '') {
+        $sql = "DELETE FROM db_dying.tbl_analisa WHERE id = ?";
+        $params = [$id];
+
+        $stmt = sqlsrv_query($con, $sql, $params);
+
+        if ($stmt !== false) {
+            echo 'success';
+        } else {
+            http_response_code(500);
+            echo 'Gagal menghapus data.';
+        }
     } else {
-        http_response_code(500);
-        echo 'Gagal menghapus data.';
+        http_response_code(400);
+        echo 'ID tidak valid.';
     }
 } else {
     http_response_code(400);

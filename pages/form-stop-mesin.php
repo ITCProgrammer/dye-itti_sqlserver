@@ -3,22 +3,25 @@
 	session_start();
 	include "koneksi.php";
 
-	/* -------------------- Util: preview kode berikutnya hari ini -------------------- */
-	$prefix = 'SM'.date('y').date('md'); // SM + yy + mmdd
-	$qPrev  = mysqli_query($con, "
-		SELECT COALESCE(MAX(CAST(SUBSTRING(no_stop, 9) AS UNSIGNED)), 0) AS last_seq
-		FROM tbl_stopmesin
-		WHERE DATE(tgl_buat) = CURDATE()
-	");
-	$rPrev        = $qPrev ? mysqli_fetch_assoc($qPrev) : ['last_seq'=>0];
-	$previewCode  = sprintf('%s%02d', $prefix, ((int)$rPrev['last_seq']) + 1);
+	/* -------------------- Util: preview kode berikutnya hari ini (SQL Server) -------------------- */
+	$prefix = 'SM' . date('y') . date('md'); // SM + yy + mmdd
+	$qPrev  = sqlsrv_query(
+		$con,
+		"SELECT ISNULL(MAX(CAST(SUBSTRING(no_stop, 9, 2) AS INT)), 0) AS last_seq
+		 FROM db_dying.tbl_stopmesin
+		 WHERE CONVERT(date, tgl_buat) = CONVERT(date, GETDATE())"
+	);
+	$rPrev       = $qPrev ? sqlsrv_fetch_array($qPrev, SQLSRV_FETCH_ASSOC) : ['last_seq' => 0];
+	$previewCode = sprintf('%s%02d', $prefix, ((int)$rPrev['last_seq']) + 1);
 
-	/* -------------------- Build opsi mesin (tanpa filter kapasitas) -------------------- */
+	/* -------------------- Build opsi mesin (tanpa filter kapasitas) - SQL Server -------------------- */
 	$mcOptions = '';
-	$qMC = mysqli_query($con, "SELECT no_mesin FROM tbl_mesin ORDER BY no_mesin ASC");
-	while ($r = mysqli_fetch_assoc($qMC)) {
-		$val = htmlspecialchars($r['no_mesin'], ENT_QUOTES);
-		$mcOptions .= "<option value=\"{$val}\">{$val}</option>";
+	$qMC = sqlsrv_query($con, "SELECT no_mesin FROM db_dying.tbl_mesin ORDER BY no_mesin ASC");
+	if ($qMC !== false) {
+		while ($r = sqlsrv_fetch_array($qMC, SQLSRV_FETCH_ASSOC)) {
+			$val = htmlspecialchars($r['no_mesin'], ENT_QUOTES);
+			$mcOptions .= "<option value=\"{$val}\">{$val}</option>";
+		}
 	}
 
 	/* -------------------- Proses Submit -------------------- */
@@ -45,70 +48,82 @@
 			$mulai   = ($kodesm !== "" ? (($_POST['mulaism'] ?? '')." ".($_POST['waktu_mulai'] ?? '')) : null);
 			$selesai = ($kodesm !== "" ? (($_POST['selesaism'] ?? '')." ".($_POST['waktu_stop']  ?? '')) : null);
 
-			// Ambil kapasitas per mesin dari DB (sekali query)
+			// Ambil kapasitas per mesin dari DB (sekali query) - SQL Server
 			$mesinsUnique = array_values(array_unique($mesins));
-			$inList = implode(',', array_map(function($m) use ($con){
-				return "'".mysqli_real_escape_string($con, $m)."'";
+			$inList = implode(',', array_map(function($m) {
+				return "'" . str_replace("'", "''", $m) . "'";
 			}, $mesinsUnique));
 			$kapMap = [];
 			if ($inList) {
-				$qCap = mysqli_query($con, "SELECT no_mesin, kapasitas FROM tbl_mesin WHERE no_mesin IN ($inList)");
-				while ($row = mysqli_fetch_assoc($qCap)) {
-					$kapMap[$row['no_mesin']] = (int)$row['kapasitas'];
+				$qCap = sqlsrv_query($con, "SELECT no_mesin, kapasitas FROM db_dying.tbl_mesin WHERE no_mesin IN ($inList)");
+				if ($qCap !== false) {
+					while ($row = sqlsrv_fetch_array($qCap, SQLSRV_FETCH_ASSOC)) {
+						$kapMap[$row['no_mesin']] = (int)$row['kapasitas'];
+					}
 				}
 			}
 
-			// Mulai transaksi agar urutan kode aman
-			mysqli_begin_transaction($con);
+			// Mulai transaksi agar urutan kode aman (SQL Server)
+			sqlsrv_begin_transaction($con);
 			try {
-				// Kunci urutan hari ini
-				$res = mysqli_query($con, "
-					SELECT COALESCE(MAX(CAST(SUBSTRING(no_stop, 9) AS UNSIGNED)), 0) AS last_seq
-					FROM tbl_stopmesin
-					WHERE DATE(tgl_buat) = CURDATE()
-					FOR UPDATE
-				");
-				$row = mysqli_fetch_assoc($res);
+				// Kunci urutan hari ini (UPDLOCK + HOLDLOCK)
+				$res = sqlsrv_query(
+					$con,
+					"SELECT ISNULL(MAX(CAST(SUBSTRING(no_stop, 9, 2) AS INT)), 0) AS last_seq
+					 FROM db_dying.tbl_stopmesin WITH (UPDLOCK, HOLDLOCK)
+					 WHERE CONVERT(date, tgl_buat) = CONVERT(date, GETDATE())"
+				);
+				if ($res === false) {
+					throw new Exception('Gagal membaca urutan no_stop: ' . print_r(sqlsrv_errors(), true));
+				}
+				$row = sqlsrv_fetch_array($res, SQLSRV_FETCH_ASSOC);
 				$seq = (int)$row['last_seq'];
 
-				// Siapkan statement INSERT (2 versi: dengan waktu & tanpa waktu)
-				if ($kodesm !== "") {
-					$stmt = mysqli_prepare($con, "INSERT INTO tbl_stopmesin
-						(no_stop, shift, g_shift, kapasitas, no_mesin, proses, kd_stopmc, mulai, selesai, keterangan, tgl_buat, tgl_update)
-						VALUES (?,?,?,?,?,?,?,?,?, ?, NOW(), NOW())");
-					if (!$stmt) throw new Exception('Prepare failed: '.mysqli_error($con));
-				} else {
-					$stmt = mysqli_prepare($con, "INSERT INTO tbl_stopmesin
-						(no_stop, shift, g_shift, kapasitas, no_mesin, proses, kd_stopmc, keterangan, tgl_buat, tgl_update)
-						VALUES (?,?,?,?,?,?,?, ?, NOW(), NOW())");
-					if (!$stmt) throw new Exception('Prepare failed: '.mysqli_error($con));
-				}
-
+				// INSERT (2 versi: dengan waktu & tanpa waktu) - SQL Server
 				foreach ($mesins as $mc) {
 					$seq++;
 					$no_stop = sprintf('%s%02d', $prefix, $seq); // contoh: SM25102001
 					$kapasitas = (int)($kapMap[$mc] ?? 0);       // kapasitas otomatis dari tbl_mesin
 
 					if ($kodesm !== "") {
-						mysqli_stmt_bind_param(
-							$stmt,
-							"sssissssss",
-							$no_stop, $shift, $g_shift, $kapasitas, $mc, $proses, $kodesm, $mulai, $selesai, $ket
-						);
+						$sqlIns = "INSERT INTO db_dying.tbl_stopmesin
+							(no_stop, shift, g_shift, kapasitas, no_mesin, proses, kd_stopmc, mulai, selesai, keterangan, tgl_buat, tgl_update)
+							VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())";
+						$params = [
+							$no_stop,
+							$shift,
+							$g_shift,
+							$kapasitas,
+							$mc,
+							$proses,
+							$kodesm,
+							$mulai,
+							$selesai,
+							$ket
+						];
 					} else {
-						mysqli_stmt_bind_param(
-							$stmt,
-							"sssissss",
-							$no_stop, $shift, $g_shift, $kapasitas, $mc, $proses, $kodesm, $ket
-						);
+						$sqlIns = "INSERT INTO db_dying.tbl_stopmesin
+							(no_stop, shift, g_shift, kapasitas, no_mesin, proses, kd_stopmc, keterangan, tgl_buat, tgl_update)
+							VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())";
+						$params = [
+							$no_stop,
+							$shift,
+							$g_shift,
+							$kapasitas,
+							$mc,
+							$proses,
+							$kodesm,
+							$ket
+						];
 					}
 
-					if (!mysqli_stmt_execute($stmt)) {
-						throw new Exception('Execute failed: '.mysqli_stmt_error($stmt));
+					$stmt = sqlsrv_query($con, $sqlIns, $params);
+					if ($stmt === false) {
+						throw new Exception('Execute failed: ' . print_r(sqlsrv_errors(), true));
 					}
 				}
 
-				mysqli_commit($con);
+				sqlsrv_commit($con);
 				echo "<script>swal({
 					title:'Data Tersimpan',
 					text:'Berhasil membuat nomor stop per-mesin',
@@ -116,7 +131,7 @@
 				}).then(()=>{ window.location='?p=Hasil-Celup'; });</script>";
 
 			} catch (Throwable $e) {
-				mysqli_rollback($con);
+				sqlsrv_rollback($con);
 				$msg = htmlspecialchars($e->getMessage(), ENT_QUOTES);
 				echo "<script>swal('Gagal menyimpan', '$msg', 'error');</script>";
 			}

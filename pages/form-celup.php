@@ -277,131 +277,160 @@ $nokk = $_GET['nokk'];
 	// $rcode = $row['USER28'];
 	// return $rcode;
 }
-$sqlCek = mysqli_query($con, "SELECT
-										a.*,b.id as idm 
-									FROM
-										tbl_schedule a
-									INNER JOIN tbl_montemp b ON a.id=b.id_schedule	
-									WHERE
-										a.nokk = '$nokk' 
-									ORDER BY
-										a.id DESC 
-										LIMIT 1");
-$cek = mysqli_num_rows($sqlCek);
-$rcek = mysqli_fetch_array($sqlCek);
+$sqlCek = sqlsrv_query(
+	$con,
+	"SELECT TOP 1
+		a.*,
+		b.id AS idm
+	FROM db_dying.tbl_schedule a
+	INNER JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule
+	WHERE a.nokk = ?
+	ORDER BY a.id DESC",
+	[$nokk],
+	["Scrollable" => SQLSRV_CURSOR_STATIC]
+);
+$cek  = ($sqlCek && sqlsrv_num_rows($sqlCek) > 0) ? sqlsrv_num_rows($sqlCek) : 0;
+$rcek = ($sqlCek) ? sqlsrv_fetch_array($sqlCek, SQLSRV_FETCH_ASSOC) : [];
 
-$sqlCek1 = mysqli_query($con, "SELECT
-										c.*,a.id as ids,b.id as idm 
-									FROM
-										tbl_schedule a
-									INNER JOIN tbl_montemp b ON a.id=b.id_schedule
-									INNER JOIN tbl_hasilcelup c ON b.id=c.id_montemp
-									WHERE
-										a.nokk = '$nokk' and b.status='selesai'
-									ORDER BY
-										a.id DESC 
-										LIMIT 1");
-$cek1 = mysqli_num_rows($sqlCek1);
-$rcek1 = mysqli_fetch_array($sqlCek1);
-$qryLama = mysqli_query($con, "SELECT
-										TIME_FORMAT( timediff( now(), b.tgl_buat ), '%H:%i' ) AS lama 
-									FROM
-										tbl_schedule a
-										LEFT JOIN tbl_montemp b ON a.id = b.id_schedule 
-									WHERE
-										b.nokk = '$nokk' 
-										AND b.STATUS = 'sedang jalan' 
-									ORDER BY
-										a.no_urut ASC");
-$rLama = mysqli_fetch_array($qryLama);
-$sqlCek2 = mysqli_query($con, "SELECT
-										id,
-										if(COUNT(lot)>1,'Gabung Kartu','') as ket_kartu,
-										if(COUNT(lot)>1,CONCAT('(',COUNT(lot),'kk',')'),'') as kk,
-										GROUP_CONCAT(nokk SEPARATOR ', ') as g_kk,
-										no_mesin,
-										no_urut,	
-										sum(rol) as rol,
-										sum(bruto) as bruto
-									FROM
-										tbl_schedule 
-									WHERE
-										(`status` = 'sedang jalan' or `status` = 'antri mesin') and no_mesin='$rcek[no_mesin]' and no_urut='$rcek[no_urut]'
-									GROUP BY
-										no_mesin,
-										no_urut 
-									ORDER BY
-										id ASC");
-$cek2 = mysqli_num_rows($sqlCek2);
-$rcek2 = mysqli_fetch_array($sqlCek2);
+$sqlCek1 = sqlsrv_query(
+	$con,
+	"SELECT TOP 1
+		c.*,
+		a.id AS ids,
+		b.id AS idm
+	FROM db_dying.tbl_schedule a
+	INNER JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule
+	INNER JOIN db_dying.tbl_hasilcelup c ON b.id = c.id_montemp
+	WHERE a.nokk = ? AND b.status = 'selesai'
+	ORDER BY a.id DESC",
+	[$nokk],
+	["Scrollable" => SQLSRV_CURSOR_STATIC]
+);
+$cek1  = ($sqlCek1 && sqlsrv_num_rows($sqlCek1) > 0) ? sqlsrv_num_rows($sqlCek1) : 0;
+$rcek1 = ($sqlCek1) ? sqlsrv_fetch_array($sqlCek1, SQLSRV_FETCH_ASSOC) : [];
+
+// Lama proses: selisih waktu sekarang dengan tgl_buat (HH:MM)
+$qryLama = sqlsrv_query(
+	$con,
+	"SELECT TOP 1
+		FORMAT(DATEADD(MINUTE, DATEDIFF(MINUTE, b.tgl_buat, GETDATE()), '1900-01-01'), 'HH:mm') AS lama
+	FROM db_dying.tbl_schedule a
+	LEFT JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule
+	WHERE b.nokk = ?
+	  AND b.status = 'sedang jalan'
+	ORDER BY a.no_urut ASC",
+	[$nokk]
+);
+$rLama = ($qryLama) ? sqlsrv_fetch_array($qryLama, SQLSRV_FETCH_ASSOC) : [];
+
+// Gabung kartu
+$sqlCek2 = sqlsrv_query(
+	$con,
+	"SELECT
+		MIN(id) AS id,
+		CASE WHEN COUNT(lot) > 1 THEN 'Gabung Kartu' ELSE '' END AS ket_kartu,
+		CASE WHEN COUNT(lot) > 1
+			 THEN '(' + CAST(COUNT(lot) AS VARCHAR(10)) + 'kk)'
+			 ELSE '' END AS kk,
+		STRING_AGG(nokk, ', ') AS g_kk,
+		no_mesin,
+		no_urut,
+		SUM(rol)   AS rol,
+		SUM(bruto) AS bruto
+	FROM db_dying.tbl_schedule
+	WHERE (status = 'sedang jalan' OR status = 'antri mesin')
+	  AND no_mesin = ?
+	  AND no_urut  = ?
+	GROUP BY no_mesin, no_urut
+	ORDER BY MIN(id) ASC",
+	[$rcek['no_mesin'] ?? null, $rcek['no_urut'] ?? null],
+	["Scrollable" => SQLSRV_CURSOR_STATIC]
+);
+$cek2  = ($sqlCek2 && sqlsrv_num_rows($sqlCek2) > 0) ? sqlsrv_num_rows($sqlCek2) : 0;
+$rcek2 = ($sqlCek2) ? sqlsrv_fetch_array($sqlCek2, SQLSRV_FETCH_ASSOC) : [];
 if ($rcek2['ket_kartu'] != "") {
 	$ketsts = $rcek2['ket_kartu'] . "\n(" . $rcek2['g_kk'] . ")";
 } else {
 	$ketsts = "";
 }
-$sqlCek3 = mysqli_query($con, "SELECT
-										* 
-									FROM
-										tbl_montemp 
-									WHERE
-										nokk = '$nokk' 
-										AND ( STATUS = 'antri mesin' OR STATUS = 'sedang jalan' ) 
-									ORDER BY
-										id DESC 
-										LIMIT 1");
-$cek3 = mysqli_num_rows($sqlCek3);
-$rcek3 = mysqli_fetch_array($sqlCek3);
-$sqlCekAir = mysqli_query($con, "SELECT
-										air_awal,
-										waktu_tunggu 
-									FROM
-										tbl_montemp 
-									WHERE
-										nokk = '$nokk' 
-									ORDER BY
-										id DESC 
-										LIMIT 1");
-$cekAir = mysqli_num_rows($sqlCekAir);
-$rcekAir = mysqli_fetch_array($sqlCekAir);
-$sqlRcode = mysqli_query($con, "SELECT
-										no_resep
-									FROM
-										tbl_schedule 
-									WHERE
-										nokk = '$nokk' 
-									ORDER BY
-										id DESC 
-										LIMIT 1");
-$rRcode = mysqli_fetch_array($sqlRcode);
-$sqlTopping = mysqli_query($con, "SELECT
-											jml_topping 
-										FROM
-											tbl_hasilcelup 
-										WHERE
-											nokk = '$nokk' 
-										ORDER BY
-											id DESC 
-											LIMIT 1");
-$rTopping = mysqli_fetch_array($sqlTopping);
-$sqltarget = mysqli_query($con, "SELECT
-										IF( b.tgl_target <= now(), 'melebihi target', 'sedang berjalan' ) AS cek_delay,
-											a.target,(round( LEFT ( c.lama_proses, 2 ))+ round( RIGHT ( c.lama_proses, 2 )/ 60, 2 )) AS lama_proses,
-										IF(isnull( c.lama_proses ),'jalan',IF(a.target >=(round(LEFT ( c.lama_proses, 2 ))+ round( RIGHT ( c.lama_proses, 2 )/ 60, 2 )),'sesuai target','melebihi target')) AS sts 
-										FROM
-											db_dying.tbl_schedule a
-										LEFT JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule
-										LEFT JOIN db_dying.tbl_hasilcelup c ON b.id = c.id_montemp 
-										WHERE
-											b.nokk = '$nokk' 
-										ORDER BY
-											b.id DESC 
-											LIMIT 1");
-$cktarget = mysqli_fetch_array($sqltarget);
+$sqlCek3 = sqlsrv_query(
+	$con,
+	"SELECT TOP 1 *
+	 FROM db_dying.tbl_montemp
+	 WHERE nokk = ?
+	   AND (status = 'antri mesin' OR status = 'sedang jalan')
+	 ORDER BY id DESC",
+	[$nokk],
+	["Scrollable" => SQLSRV_CURSOR_STATIC]
+);
+$cek3  = ($sqlCek3 && sqlsrv_num_rows($sqlCek3) > 0) ? sqlsrv_num_rows($sqlCek3) : 0;
+$rcek3 = ($sqlCek3) ? sqlsrv_fetch_array($sqlCek3, SQLSRV_FETCH_ASSOC) : [];
+
+$sqlCekAir = sqlsrv_query(
+	$con,
+	"SELECT TOP 1
+		air_awal,
+		waktu_tunggu
+	 FROM db_dying.tbl_montemp
+	 WHERE nokk = ?
+	 ORDER BY id DESC",
+	[$nokk],
+	["Scrollable" => SQLSRV_CURSOR_STATIC]
+);
+$cekAir  = ($sqlCekAir && sqlsrv_num_rows($sqlCekAir) > 0) ? sqlsrv_num_rows($sqlCekAir) : 0;
+$rcekAir = ($sqlCekAir) ? sqlsrv_fetch_array($sqlCekAir, SQLSRV_FETCH_ASSOC) : [];
+
+$sqlRcode = sqlsrv_query(
+	$con,
+	"SELECT TOP 1 no_resep
+	 FROM db_dying.tbl_schedule
+	 WHERE nokk = ?
+	 ORDER BY id DESC",
+	[$nokk]
+);
+$rRcode = ($sqlRcode) ? sqlsrv_fetch_array($sqlRcode, SQLSRV_FETCH_ASSOC) : [];
+
+$sqlTopping = sqlsrv_query(
+	$con,
+	"SELECT TOP 1 jml_topping
+	 FROM db_dying.tbl_hasilcelup
+	 WHERE nokk = ?
+	 ORDER BY id DESC",
+	[$nokk]
+);
+$rTopping = ($sqlTopping) ? sqlsrv_fetch_array($sqlTopping, SQLSRV_FETCH_ASSOC) : [];
+
+// Cek status target vs lama_proses
+$sqltarget = sqlsrv_query(
+	$con,
+	"SELECT TOP 1
+		CASE WHEN b.tgl_target <= GETDATE()
+			 THEN 'melebihi target'
+			 ELSE 'sedang berjalan'
+		END AS cek_delay,
+		a.target,
+		(CAST(LEFT(ISNULL(c.lama_proses, '00:00'), 2) AS FLOAT)
+		 + ROUND(CAST(RIGHT(ISNULL(c.lama_proses, '00:00'), 2) AS FLOAT) / 60.0, 2)) AS lama_proses,
+		CASE
+			WHEN c.lama_proses IS NULL THEN 'jalan'
+			WHEN a.target >= (CAST(LEFT(c.lama_proses, 2) AS FLOAT)
+							  + ROUND(CAST(RIGHT(c.lama_proses, 2) AS FLOAT) / 60.0, 2))
+				THEN 'sesuai target'
+			ELSE 'melebihi target'
+		END AS sts
+	 FROM db_dying.tbl_schedule a
+	 LEFT JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule
+	 LEFT JOIN db_dying.tbl_hasilcelup c ON b.id = c.id_montemp
+	 WHERE b.nokk = ?
+	 ORDER BY b.id DESC",
+	[$nokk]
+);
+$cktarget = ($sqltarget) ? sqlsrv_fetch_array($sqltarget, SQLSRV_FETCH_ASSOC) : [];
 
 // UPDATE NILO
-$q_hasilcelup	= mysqli_query($con, "SELECT 
+$q_hasilcelup	= sqlsrv_query($con, "SELECT 
 													*,
-													a.`status` AS sts_celup,
+													a.status AS sts_celup,
 													a.shift AS shift_celup,
 													a.g_shift as g_shift_celup,
 													a.analisa AS analisa_celup,
@@ -410,12 +439,12 @@ $q_hasilcelup	= mysqli_query($con, "SELECT
 													a.selesai_stop AS selesai_stop_celup,
 													a.proses AS proses_celup
 												FROM
-													tbl_hasilcelup a
-													LEFT JOIN tbl_montemp c ON a.id_montemp = c.id
-													LEFT JOIN tbl_schedule b ON c.id_schedule = b.id
+													db_dying.tbl_hasilcelup a
+													LEFT JOIN db_dying.tbl_montemp c ON a.id_montemp = c.id
+													LEFT JOIN db_dying.tbl_schedule b ON c.id_schedule = b.id
 												WHERE
 													a.id = '$_GET[id]'");
-$row_hasilcelup	= mysqli_fetch_assoc($q_hasilcelup);
+$row_hasilcelup	= sqlsrv_fetch_array($q_hasilcelup, SQLSRV_FETCH_ASSOC);
 
 $nokk = $_GET['nokk'];
 $sql_ITXVIEWKK  = db2_exec($conn2, "SELECT
@@ -467,6 +496,13 @@ $TglMasuk	= isset($_POST['tglmsk']) ? $_POST['tglmsk'] : '';
 $Item		= isset($_POST['item']) ? $_POST['item'] : '';
 $Warna		= isset($_POST['warna']) ? $_POST['warna'] : '';
 $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
+
+function format_tanggal_sqlsrv($value) {
+		if ($value instanceof DateTime) {
+			return $value->format('Y-m-d');
+		}
+		return $value;
+		}
 ?>
 <form class="form-horizontal" action="" method="post" enctype="multipart/form-data" name="form1">
 	<div class="box box-info">
@@ -582,9 +618,9 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 						<div class="input-group date">
 							<div class="input-group-addon"> <i class="fa fa-calendar"></i> </div>
 							<input name="tgl_delivery" type="text" disabled="disabled" required class="form-control pull-right" id="datepicker2" placeholder="0000-00-00" value="<?php if (!empty($_GET['id'])) {
-																																														echo $row_hasilcelup['tgl_delivery'];
+																																														echo format_tanggal_sqlsrv($row_hasilcelup['tgl_delivery']);
 																																													} else {
-																																														echo $rcek['tgl_delivery'];
+																																														echo format_tanggal_sqlsrv($rcek['tgl_delivery']);
 																																													} ?>" />
 						</div>
 					</div>
@@ -716,10 +752,11 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 						<select name="kapasitas" disabled="disabled" class="form-control">
 							<option value="">Pilih</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT kapasitas FROM tbl_mesin GROUP BY kapasitas ORDER BY kapasitas DESC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							// Koneksi $con sudah ke database db_dying, jadi cukup pakai nama tabel saja
+							$sqlKap = sqlsrv_query($con, "SELECT DISTINCT kapasitas FROM db_dying.tbl_mesin ORDER BY kapasitas DESC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
-								<option value="<?php echo $rK['kapasitas']; ?>" <?php if ($rcek['kapasitas'] == $rK['kapasitas'] OR $row_hasilcelup['kapasitas'] == $rK['kapasitas']) {
+								<option value="<?php echo $rK['kapasitas']; ?>" <?php if (!empty($rcek['kapasitas']) && $rcek['kapasitas'] == $rK['kapasitas']) {
 																					echo "SELECTED";
 																				} ?>><?php echo $rK['kapasitas']; ?> KGs</option>
 							<?php } ?>
@@ -744,8 +781,12 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 						<select id="no_mc" name="no_mc" disabled="disabled" class="form-control">
 							<option value="">Pilih</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT no_mesin FROM tbl_mesin WHERE kapasitas='$rcek[kapasitas]$row_hasilcelup[kapasitas]' ORDER BY no_mesin ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query(
+								$con,
+								"SELECT no_mesin FROM db_dying.tbl_mesin WHERE kapasitas = ? OR kapasitas = ? ORDER BY no_mesin ASC",
+								[$rcek['kapasitas'] ?? null, $row_hasilcelup['kapasitas'] ?? null]
+							);
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['no_mesin']; ?>"
 								<?php if ($rcek['no_mesin'] == $rK['no_mesin'] OR $row_hasilcelup['no_mesin'] == $rK['no_mesin']) {
@@ -775,8 +816,12 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 							}else{
 							$nokk = $row_hasilcelup['nokk'];
 						}
-						$cari_dari_greige	 = mysqli_query($con, "SELECT * FROM `tbl_schedule` WHERE nokk = '$nokk' AND ket_status = 'Greige'");
-						$row_schedule_greige = mysqli_fetch_assoc($cari_dari_greige);
+						$cari_dari_greige	 = sqlsrv_query(
+							$con,
+							"SELECT TOP 1 * FROM db_dying.tbl_schedule WHERE nokk = ? AND ket_status = 'Greige' ORDER BY id DESC",
+							[$nokk]
+						);
+						$row_schedule_greige = sqlsrv_fetch_array($cari_dari_greige, SQLSRV_FETCH_ASSOC);
 
 							if($row_schedule_greige['suffix'] == 001){
 								$_noprod    = substr($row_schedule_greige['no_resep2'], 0,8);
@@ -894,8 +939,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 				    <select name="analisa" class="form-control analisa-select" id="analisa" disabled="disabled" required>
 							<option value="">Pilih</option>
 							<?php
-							$sqlAn = mysqli_query($con, "SELECT * FROM tbl_analisa ORDER BY nama ASC");
-							while ($rAn = mysqli_fetch_array($sqlAn)) {
+							$sqlAn = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_analisa ORDER BY nama ASC");
+							while ($rAn = sqlsrv_fetch_array($sqlAn, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rAn['nama']; ?>"
 									<?php if ($rcek['analisa'] == $rAn['nama'] || $row_hasilcelup['analisa'] == $rAn['nama']) echo "selected"; ?>>
@@ -953,7 +998,7 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 					<div class="col-sm-4">
 						<div class="input-group date">
 							<div class="input-group-addon"> <i class="fa fa-calendar"></i> </div>
-							<input name="mulaism" type="text" class="form-control pull-right" id="datepicker3" placeholder="0000-00-00" value="<?= $row_hasilcelup['mulai_stop_celup']; ?>" disabled />
+							<input name="mulaism" type="text" class="form-control pull-right" id="datepicker3" placeholder="0000-00-00" value="<?= format_tanggal_sqlsrv($row_hasilcelup['mulai_stop_celup']); ?>" disabled />
 						</div>
 					</div>
 
@@ -971,7 +1016,7 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 					<div class="col-sm-4">
 						<div class="input-group date">
 							<div class="input-group-addon"> <i class="fa fa-calendar"></i> </div>
-							<input name="selesaism" type="text" class="form-control pull-right" id="datepicker" placeholder="0000-00-00" value="<?= $row_hasilcelup['selesai_stop_celup']; ?>" disabled />
+							<input name="selesaism" type="text" class="form-control pull-right" id="datepicker" placeholder="0000-00-00" value="<?= format_tanggal_sqlsrv($row_hasilcelup['selesai_stop_celup']); ?>" disabled />
 						</div>
 					</div>
 
@@ -982,8 +1027,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 						<select name="proses" class="form-control" id="proses" onChange="aktif3();" required  <?php if(!empty($_GET['id'])){ echo "readonly"; } ?>>
 							<option value="">Pilih</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT proses FROM tbl_proses ORDER BY proses ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT proses FROM db_dying.tbl_proses ORDER BY proses ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['proses']; ?>" <?php if($row_hasilcelup['proses_celup'] == $rK['proses']) { echo "SELECTED"; } ?>><?php echo $rK['proses']; ?></option>
 							<?php } ?>
@@ -997,8 +1042,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 						<select name="status_proses" class="form-control" id="status_proses" disabled="disabled" required>
 							<option value="">Pilih</option>
 							<?php
-							$sqlAn = mysqli_query($con, "SELECT * FROM tbl_status_proses ORDER BY nama ASC");
-							while ($rAn = mysqli_fetch_array($sqlAn)) {
+							$sqlAn = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_status_proses ORDER BY nama ASC");
+							while ($rAn = sqlsrv_fetch_array($sqlAn, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rAn['nama']; ?>" <?php if ($rcek['status_proses'] == $rAn['nama'] OR $row_hasilcelup['status_proses'] == $rAn['nama']) {
 																				echo "SELECTED";
@@ -1140,8 +1185,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 						<select name="point_proses" class="form-control" id="point_proses" required <?php if(!empty($_GET['id'])){ echo "readonly"; } ?>>
 							<option value="">Pilih</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT proses,point FROM tbl_point_greige ORDER BY proses ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT proses, point FROM db_dying.tbl_point_greige ORDER BY proses ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['proses'] . " #" . $rK['point']; ?>" <?php if($row_hasilcelup['point'] == $rK['point'] && $row_hasilcelup['proses_point'] == $rK['proses']) {echo "SELECTED";} ?>><?php echo $rK['proses']; ?></option>
 							<?php } ?>
@@ -1198,8 +1243,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 						<select name="acc_keluar" class="form-control" required  <?php if(!empty($_GET['id'])){ echo "readonly"; } ?>>
 							<option value="">Pilih</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT nama FROM tbl_staff WHERE jabatan='SPV' or jabatan='Colorist' or jabatan='Asst. Manager' or jabatan='Manager' or jabatan='Senior Manager' or jabatan='DMF' ORDER BY nama ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_staff WHERE jabatan IN ('SPV','Colorist','Asst. Manager','Manager','Senior Manager','DMF') ORDER BY nama ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['nama']; ?>" <?php if($row_hasilcelup['acc_keluar'] == $rK['nama']) { echo "SELECTED"; } ?>><?php echo $rK['nama']; ?></option>
 							<?php } ?>
@@ -1211,8 +1256,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 							<option value="">Pilih</option>
 							<option value="0X">0X</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT nama FROM tbl_staff WHERE jabatan='SPV' or jabatan='Colorist' or jabatan='Asst. Manager' or jabatan='Manager' or jabatan='Senior Manager' or jabatan='DMF' ORDER BY nama ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_staff WHERE jabatan IN ('SPV','Colorist','Asst. Manager','Manager','Senior Manager','DMF') ORDER BY nama ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['nama']; ?>" <?php if($row_hasilcelup['tambah_obat'] == $rK['nama']) { echo "SELECTED"; } ?>><?php echo $rK['nama']; ?></option>
 							<?php } ?>
@@ -1227,8 +1272,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 							<option value="">Pilih</option>
 							<option value="-" > - </option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT nama FROM tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['nama']; ?>" <?php if($row_hasilcelup['operator_keluar'] == $rK['nama']) { echo "SELECTED"; } ?>><?php echo $rK['nama']; ?></option>
 							<?php } ?>
@@ -1242,8 +1287,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 							<option value="">Pilih</option>
 													<option value="-" > - </option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT nama FROM tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['nama']; ?>" <?php if($row_hasilcelup['operator_keluar'] == $rK['nama']) { echo "SELECTED"; } ?>><?php echo $rK['nama']; ?></option>
 							<?php } ?>
@@ -1256,8 +1301,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 						<select name="operator" class="form-control" required  <?php if(!empty($_GET['id'])){ echo "readonly"; } ?>>
 							<option value="">Pilih</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT nama FROM tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['nama']; ?>" <?php if($row_hasilcelup['operator_keluar'] == $rK['nama']) { echo "SELECTED"; } ?>><?php echo $rK['nama']; ?></option>
 							<?php } ?>
@@ -1269,8 +1314,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 							<option value="">Pilih</option>
 							<option value="0X">0X</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT nama FROM tbl_staff WHERE jabatan='SPV' or jabatan='Colorist' or jabatan='Asst. Manager' or jabatan='Manager' or jabatan='Senior Manager' or jabatan='DMF' ORDER BY nama ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_staff WHERE jabatan IN ('SPV','Colorist','Asst. Manager','Manager','Senior Manager','DMF') ORDER BY nama ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['nama']; ?>" <?php if($row_hasilcelup['tambah_obat1'] == $rK['nama']) { echo "SELECTED"; } ?>><?php echo $rK['nama']; ?></option>
 							<?php } ?>
@@ -1284,8 +1329,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 						<select name="operator_potong" class="form-control">
 							<option value="">Pilih</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT nama FROM tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['nama']; ?>"><?php echo $rK['nama']; ?></option>
 							<?php } ?>
@@ -1318,8 +1363,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 							<option value="">Pilih</option>
 							<option value="0X">0X</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT nama FROM tbl_staff WHERE jabatan='SPV' or jabatan='Colorist' or jabatan='Asst. Manager' or jabatan='Manager' or jabatan='Senior Manager' or jabatan='DMF' ORDER BY nama ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_staff WHERE jabatan IN ('SPV','Colorist','Asst. Manager','Manager','Senior Manager','DMF') ORDER BY nama ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['nama']; ?>" <?php if($row_hasilcelup['tambah_obat2'] == $rK['nama']) { echo "SELECTED"; } ?>><?php echo $rK['nama']; ?></option>
 							<?php } ?>
@@ -1352,8 +1397,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 							<option value="">Pilih</option>
 							<option value="0X">0X</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT nama FROM tbl_staff WHERE jabatan='SPV' or jabatan='Colorist' or jabatan='Asst. Manager' or jabatan='Manager' or jabatan='Senior Manager' or jabatan='DMF' ORDER BY nama ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_staff WHERE jabatan IN ('SPV','Colorist','Asst. Manager','Manager','Senior Manager','DMF') ORDER BY nama ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['nama']; ?>" <?php if($row_hasilcelup['tambah_obat3'] == $rK['nama']) { echo "SELECTED"; } ?>><?php echo $rK['nama']; ?></option>
 							<?php } ?>
@@ -1385,8 +1430,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 							<option value="">Pilih</option>
 							<option value="0X">0X</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT nama FROM tbl_staff WHERE jabatan='SPV' or jabatan='Colorist' or jabatan='Asst. Manager' or jabatan='Manager' or jabatan='Senior Manager' or jabatan='DMF' ORDER BY nama ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_staff WHERE jabatan IN ('SPV','Colorist','Asst. Manager','Manager','Senior Manager','DMF') ORDER BY nama ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['nama']; ?>" <?php if($row_hasilcelup['tambah_obat4'] == $rK['nama']) { echo "SELECTED"; } ?>><?php echo $rK['nama']; ?></option>
 							<?php } ?>
@@ -1408,8 +1453,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 							<option value="">Pilih</option>
 							<option value="0X">0X</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT nama FROM tbl_staff WHERE jabatan='SPV' or jabatan='Colorist' or jabatan='Asst. Manager' or jabatan='Manager' or jabatan='Senior Manager' or jabatan='DMF' ORDER BY nama ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_staff WHERE jabatan IN ('SPV','Colorist','Asst. Manager','Manager','Senior Manager','DMF') ORDER BY nama ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['nama']; ?>" <?php if($row_hasilcelup['tambah_obat5'] == $rK['nama']) { echo "SELECTED"; } ?>><?php echo $rK['nama']; ?></option>
 							<?php } ?>
@@ -1431,8 +1476,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 							<option value="">Pilih</option>
 							<option value="0X">0X</option>
 							<?php
-							$sqlKap = mysqli_query($con, "SELECT nama FROM tbl_staff WHERE jabatan='SPV' or jabatan='Colorist' or jabatan='Asst. Manager' or jabatan='Manager' or jabatan='Senior Manager' or jabatan='DMF' ORDER BY nama ASC");
-							while ($rK = mysqli_fetch_array($sqlKap)) {
+							$sqlKap = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_staff WHERE jabatan IN ('SPV','Colorist','Asst. Manager','Manager','Senior Manager','DMF') ORDER BY nama ASC");
+							while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $rK['nama']; ?>" <?php if($row_hasilcelup['tambah_obat6'] == $rK['nama']) { echo "SELECTED"; } ?>><?php echo $rK['nama']; ?></option>
 							<?php } ?>
@@ -1535,8 +1580,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 						<select name="leader" class="form-control" id="leader" >
 							<option value="">Pilih</option>
 							<?php
-							$q_leader = mysqli_query($con, "SELECT * FROM tbl_leader ORDER BY id ASC");
-							while ($row_leader = mysqli_fetch_array($q_leader)) {
+							$q_leader = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_leader ORDER BY id ASC");
+							while ($row_leader = sqlsrv_fetch_array($q_leader, SQLSRV_FETCH_ASSOC)) {
 							?>
 								<option value="<?php echo $row_leader['leader']; ?>" <?php if($row_leader['leader'] == $row_hasilcelup['leader']) { echo "SELECTED"; } ?>><?php echo $row_leader['leader']; ?></option>
 							<?php } ?>
@@ -1739,8 +1784,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 						<tbody>
 							<?php
 							$c = 1;
-							$sqlAn1 = mysqli_query($con, "SELECT * FROM tbl_analisa ORDER BY nama ASC");
-							while ($rAn1 = mysqli_fetch_array($sqlAn1)) {
+							$sqlAn1 = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_analisa ORDER BY nama ASC");
+							while ($rAn1 = sqlsrv_fetch_array($sqlAn1, SQLSRV_FETCH_ASSOC)) {
 								$bgcolor = ($c++ & 1) ? '#33CCFF' : '#FFCC99';
 							?>
 								<tr bgcolor="<?php echo $bgcolor; ?>">
@@ -1797,8 +1842,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 						<tbody>
 							<?php
 							$c = 1;
-							$sqlAn1 = mysqli_query($con, "SELECT * FROM tbl_status_proses ORDER BY nama ASC");
-							while ($rAn1 = mysqli_fetch_array($sqlAn1)) {
+							$sqlAn1 = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_status_proses ORDER BY nama ASC");
+							while ($rAn1 = sqlsrv_fetch_array($sqlAn1, SQLSRV_FETCH_ASSOC)) {
 								$bgcolor = ($c++ & 1) ? '#33CCFF' : '#FFCC99';
 							?>
 								<tr bgcolor="<?php echo $bgcolor; ?>">
@@ -1846,7 +1891,7 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 	function hapusStatusProses(id) {
 		if (confirm('Yakin ingin menghapus Data Status Proses ini?')) {
 			$.ajax({
-				url: 'pages/hapus-celup.php',
+				url: 'pages/hapus-status-proses.php',
 				type: 'POST',
 				data: {
 					id: id
@@ -1875,75 +1920,115 @@ if ($_POST['save'] == "save") {
 	} else {
 		$jam_stop = " ";
 	}
-	$sqlData = mysqli_query($con, "INSERT INTO tbl_hasilcelup SET
-								id_montemp='" . $_POST['id'] . "',
-								nokk='" . $_POST['nokk'] . "',
-								nodemand='" . $_POST['demand'] . "',
-								shift='" . $_POST['shift'] . "',
-								g_shift='" . $_POST['g_shift'] . "',
-								lama_proses='" . $_POST['lama_proses'] . "',
-								`status`='" . $_POST['sts'] . "',		
-								ph_cb='" . $_POST['ph_cb'] . "',
-								suhu_cb='" . $_POST['suhu_cb'] . "',
-								ph_poly='" . $_POST['ph_poly'] . "',
-								suhu_poly='" . $_POST['suhu_poly'] . "',
-								ph_cott='" . $_POST['ph_cott'] . "',
-								suhu_cott='" . $_POST['suhu_cott'] . "',
-								berat_jns='" . $_POST['berat_jns'] . "',
-								ph_naco='" . $_POST['ph_naco'] . "',
-								a_panas='" . $_POST['a_panas'] . "',
-								a_dingin='" . $_POST['a_dingin'] . "',
-								`point`='$point', 
-								proses_point='$propoint',
-								proses='" . $_POST['proses'] . "',
-								status_proses='" . $_POST['status_proses'] . "',
-								k_resep='" . $_POST['k_resep'] . "',
-								jml_topping='" . $_POST['jml_topping'] . "',
-								analisa='" . $_POST['analisaCombined'] . "',
-								rcode='" . $_POST['rcode1'] . "',
-								operator_keluar='" . $_POST['operator'] . "',
-								operator_potong='" . $_POST['operator_potong'] . "',
-								operatorcotton='" . $_POST['operatorcotton'] . "',
-								operatorpolyester='" . $_POST['operatorpolyester'] . "',
-								acc_keluar='" . $_POST['acc_keluar'] . "',
-								tambah_obat='" . $_POST['tambah_obat'] . "',
-								tambah_obat1='" . $_POST['tambah_obat1'] . "',
-								tambah_obat2='" . $_POST['tambah_obat2'] . "',
-								tambah_obat3='" . $_POST['tambah_obat3'] . "',
-								tambah_obat4='" . $_POST['tambah_obat4'] . "',
-								tambah_obat5='" . $_POST['tambah_obat5'] . "',
-								tambah_obat6='" . $_POST['tambah_obat6'] . "',
-								kd_stop='" . $_POST['kodesm'] . "',
-								$jam_stop 
-								ket='$ket',
-								air_akhir='" . $_POST['air_akhir'] . "',
-								gerobak='" . $_POST['gerobak'] . "',
-								jns_gerobak='" . $_POST['jns_gerobak'] . "',
-								analisa_topping='" . $_POST['analisa_topping'] . "',
-								no_resep='" . $_POST['no_resep'] . "',
-								no_resep2='" . $_POST['no_resep2'] . "',
-								resep='" . $_POST['resep'] . "',
-								kategori_warna='" . $_POST['kategori_warna'] . "',
-								tgl_buat=now(),
-								tgl_update=now(),
-								status_resep='Belum Analisa',
-								tambah_dyestuff='" . $_POST['tambah_dyestuff'] . "',
-								arah_warna='" . $_POST['arah_warna'] . "',
-								status_warna='" . $_POST['status_warna'] . "',
-								leader='" . $_POST['leader'] . "',
-								point2='" . $_POST['point2'] . "',
-								penanggungjawabbuyer='" . $_POST['penanggungjawabbuyer'] . "'") or die(mysqli_error($con));
+	$sqlData = sqlsrv_query(
+		$con,
+		"INSERT INTO db_dying.tbl_hasilcelup (
+			id_montemp, nokk, nodemand, shift, g_shift, lama_proses, status,
+			ph_cb, suhu_cb, ph_poly, suhu_poly, ph_cott, suhu_cott,
+			berat_jns, ph_naco, a_panas, a_dingin,
+			point, proses_point, proses, status_proses,
+			k_resep, jml_topping, analisa, rcode,
+			operator_keluar, operator_potong, operatorcotton, operatorpolyester,
+			acc_keluar, tambah_obat, tambah_obat1, tambah_obat2, tambah_obat3,
+			tambah_obat4, tambah_obat5, tambah_obat6,
+			kd_stop, mulai_stop, selesai_stop,
+			ket, air_akhir, gerobak, jns_gerobak, analisa_topping,
+			no_resep, no_resep2, resep, kategori_warna,
+			tgl_buat, tgl_update, status_resep,
+			tambah_dyestuff, arah_warna, status_warna,
+			leader, point2, penanggungjawabbuyer
+		) VALUES (
+			?,?,?,?,?,?,?,?,?,
+			?,?,?,?,?,?,?,?,?,
+			?,?,?,?,?,?,?,?,?,
+			?,?,?,?,?,?,?,?,?,
+			?,?,?,?,?,?,?,?,?,?,?,?,?,
+			GETDATE(), GETDATE(),'Belum Analisa',
+			?,?,?,?,?,?
+		)",
+		[
+			$_POST['id'],
+			$_POST['nokk'],
+			$_POST['demand'],
+			$_POST['shift'],
+			$_POST['g_shift'],
+			$_POST['lama_proses'],
+			$_POST['sts'],
+			$_POST['ph_cb'],
+			$_POST['suhu_cb'],
+			$_POST['ph_poly'],
+			$_POST['suhu_poly'],
+			$_POST['ph_cott'],
+			$_POST['suhu_cott'],
+			$_POST['berat_jns'],
+			$_POST['ph_naco'],
+			$_POST['a_panas'],
+			$_POST['a_dingin'],
+			$point,
+			$propoint,
+			$_POST['proses'],
+			$_POST['status_proses'],
+			$_POST['k_resep'],
+			$_POST['jml_topping'],
+			$_POST['analisaCombined'],
+			$_POST['rcode1'],
+			$_POST['operator'],
+			$_POST['operator_potong'],
+			$_POST['operatorcotton'],
+			$_POST['operatorpolyester'],
+			$_POST['acc_keluar'],
+			$_POST['tambah_obat'],
+			$_POST['tambah_obat1'],
+			$_POST['tambah_obat2'],
+			$_POST['tambah_obat3'],
+			$_POST['tambah_obat4'],
+			$_POST['tambah_obat5'],
+			$_POST['tambah_obat6'],
+			$_POST['kodesm'],
+			($_POST['kodesm'] != "" ? $mulai : null),
+			($_POST['kodesm'] != "" ? $selesai : null),
+			$ket,
+			$_POST['air_akhir'],
+			$_POST['gerobak'],
+			$_POST['jns_gerobak'],
+			$_POST['analisa_topping'],
+			$_POST['no_resep'],
+			$_POST['no_resep2'],
+			$_POST['resep'],
+			$_POST['kategori_warna'],
+			$_POST['tambah_dyestuff'],
+			$_POST['arah_warna'],
+			$_POST['status_warna'],
+			$_POST['leader'],
+			$_POST['point2'],
+			$_POST['penanggungjawabbuyer']
+		]
+	);
+
+	// if ($sqlData === false) {
+	// 	$err = print_r(sqlsrv_errors(), true);
+	// 	echo "<pre>Gagal INSERT ke db_dying.tbl_hasilcelup:\n{$err}</pre>";
+	// 	exit;
+	// }
 
 	if ($sqlData) {
 		/* awal form potong */
-		$sqlCekP = mysqli_query($con, "SELECT a.*,c.k_resep,c.acc_keluar,c.operator_keluar,c.shift as shift_keluar,c.g_shift as g_shift_keluar,c.id as idcelup from tbl_schedule a
-											INNER JOIN tbl_montemp b ON a.id=b.id_schedule
-											INNER JOIN tbl_hasilcelup c ON b.id=c.id_montemp 
-											WHERE a.nokk='" . $_POST['nokk'] . "' ORDER BY c.id DESC LIMIT 1");
-		$rcekP = mysqli_fetch_array($sqlCekP);
-		$dataSche = mysqli_query(
+		$sqlCekP = sqlsrv_query(
 			$con,
-			"SELECT
+			"SELECT TOP 1 a.*, c.k_resep, c.acc_keluar, c.operator_keluar,
+					c.shift AS shift_keluar, c.g_shift AS g_shift_keluar, c.id AS idcelup
+			 FROM db_dying.tbl_schedule a
+			 INNER JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule
+			 INNER JOIN db_dying.tbl_hasilcelup c ON b.id = c.id_montemp
+			 WHERE a.nokk = ?
+			 ORDER BY c.id DESC",
+			[$_POST['nokk']]
+		);
+		$rcekP = sqlsrv_fetch_array($sqlCekP, SQLSRV_FETCH_ASSOC);
+
+		$dataSche = sqlsrv_query(
+			$con,
+			"SELECT TOP 1
 					no_resep,
 					kapasitas,
 					ket_status,
@@ -1955,38 +2040,62 @@ if ($_POST['save'] == "save") {
 					ket_kain,
 					kk_kestabilan,
 					kk_normal
-				FROM
-					tbl_schedule 
-				WHERE
-					nokk = '" . $_POST['nokk'] . "'
-				ORDER BY
-					id DESC 
-					LIMIT 1"
+			 FROM db_dying.tbl_schedule
+			 WHERE nokk = ?
+			 ORDER BY id DESC",
+			[$_POST['nokk']]
 		);
-		$rSche = mysqli_fetch_array($dataSche);
-		$sqlDataP = mysqli_query($con, "INSERT INTO tbl_potongcelup SET
-			id_hasilcelup='" . $rcekP['idcelup'] . "',
-			nokk='" . $_POST['nokk'] . "',
-			shift='" . $_POST['shift'] . "',
-			g_shift='" . $_POST['g_shift'] . "',
-			operator='" . $_POST['operator_potong'] . "',
-			tgl_buat=now(),
-			tgl_update=now()");
+		$rSche = sqlsrv_fetch_array($dataSche, SQLSRV_FETCH_ASSOC);
+
+		$sqlDataP = sqlsrv_query(
+			$con,
+			"INSERT INTO db_dying.tbl_potongcelup (
+				id_hasilcelup, nokk, shift, g_shift, operator, tgl_buat, tgl_update
+			) VALUES (?,?,?,?,?,GETDATE(),GETDATE())",
+			[
+				$rcekP['idcelup'],
+				$_POST['nokk'],
+				$_POST['shift'],
+				$_POST['g_shift'],
+				$_POST['operator_potong']
+			]
+		);
+		// if ($sqlDataP === false) {
+		// 	$err = print_r(sqlsrv_errors(), true);
+		// 	echo "<pre>Gagal INSERT ke db_dying.tbl_potongcelup:\n{$err}</pre>";
+		// 	exit;
+		// }
 		/* akhir form potong */
-		$sqlMonT = mysqli_query($con, "SELECT * FROM tbl_montemp WHERE id='" . $_POST['id'] . "'");
-		$rMonT = mysqli_fetch_array($sqlMonT);
-		$sqlD = mysqli_query($con, "UPDATE tbl_schedule SET 
-			`status`='selesai',
-			tgl_update=now()
-			WHERE no_mesin = '" . $rcek['no_mesin'] . "' and no_urut='1' and `status`='sedang jalan' ");
-		$sqlDT = mysqli_query($con, "UPDATE tbl_montemp SET 
-			`status`='selesai',
-			tgl_update=now()
-			WHERE id='" . $_POST['id'] . "'");
-		$sqlUrut = mysqli_query($con, "UPDATE tbl_schedule 
-			SET no_urut = no_urut - 1 
-			WHERE no_mesin = '" . $rcek['no_mesin'] . "' 
-			AND `status` = 'antri mesin' AND not no_urut='1' ");
+		$sqlMonT = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_montemp WHERE id = ?", [$_POST['id']]);
+		$rMonT   = sqlsrv_fetch_array($sqlMonT, SQLSRV_FETCH_ASSOC);
+
+		$sqlD = sqlsrv_query(
+			$con,
+			"UPDATE db_dying.tbl_schedule
+			 SET status = 'selesai',
+			     tgl_update = GETDATE()
+			 WHERE no_mesin = ? AND no_urut = 1 AND status = 'sedang jalan'",
+			[$rcek['no_mesin']]
+		);
+
+		$sqlDT = sqlsrv_query(
+			$con,
+			"UPDATE db_dying.tbl_montemp
+			 SET status = 'selesai',
+			     tgl_update = GETDATE()
+			 WHERE id = ?",
+			[$_POST['id']]
+		);
+
+		$sqlUrut = sqlsrv_query(
+			$con,
+			"UPDATE db_dying.tbl_schedule
+			 SET no_urut = no_urut - 1
+			 WHERE no_mesin = ?
+			   AND status = 'antri mesin'
+			   AND no_urut <> 1",
+			[$rcek['no_mesin']]
+		);
 
 		if ($sqlDataP) {
 			$out_to = $_POST['out_to'] ?? '';
@@ -2011,56 +2120,84 @@ if ($_POST['save'] == "save") {
 				} else {
 					$loading1 = '0';
 				}
-				$sqlSchedule = mysqli_query(
+				$sqlSchedule = sqlsrv_query(
 					$con,
-					"INSERT INTO tbl_schedule SET
-						nokk='" . $_POST['nokk'] . "',
-						nodemand='" . $_POST['demand'] . "',
-						langganan='" . $_POST['langganan'] . "',
-						buyer='" . $_POST['buyer'] . "',
-						no_order='" . $_POST['no_order'] . "',
-						po='$po',
-						no_hanger='" . $_POST['no_hanger'] . "',
-						no_item='" . $_POST['no_item'] . "',
-						jenis_kain='$jenis_kain',
-						tgl_delivery='$tgl_delivery',
-						lebar='" . $_POST['lebar'] . "',
-						gramasi='" . $_POST['grms'] . "',
-						warna='$warna',
-						no_warna='$nowarna',
-						qty_order='" . $_POST['qty1'] . "',
-						pjng_order='" . $_POST['qty2'] . "',
-						satuan_order='" . $_POST['satuan1'] . "',
-						lot='$lot',
-						rol='" . $_POST['qty3'] . "',
-						bruto='" . $_POST['qty4'] . "',
-						no_rajut='$no_rajut',
-						shift='" . $_POST['shift'] . "',
-						g_shift='" . $_POST['g_shift'] . "'',
-						kapasitas='" . $_POST['kapasitas'] . "'',
-						no_mesin='CB11',
-						no_urut='$no_urut',
-						no_sch='$no_urut',
-						loading='$loading1',
-						resep='" . $_POST['resep'] . "',
-						no_resep='" . $_POST['no_resep'] . "',
-						no_resep2='" . $_POST['no_resep2'] . "',
-						suffix='" . $_POST['suffix1'] . "',
-						suffix2='" . $_POST['suffix2'] . "',
-						energi='',
-						dyestuff='" . $_POST['dyestuff'] . "',
-						proses='Continuous - Bleaching',
-						revisi='',
-						kategori_warna='" . $_POST['kategori_warna'] . "',
-						ket_status='$ket',
-						ket_kain='$ket_kain',
-						tgl_masuk=now(),
-						personil='" . $_POST['operator'] . "',
-						target='" . $_POST['target'] . "',
-						kk_kestabilan='$kk_kestabilan',
-						kk_normal='$kk_normal',
-						tgl_update=now()"
+					"INSERT INTO db_dying.tbl_schedule (
+						nokk, nodemand, langganan, buyer, no_order, po,
+						no_hanger, no_item, jenis_kain, tgl_delivery,
+						lebar, gramasi, warna, no_warna,
+						qty_order, pjng_order, satuan_order,
+						lot, rol, bruto, no_rajut,
+						shift, g_shift, kapasitas, no_mesin,
+						no_urut, no_sch, loading,
+						resep, no_resep, no_resep2,
+						suffix, suffix2, energi, dyestuff,
+						proses, revisi, kategori_warna,
+						ket_status, ket_kain,
+						tgl_masuk, personil, target,
+						kk_kestabilan, kk_normal, tgl_update
+					) VALUES (
+						?,?,?,?,?,?,?,?,?,
+						?,?,?,?,?,
+						?,?,?,?,?,
+						?,?,?,?,?,
+						?,?,?,?,?,
+						?,?,?,?,?,
+						?, GETDATE(),?,?,?,?,
+						GETDATE()
+					)",
+					[
+						$_POST['nokk'],
+						$_POST['demand'],
+						$_POST['langganan'],
+						$_POST['buyer'],
+						$_POST['no_order'],
+						$po,
+						$_POST['no_hanger'],
+						$_POST['no_item'],
+						$jenis_kain,
+						$tgl_delivery,
+						$_POST['lebar'],
+						$_POST['grms'],
+						$warna,
+						$nowarna,
+						$_POST['qty1'],
+						$_POST['qty2'],
+						$_POST['satuan1'],
+						$lot,
+						$_POST['qty3'],
+						$_POST['qty4'],
+						$no_rajut,
+						$_POST['shift'],
+						$_POST['g_shift'],
+						$_POST['kapasitas'],
+						'CB11',
+						$no_urut,
+						$no_urut,
+						$loading1,
+						$_POST['resep'],
+						$_POST['no_resep'],
+						$_POST['no_resep2'],
+						$_POST['suffix1'],
+						$_POST['suffix2'],
+						'',
+						$_POST['dyestuff'],
+						'Continuous - Bleaching',
+						'',
+						$_POST['kategori_warna'],
+						$ket,
+						$ket_kain,
+						$_POST['operator'],
+						$_POST['target'],
+						$kk_kestabilan,
+						$kk_normal
+					]
 				);
+				// if ($sqlSchedule === false) {
+				// 	$err = print_r(sqlsrv_errors(), true);
+				// 	echo "<pre>Gagal INSERT ke db_dying.tbl_schedule (CB11):\n{$err}</pre>";
+				// 	exit;
+				// }
 			}
 		}
 
@@ -2078,10 +2215,13 @@ if ($_POST['save'] == "save") {
 }
 if ($_POST['update'] == "update") {
 	$analisaresep		= addslashes($_POST['analisa_resep']);
-	$sqlData = mysqli_query($con, "UPDATE tbl_hasilcelup SET 
-											analisa_resep = '$analisaresep',
-											status_resep = '$_POST[status_resep]'
-											WHERE nokk='" . $_POST['nokk'] . "'");
+	$sqlData = sqlsrv_query(
+		$con,
+		"UPDATE db_dying.tbl_hasilcelup
+		 SET analisa_resep = ?, status_resep = ?
+		 WHERE nokk = ?",
+		[$analisaresep, $_POST['status_resep'], $_POST['nokk']]
+	);
 
 	if ($sqlData) {
 		echo "<script>swal({

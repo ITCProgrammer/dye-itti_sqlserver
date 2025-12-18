@@ -13,13 +13,26 @@ include"koneksi.php";
 
 <body>
 <?php
-   $data=mysqli_query($con,"SELECT a.*,b.k_resep,b.acc_keluar,
-   b.operator_keluar,b.shift as shift_keluar,
-   b.g_shift as g_shift_keluar,c.comment_warna,c.acc,c.ket,c.id as idb,c.disposisi from tbl_schedule a
-     INNER JOIN tbl_montemp d ON a.id=d.id_schedule
-	 INNER JOIN tbl_hasilcelup b ON d.id=b.id_montemp
-	 INNER JOIN tbl_potongcelup c ON b.id=c.id_hasilcelup
-	 ORDER BY c.id DESC LIMIT 100");
+   $data = sqlsrv_query(
+	   $con,
+	   "SELECT TOP 100
+			a.*,
+			b.k_resep,
+			b.acc_keluar,
+			b.operator_keluar,
+			b.shift AS shift_keluar,
+			b.g_shift AS g_shift_keluar,
+			c.comment_warna,
+			c.acc,
+			c.ket,
+			c.id AS idb,
+			c.disposisi
+		FROM db_dying.tbl_schedule a
+		INNER JOIN db_dying.tbl_montemp d     ON a.id = d.id_schedule
+		INNER JOIN db_dying.tbl_hasilcelup b  ON d.id = b.id_montemp
+		INNER JOIN db_dying.tbl_potongcelup c ON b.id = c.id_hasilcelup
+		ORDER BY c.id DESC"
+   );
 	$no=1;
 	$n=1;
 	$c=0;
@@ -51,7 +64,7 @@ include"koneksi.php";
           <tbody>
             <?php
 	  $col=0;
-  while($rowd=mysqli_fetch_array($data)){
+  while($rowd = sqlsrv_fetch_array($data, SQLSRV_FETCH_ASSOC)){
 			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
 		 ?>
             <tr bgcolor="<?php echo $bgcolor; ?>">

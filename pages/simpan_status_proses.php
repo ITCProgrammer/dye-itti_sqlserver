@@ -2,13 +2,23 @@
 ini_set("error_reporting", 1);
 session_start();
 include("../koneksi.php");
+
 if ($_POST) {
-  extract($_POST);
-  $nama = mysqli_real_escape_string($con,$_POST['nama']);
-  $nama = strtoupper($nama);
-    $sqlupdate=mysqli_query($con,"INSERT INTO `tbl_status_proses` SET
-		`nama`='$nama'
-		");
-    echo " <script>window.location='?p=Form-Celup';</script>";
+    // Ambil dan normalisasi input
+    $nama = isset($_POST['nama']) ? strtoupper(trim($_POST['nama'])) : '';
+
+    if ($nama !== '') {
+        // Gunakan parameterized query ke SQL Server
+        $sql  = "INSERT INTO db_dying.tbl_status_proses (nama) VALUES (?)";
+        $params = [$nama];
+
+        $stmt = sqlsrv_query($con, $sql, $params);
+
+        if ($stmt === false) {
+            $err = print_r(sqlsrv_errors(), true);
+            die("<pre>Gagal insert ke db_dying.tbl_status_proses:\n{$err}</pre>");
+        }
+    }
+
+    echo "<script>window.location='?p=Form-Celup';</script>";
 }
-    

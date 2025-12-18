@@ -14,35 +14,41 @@ include "koneksi.php";
 
 <body>
 	<?php
-		$tgl1	= $_POST['tgl1'];
-		$tgl2	= $_POST['tgl2'];
+		$tgl1 = isset($_POST['tgl1']) ? $_POST['tgl1'] : '';
+		$tgl2 = isset($_POST['tgl2']) ? $_POST['tgl2'] : '';
 
-		if($tgl1 && $tgl2){
-			$_sortTgl = "DATE_FORMAT( a.tgl_buat, '%Y-%m-%d' ) BETWEEN '$tgl1' AND '$tgl2'";
-		}else{
-			$_sortTgl = "DATE_FORMAT( a.tgl_buat, '%Y-%m-%d' ) = DATE_FORMAT( now( ), '%Y-%m-%d' ) ";
+		// Konversi filter tanggal ke sintaks SQL Server
+		$whereTgl = "CAST(a.tgl_buat AS DATE) = CAST(GETDATE() AS DATE)";
+		$paramsTgl = [];
+
+		if ($tgl1 && $tgl2) {
+			$whereTgl = "CAST(a.tgl_buat AS DATE) BETWEEN ? AND ?";
+			$paramsTgl = [$tgl1, $tgl2];
 		}
-		$data = mysqli_query($con, "SELECT
-										a.*,
-										b.buyer,
-										b.nodemand,
-										b.no_order,
-										b.no_mesin,
-										b.warna,
-										b.proses,
-										b.target,
-										a.id AS idh,
-										c.id as ids,
-										b.id as idm,
-										a.rcode as rcode_hasilcelup
-									FROM
-										tbl_hasilcelup a
-										LEFT JOIN tbl_montemp c ON a.id_montemp=c.id
-										LEFT JOIN tbl_schedule b ON c.id_schedule = b.id
-									WHERE
-										$_sortTgl
-									ORDER BY
-										a.id ASC");
+
+		$sqlData = "SELECT
+						a.*,
+						b.buyer,
+						b.nodemand,
+						b.no_order,
+						b.no_mesin,
+						b.warna,
+						b.proses,
+						b.target,
+						a.id AS idh,
+						c.id AS ids,
+						b.id AS idm,
+						a.rcode AS rcode_hasilcelup
+					FROM
+						db_dying.tbl_hasilcelup a
+						LEFT JOIN db_dying.tbl_montemp c ON a.id_montemp = c.id
+						LEFT JOIN db_dying.tbl_schedule b ON c.id_schedule = b.id
+					WHERE
+						$whereTgl
+					ORDER BY
+						a.id ASC";
+
+		$data = sqlsrv_query($con, $sqlData, $paramsTgl);
 		$no = 1;
 		$n = 1;
 		$c = 0;
@@ -153,10 +159,17 @@ include "koneksi.php";
 									return $waktu;
 								}
 								$col = 0;
-								while ($rowd = mysqli_fetch_array($data)) {
+								while ($rowd = sqlsrv_fetch_array($data, SQLSRV_FETCH_ASSOC)) {
 									$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
-									$qCek = mysqli_query($con, "SELECT id as idb FROM tbl_potongcelup WHERE nokk='$rowd[nokk]' ORDER BY id DESC LIMIT 1");
-									$rCEk = mysqli_fetch_array($qCek);
+									$qCek = sqlsrv_query(
+										$con,
+										"SELECT TOP 1 id AS idb 
+										 FROM db_dying.tbl_potongcelup 
+										 WHERE nokk = ? 
+										 ORDER BY id DESC",
+										[$rowd['nokk']]
+									);
+									$rCEk = sqlsrv_fetch_array($qCek, SQLSRV_FETCH_ASSOC);
 							?>
 								<tr bgcolor="<?php echo $bgcolor; ?>">
 									<td align="center">

@@ -2,22 +2,28 @@
 ini_set("error_reporting", 1);
 session_start();
 include("../koneksi.php");
-if($_POST){ 
-	extract($_POST);
-	$id = mysqli_real_escape_string($con,$_POST['id']);
-	$ket = mysqli_real_escape_string($con,$_POST['ket']);
-	$sts= mysqli_real_escape_string($con,$_POST['sts_warna']);
-	$acc = mysqli_real_escape_string($con,$_POST['acc']);
-	$disposisi = mysqli_real_escape_string($con,$_POST['disposisi']);
-				$sqlupdate=mysqli_query($con,"UPDATE `tbl_potongcelup` SET 
-				`comment_warna`='$sts',
-				`acc`='$acc',
-				`disposisi`='$disposisi',
-				`ket`='$ket'
-				WHERE `id`='$id' LIMIT 1");
-				echo " <script>window.location='?p=Potong-Celup';</script>";
-				
-		}
-		
+
+if ($_POST) {
+	// Ambil nilai dari POST (trim untuk rapikan)
+	$id        = isset($_POST['id']) ? $_POST['id'] : '';
+	$ket       = isset($_POST['ket']) ? $_POST['ket'] : '';
+	$sts       = isset($_POST['sts_warna']) ? $_POST['sts_warna'] : '';
+	$acc       = isset($_POST['acc']) ? $_POST['acc'] : '';
+	$disposisi = isset($_POST['disposisi']) ? $_POST['disposisi'] : '';
+
+	// Update ke SQL Server dengan parameter
+	$sql  = "UPDATE db_dying.tbl_potongcelup
+	         SET comment_warna = ?, acc = ?, disposisi = ?, ket = ?
+	         WHERE id = ?";
+	$params = [$sts, $acc, $disposisi, $ket, $id];
+
+	$stmt = sqlsrv_query($con, $sql, $params);
+	if ($stmt === false) {
+		$err = print_r(sqlsrv_errors(), true);
+		die("<pre>Gagal update tbl_potongcelup:\n{$err}</pre>");
+	}
+
+	echo "<script>window.location='?p=Potong-Celup';</script>";
+}
 
 ?>
