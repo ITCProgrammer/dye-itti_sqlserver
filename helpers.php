@@ -31,3 +31,26 @@ function escapeString($str)
 
     return $str;
 }
+
+function num($v) {
+    if ($v === "" || $v === null) return null;
+    return preg_replace('/[^0-9.\-]/', '', $v);
+}
+
+function toNumericOrNull($value) {
+    // trim spaces
+    $value = trim($value);
+
+    // jika kosong → NULL
+    if ($value === "" || $value === null) {
+        return NULL;
+    }
+
+    // jika mengandung karakter selain angka, minus, titik → invalid → NULL
+    if (!preg_match('/^-?[0-9]+(\.[0-9]+)?$/', $value)) {
+        return NULL;
+    }
+
+    // jika valid numeric → kembalikan dalam bentuk numeric
+    return $value; // convert otomatis ke int/float
+}

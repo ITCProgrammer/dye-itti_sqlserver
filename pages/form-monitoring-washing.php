@@ -1,165 +1,71 @@
 <?php
 
 include "koneksiLAB.php";
+include "koneksi.php";
 //db_connect($db_name);
-$con=mysqli_connect("10.0.0.10","dit","4dm1n","db_dying");
-$nokk=$_GET['nokk'];
-$sqlCek=mysqli_query($con,"SELECT * FROM tbl_schedule WHERE nokk='$nokk' ORDER BY id DESC LIMIT 1");
-$cek=mysqli_num_rows($sqlCek);
-$rcek=mysqli_fetch_array($sqlCek);
-$sqlCek1=mysqli_query($con,"SELECT * FROM tbl_montemp WHERE nokk='$nokk' and (status='antri mesin' or status='sedang jalan') ORDER BY id DESC LIMIT 1");
-$cek1=mysqli_num_rows($sqlCek1);
-$rcek1=mysqli_fetch_array($sqlCek1);
-$sqlcek2=mysqli_query($con,"SELECT
-   	id,
-	if(COUNT(lot)>1,'Gabung Kartu','') as ket_kartu,
-	if(COUNT(lot)>1,CONCAT('(',COUNT(lot),'kk',')'),'') as kk,
-	GROUP_CONCAT(nokk SEPARATOR ', ') as g_kk,
-	no_mesin,
-	no_urut,	
-	sum(rol) as rol,
-	sum(bruto) as bruto
-FROM
-	tbl_schedule 
-WHERE
-	NOT `status` = 'selesai' and no_mesin='".$rcek['no_mesin']."' and no_urut='".$rcek['no_urut']."'
-GROUP BY
-	no_mesin,
-	no_urut 
-ORDER BY
-	id ASC");
-$cek2=mysqli_num_rows($sqlcek2);
-$rcek2=mysqli_fetch_array($sqlcek2);
+// $con=sqlsrv_connect("10.0.0.10","dit","4dm1n","db_dying");
+$nokk	=	$_GET['nokk'];
+$sql_cek= 	"SELECT TOP 1 
+				COUNT(*) OVER() as total_rows, 
+				* 
+				FROM 
+					db_dying.tbl_schedule 
+				WHERE 
+					nokk='$nokk' 
+				ORDER BY 
+					id DESC ";
+$sqlCek	=	sqlsrv_query($con,$sql_cek);
+$rcek	=	sqlsrv_fetch_array($sqlCek);
+$cek 	= 	$rcek['total_rows'];
+$query_cek1 = "SELECT TOP 1 
+					COUNT(*) OVER() as total_rows, 
+					* 
+				FROM 
+					db_dying.tbl_montemp 
+				WHERE 
+					nokk='$nokk' 
+					and (status='antri mesin' or status='sedang jalan') 
+				ORDER BY id DESC";
+$sqlCek1=	sqlsrv_query($con,$query_cek1);
+$rcek1	=	sqlsrv_fetch_array($sqlCek1);
+$cek1	=	$rcek1['total_rows'];
+$query_cek2 = "SELECT
+					COUNT(*) OVER() as total_rows,
+					MAX(id) as id,
+					CASE
+						WHEN COUNT(lot)>1 THEN 'Gabung Kartu'
+						ELSE ''
+					END AS ket_kartu,
+					CASE 
+						WHEN COUNT(lot) > 1 
+						THEN CONCAT('(', CAST(COUNT(lot) AS VARCHAR), 'kk', ')') 
+						ELSE '' 
+					END AS kk,
+					STRING_AGG(nokk, ', ') AS g_kk,
+					no_mesin,
+					no_urut,
+					sum(rol) as rol,
+					sum(bruto) as bruto
+				FROM
+					db_dying.tbl_schedule
+				WHERE
+					NOT status = 'selesai'
+					and no_mesin='".$rcek['no_mesin']."'
+					and no_urut= '".$rcek['no_urut']."'
+				GROUP BY
+					no_mesin,
+					no_urut
+				ORDER BY
+					id ASC";
+	// echo $query_cek2;
+	$sqlcek2 =	sqlsrv_query($con,$query_cek2);
+	$rcek2	 =sqlsrv_fetch_array($sqlcek2);
+	$cek2	 =sqlsrv_num_rows($sqlcek2);
 if($rcek2['ket_kartu']!=""){$ketsts=$rcek2['ket_kartu']."\n(".$rcek2['g_kk'].")";}else{$ketsts="";}
 
 
 ?>
 <?php
-$sqlc="select convert(char(10),CreateTime,103) as TglBonResep,convert(char(10),CreateTime,108) as JamBonResep,ID_NO,COLOR_NAME,PROGRAM_NAME,PRODUCT_LOT,VOLUME,PROGRAM_CODE,YARN as NoKK,TOTAL_WT,USER25 from ticket_title where ID_NO='$rcek[no_resep]' order by createtime Desc";
-				 //--lot
-//$qryc=sqlsrv_query($conn1,$sqlc, array(), array("Scrollable"=>"static"));
-
-//$countdata=sqlsrv_num_rows($qryc);
-
-if ($countdata > 0)
-{
-date_default_timezone_set('Asia/Jakarta');
-
-$tglsvr= sqlsrv_query($conn1,"select CONVERT(VARCHAR(10),GETDATE(),105) AS  tgk");
-$sr=sqlsrv_fetch_array($tglsvr);
-$sqls=sqlsrv_query($conn,"select processcontrolJO.SODID,salesorders.ponumber,processcontrol.productid,salesorders.customerid,joborders.documentno,
-salesorders.buyerid,processcontrolbatches.lotno,productcode,productmaster.color,colorno,description,weight,cuttablewidth,SOSampleColor.OtherDesc,SOSampleColor.Flag from Joborders 
-left join processcontrolJO on processcontrolJO.joid = Joborders.id
-left join salesorders on soid= salesorders.id
-Left join SOSampleColor on SOSampleColor.SOID=SalesOrders.id
-left join processcontrol on processcontrolJO.pcid = processcontrol.id
-left join processcontrolbatches on processcontrolbatches.pcid = processcontrol.id
-left join productmaster on productmaster.id= processcontrol.productid
-left join productpartner on productpartner.productid= processcontrol.productid
-where processcontrolbatches.documentno='".$rcek['nokk']."'");
-		$ssr=sqlsrv_fetch_array($sqls);
-		$lgn1=sqlsrv_query($conn,"select partnername from partners where id='$ssr[customerid]'");
-		$ssr1=sqlsrv_fetch_array($lgn1);
-		$lgn2=sqlsrv_query($conn,"select partnername from partners where id='$ssr[buyerid]'");
-		$ssr2=sqlsrv_fetch_array($lgn2);
-		$itm=sqlsrv_query($conn,"select colorcode,color,productcode from productpartner where productid='$ssr[productid]' and partnerid='$ssr[customerid]'");
-		$itm2=sqlsrv_fetch_array($itm);
- $row=sqlsrv_fetch_array($qryc);
- //
- $sql=sqlsrv_query($conn,"select stockmovement.dono,stockmovement.documentno as no_doku,processcontrolbatches.documentno,lotno,customerid,
-	processcontrol.productid ,processcontrol.id as pcid, 
-  sum(stockmovementdetails.weight) as berat,
-  count(stockmovementdetails.weight) as roll,processcontrolbatches.dated as tgllot
-   from stockmovement 
-LEFT join stockmovementdetails on StockMovement.id=stockmovementdetails.StockmovementID
-left join processcontrolbatches on processcontrolbatches.id=stockmovement.pcbid
-left join processcontrol on processcontrol.id=processcontrolbatches.pcid
-
-
-
-where wid='12' and processcontrolbatches.documentno='".$rcek['nokk']."' and (transactiontype='7' or transactiontype='4')
-group by stockmovement.DocumentNo,processcontrolbatches.DocumentNo,processcontrolbatches.LotNo,stockmovement.dono,
-processcontrol.CustomerID,processcontrol.ProductID,processcontrol.ID,processcontrolbatches.Dated") or die("gagal");
-$c=0;
- $r=sqlsrv_fetch_array($sql); 
- 	if($r['documentno']!=''){$dated = $r['tgllot']->format('Y-m-d H:i:s');} 
-	 $sqlkko=sqlsrv_query($conn,"select SODID from knittingorders  
-	where knittingorders.Kono='$r[dono]'") or die("gagal");
-	$rkko=sqlsrv_fetch_array($sqlkko);
-	 $sqlkko1=sqlsrv_query($conn,"select joid,productid from processcontroljo  
-	where sodid='$rkko[SODID]'") or die("gagal");
-	$rkko1=sqlsrv_fetch_array($sqlkko1);
-	if($r['productid']!=''){$kno1=$r['productid'];}else{$kno1=$rkko1['productid'];}
-	$sql1=sqlsrv_query($conn,"select hangerno,color from  productmaster
-	where id='$kno1'") or die("gagal"); 
-	 $r1=sqlsrv_fetch_array($sql1);
-	 $sql2=sqlsrv_query($conn,"select partnername from Partners
-	where id='$r[customerid]'") or die("gagal"); 
-	 $r2=sqlsrv_fetch_array($sql2);
-	 $sql3=sqlsrv_query($conn,"select Kono,joid from processcontroljo 
-	where pcid='$r[pcid]'") or die("gagal"); 
-	$r3=sqlsrv_fetch_array($sql3);
-	if($r3['Kono']!=''){$kno=$r3['Kono'];}else{$kno=$r['dono'];}
-	 $sql4=sqlsrv_query($conn,"select CAST(TM.dbo.knittingorders.[Note] AS VARCHAR(8000))as note,id,supplierid from knittingorders 
-	where kono='$kno'") or die("gagal");
-	 $r4=sqlsrv_fetch_array($sql4);
-	 $sql5=sqlsrv_query($conn,"select partnername from partners 
-	where id='$r4[supplierid]'") or die("gagal");
-	 $r5=sqlsrv_fetch_array($sql5);
-	 if($r3['joid']!=''){$jno=$r3['joid'];}else{$jno=$rkko1['joid'];}
-	 $sql6=sqlsrv_query($conn,"select documentno,soid from joborders 
-	where id='$jno'") or die("gagal");
-	 $r6=sqlsrv_fetch_array($sql6);
-	  $sql8=sqlsrv_query($conn,"select customerid from salesorders where id='$r6[soid]'") or die("gagal");
-	 $r8=sqlsrv_fetch_array($sql8);
-	 $sql9=sqlsrv_query($conn,"select partnername from partners where id='$r8[customerid]'") or die("gagal");
-	 $r9=sqlsrv_fetch_array($sql9);
-	 $sql10=sqlsrv_query($conn,"select id,productid from kodetails where koid='$r4[id]'") or die("gagal");
-	 $r10=sqlsrv_fetch_array($sql10);
-	 $sql11=sqlsrv_query($conn,"select productnumber from productmaster where id='$r10[productid]'") or die("gagal");
-	 $r11=sqlsrv_fetch_array($sql11);
-	 
-	 
-	 $s4=sqlsrv_query($conn,"select KOdetails.id as KODID,productmaster.id as BOMID ,KnittingOrders.SupplierID,TM.dbo.Partners.PartnerName,ProductNumber,CustomerID,SODID,KnittingOrders.ID as KOID,SalesOrders.ID as SOID from 
-(TM.dbo.KnittingOrders 
-left join TM.dbo.SODetails on TM.dbo.SODetails.ID= TM.dbo.KnittingOrders.SODID
-left join TM.dbo.KODetails on TM.dbo.KODetails.KOid= TM.dbo.KnittingOrders.ID
-left join TM.dbo.Partners on TM.dbo.Partners.ID= TM.dbo.KnittingOrders.SupplierID)
-left join TM.dbo.ProductMaster on TM.dbo.ProductMaster.ID= TM.dbo.KODetails.ProductID
-left join TM.dbo.SalesOrders on TM.dbo.SalesOrders.ID= TM.dbo.SODetails.SOID
-		where KONO='$kno'");
-	 $as7=sqlsrv_fetch_array($s4);
-	 $sql12=sqlsrv_query($conn,"select SODetailsBom.ProductID from SODetailsBom where SODID='$as7[SODID]' and KODID='$as7[KODID]' and Parentproductid='$as7[BOMID]' order by ID", array(), array("Scrollable"=>"static"));
-	  $sql14=sqlsrv_query($conn,"select  count(lotno)as jmllot from processcontrolbatches where pcid='$r[pcid]' and dated='$dated'");
-	  $lt=sqlsrv_fetch_array($sql14);
-	 $ai=sqlsrv_num_rows($sql12);
-	 $sql15=sqlsrv_query($conn,"select Partnername from TM.dbo.Partners where TM.dbo.Partners.ID='$as7[CustomerID]'");
-	$as8=sqlsrv_fetch_array($sql15);
-$i=0;
-
-
-
- do{
-	$as5=sqlsrv_fetch_array($sql12);
-	$sql13=sqlsrv_query($conn,"select ShortDescription from  ProductMaster where ID='$as5[ProductID]'");
-	$as6=sqlsrv_fetch_array($sql13);
-	$ar[$i]=$as6['ShortDescription'];
-
-$i++;
-}while($ai>=$i);
-$jb1=$ar[0];
-$jb2=$ar[1];
-$jb3=$ar[2];
-$jb4=$ar[3];
-if($ai<2){$jb1=$ar[0];
-$jb2='';
-$jb3='';
-}
-	$bng=$jb1.",".$jb2.",".$jb3.",".$jb4;
-}
-if($nokk!="" and $rcek2['bruto']!="" and $rcek2['bruto']>0 ){
-$lr=round($row['VOLUME']/$rcek2['bruto']);
-}else{$lr="";}
 function cekDesimal($angka){
 	$bulat=round($angka);
 	if($bulat>$angka){
@@ -173,11 +79,11 @@ function cekDesimal($angka){
 }
 ?>
 <?php
-$Kapasitas	= isset($_POST['kapasitas']) ? $_POST['kapasitas'] : '';
-$TglMasuk	= isset($_POST['tglmsk']) ? $_POST['tglmsk'] : '';
-$Item		= isset($_POST['item']) ? $_POST['item'] : '';
-$Warna		= isset($_POST['warna']) ? $_POST['warna'] : '';
-$Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
+// $Kapasitas	= isset($_POST['kapasitas']) ? $_POST['kapasitas'] : '';
+// $TglMasuk	= isset($_POST['tglmsk']) ? $_POST['tglmsk'] : '';
+// $Item		= isset($_POST['item']) ? $_POST['item'] : '';
+// $Warna		= isset($_POST['warna']) ? $_POST['warna'] : '';
+// $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 ?>
 <form class="form-horizontal" action="" method="post" enctype="multipart/form-data" name="form1">
  <div class="box box-info">
@@ -321,8 +227,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 				    <select name="operator" class="form-control" required>
 							  	<option value="">Pilih</option>
 							  <?php 
-							  $sqlKap=mysqli_query($con,"SELECT nama FROM tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
-							  while($rK=mysqli_fetch_array($sqlKap)){
+							  $sqlKap=sqlsrv_query($con,"SELECT nama FROM db_dying.tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
+							  while($rK=sqlsrv_fetch_array($sqlKap)){
 							  ?>
 								  <option value="<?php echo $rK['nama']; ?>"><?php echo $rK['nama']; ?></option>
 							 <?php } ?>	  
@@ -337,8 +243,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 				    <select name="colorist" class="form-control" required>
 							  	<option value="">Pilih</option>
 							  <?php 
-							  $sqlKap=mysqli_query($con,"SELECT nama FROM tbl_staff WHERE jabatan='Colorist' ORDER BY nama ASC");
-							  while($rK=mysqli_fetch_array($sqlKap)){
+							  $sqlKap=sqlsrv_query($con,"SELECT nama FROM db_dying.tbl_staff WHERE jabatan='Colorist' ORDER BY nama ASC");
+							  while($rK=sqlsrv_fetch_array($sqlKap)){
 							  ?>
 								  <option value="<?php echo $rK['nama']; ?>"><?php echo $rK['nama']; ?></option>
 							 <?php } ?>	  
@@ -353,8 +259,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 				    <select name="leader" class="form-control" required>
 							  	<option value="">Pilih</option>
 							  <?php 
-							  $sqlKap=mysqli_query($con,"SELECT nama FROM tbl_staff WHERE jabatan='Leader' ORDER BY nama ASC");
-							  while($rK=mysqli_fetch_array($sqlKap)){
+							  $sqlKap=sqlsrv_query($con,"SELECT nama FROM db_dying.tbl_staff WHERE jabatan='Leader' ORDER BY nama ASC");
+							  while($rK=sqlsrv_fetch_array($sqlKap)){
 							  ?>
 								  <option value="<?php echo $rK['nama']; ?>"><?php echo $rK['nama']; ?></option>
 							 <?php } ?>	  
@@ -646,14 +552,13 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 	<button type="button" class="btn btn-default pull-left" name="back" value="kembali" onClick="window.location='?p=Monitoring-Tempelan'">Kembali <i class="fa fa-arrow-circle-o-left"></i></button>	
    <?php if($cek1>0){ 
 	echo "<script>swal({
-  title: 'No Kartu Sudah diinput dan belum selesai proses',
-  text: 'Klik Ok untuk input kembali',
-  type: 'warning',
-  }).then((result) => {
-  if (result.value) {
-    window.location='index1.php?p=Form-Monitoring-Washing';
-  }
-});</script>";	
+	title: 'No Kartu Sudah diinput dan belum selesai proses',
+	text: 'Klik Ok untuk input kembali',
+	type: 'warning',
+	}).then((result) => {
+	if (result.value) {
+		window.location='index1.php?p=Form-Monitoring-Washing';
+	}});</script>";	
    } else if($rcek['no_urut']!="1" and $nokk!=""){
 	echo "<script>swal({
   title: 'Harus No Urut `1` ',
@@ -679,144 +584,101 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 	if($_POST['save']=="save"){
 	  $benang=str_replace("'","''",$_POST['benang']);
 	  $tglbuat=$_POST['tgl_buat']." ".$_POST['waktu_buat'];	
-  	  $sqlData=mysqli_query($con,"INSERT INTO tbl_montemp SET
-	  	id_schedule='$_POST[id]',
-		nokk='$_POST[nokk]',
-		operator='$_POST[operator]',
-		colorist='$_POST[colorist]',
-		leader='$_POST[leader]',
-		pakai_air='$_POST[pakai_air]',
-		carry_over='$_POST[carry_over]',
-		shift='$_POST[shift]',
-		gramasi_a='$_POST[grms_a]',
-		lebar_a='$_POST[lebar_a]',
-		gramasi_s='$_POST[grms1_a]',
-		lebar_s='$_POST[lebar1_a]',
-		pjng_kain='$_POST[pjng_kain]',
-		rol='$_POST[qty3]',
-		bruto='$_POST[qty4]',
-		g_shift='$_POST[g_shift]',
-		no_program='$_POST[no_program]',
-		benang='$benang',
-		std_cok_wrn='$_POST[std_cok_wrn]',
-		speed='$_POST[speed]',
-		susut_lebar='$_POST[susut_lebar]',
-		susut_panjang='$_POST[susut_panjang]',
-		vacum='$_POST[vacum]',
-		ch1='$_POST[ch1]',
-		ch2='$_POST[ch2]',
-		ch3='$_POST[ch3]',
-		ch4='$_POST[ch4]',
-		ch5='$_POST[ch5]',
-		ch6='$_POST[ch6]',
-		vr1='$_POST[vr1]',
-		vr2='$_POST[vr2]',
-		vr3='$_POST[vr3]',
-		vr4='$_POST[vr4]',
-		vr5='$_POST[vr5]',
-		vr6='$_POST[vr6]',
-		vr7='$_POST[vr7]',
-		vr8='$_POST[vr8]',
-		vr9='$_POST[vr9]',
-		vr10='$_POST[vr10]',
-		vr11='$_POST[vr11]',
-		vr12='$_POST[vr12]',
-		vr13='$_POST[vr13]',
-		vr14='$_POST[vr14]',
-		vr15='$_POST[vr15]',
-		ket='$_POST[ket]',
-		tgl_buat=now(),
-		tgl_target=ADDDATE(now(), INTERVAL '$_POST[target]' HOUR_MINUTE),
-		tgl_update=now()"); 	  
-	  
+	  $pakai_air=is_numeric($_POST['pakai_air']) ? ceil($_POST['pakai_air']) : null;
+	  $target_menit = is_numeric($_POST['target']) ? $_POST['target'] : 0;
+	  $query = "INSERT INTO db_dying.tbl_montemp 
+				(   id_schedule, nokk, operator, colorist, leader,
+					pakai_air, carry_over, shift, gramasi_a, lebar_a, gramasi_s,
+					lebar_s, pjng_kain, rol, bruto, g_shift, no_program,
+					benang, std_cok_wrn, speed, susut_lebar, susut_panjang, vacum,
+					ch1, ch2, ch3, ch4, ch5, ch6, vr1, vr2, vr3, vr4, vr5, vr6,
+					vr7, vr8, vr9, vr10, vr11, vr12, vr13, vr14, vr15, ket, 
+					tgl_buat, tgl_target, tgl_update)
+				VALUES(
+					?, ?, ?, ?, ?, 
+					?, ?, ?, ?, ?, ?, 
+					?, ?, ?, ?, ?, ?, 
+					?, ?, ?, ?, ?, ?, 
+					?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+					?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+					GETDATE(), DATEADD(MINUTE, CAST(? AS INT), GETDATE()), GETDATE()
+				)";
+		$params = [ 
+					$_POST['id'],
+					$_POST['nokk'],
+					$_POST['operator'],
+					$_POST['colorist'],
+					$_POST['leader'],
+					$pakai_air,
+					$_POST['carry_over'],
+					$_POST['shift'],
+					$_POST['grms_a'],
+					$_POST['lebar_a'],
+					$_POST['grms1_a'],
+					$_POST['lebar1_a'],
+					$_POST['pjng_kain'],
+					$_POST['qty3'],
+					$_POST['qty4'],
+					$_POST['g_shift'],
+					$_POST['no_program'],
+					$benang,
+					$_POST['std_cok_wrn'],
+					$_POST['speed'],
+					$_POST['susut_lebar'],
+					$_POST['susut_panjang'],
+					$_POST['vacum'],
+					$_POST['ch1'], $_POST['ch2'], $_POST['ch3'], $_POST['ch4'], $_POST['ch5'], $_POST['ch6'],
+					$_POST['vr1'], $_POST['vr2'], $_POST['vr3'], $_POST['vr4'], $_POST['vr5'], $_POST['vr6'],
+					$_POST['vr7'], $_POST['vr8'], $_POST['vr9'], $_POST['vr10'], $_POST['vr11'], $_POST['vr12'],
+					$_POST['vr13'], $_POST['vr14'], $_POST['vr15'],
+					$_POST['ket'],
+					$target_menit
+				];
+
+	$sqlData = sqlsrv_query($con, $query, $params);
+
 		if($sqlData){
-			/*$sqlD=mysqli_query("UPDATE tbl_schedule SET 
+			/*$sqlD=sqlsrv_query("UPDATE tbl_schedule SET 
 		  status='sedang jalan',
 		  tgl_update=now()
 		  WHERE id='$_POST[id]' ");*/
 			
-			$sqlD=mysqli_query($con,"UPDATE tbl_schedule SET 
-		  status='sedang jalan',
-		  tgl_update=now()
-		  WHERE status='antri mesin' and no_mesin='".$rcek['no_mesin']."' and no_urut='1' ");
-			
+			$sqlD=sqlsrv_query($con,"UPDATE db_dying.tbl_schedule SET 
+			status='sedang jalan',
+			tgl_update=GETDATE()
+			WHERE status='antri mesin' and no_mesin='".$rcek['no_mesin']."' and no_urut='1' ");
 			echo "<script>swal({
-  title: 'Data Tersimpan',   
-  text: 'Klik Ok untuk input data kembali',
-  type: 'success',
-  }).then((result) => {
-  if (result.value) {
-    
-	 window.location.href='?p=Monitoring-Tempelan'; 
-  }
-});</script>";
-		}
-		
-			
-	}
-    if($_POST['update']=="update"){
-	  $warna=str_replace("'","''",$_POST['warna']);
-	  $nowarna=str_replace("'","''",$_POST['no_warna']);	
-	  $jns=str_replace("'","''",$_POST['jns_kain']);
-	  $po=str_replace("'","''",$_POST['no_po']);
-	  $lot=trim($_POST['lot']);	
-  	  $sqlData=mysqli_query($con,"UPDATE tbl_montemp SET 
-		  operator='$_POST[operator]',
-		  colorist='$_POST[colorist]',
-		  leader='$_POST[leader]',
-		  shift='$_POST[shift]',
-		  gramasi_a='$_POST[grms_a]',
-		  lebar_a='$_POST[lebar_a]',
-		  rol='$_POST[qty3]',
-		  bruto='$_POST[qty4]',
-		  pjng_kain='$_POST[pjng_kain]',
-		  g_shift='$_POST[g_shift]',
-		  no_program='$_POST[no_program]',
-		  speed='$_POST[speed]',
-		  susut_lebar='$_POST[susut_lebar]',
-		  susut_panjang='$_POST[susut_panjang]',
-		  vacum='$_POST[vacum]',
-		  ch1='$_POST[ch1]',
-		  ch2='$_POST[ch2]',
-		  ch3='$_POST[ch3]',
-		  ch4='$_POST[ch4]',
-		  ch5='$_POST[ch5]',
-		  ch6='$_POST[ch6]',
-		  vr1='$_POST[vr1]',
-		  vr2='$_POST[vr2]',
-		  vr3='$_POST[vr3]',
-		  vr4='$_POST[vr4]',
-		  vr5='$_POST[vr5]',
-		  vr6='$_POST[vr6]',
-		  vr7='$_POST[vr7]',
-		  vr8='$_POST[vr8]',
-		  vr9='$_POST[vr9]',
-		  vr10='$_POST[vr10]',
-		  vr11='$_POST[vr11]',
-		  vr12='$_POST[vr12]',
-		  vr13='$_POST[vr13]',
-		  vr14='$_POST[vr14]',
-		  vr15='$_POST[vr15]',
-		  ket='$_POST[ket]',
-		  tgl_update=now()
-		  WHERE nokk='$_POST[nokk]'");	 	  
-	  
-		if($sqlData){
-			// echo "<script>alert('Data Telah Diubah');</script>";
-			// echo "<script>window.location.href='?p=Input-Data-KJ;</script>";
-			echo "<script>swal({
-  title: 'Data Telah DiUbah',   
-  text: 'Klik Ok untuk input data kembali',
-  type: 'success',
-  }).then((result) => {
-  if (result.value) {
-    
-	 window.location.href='?p=Monitoring-Tempelan'; 
-  }
-});</script>";
-		}
-		
-			
+					title: 'Data Tersimpan',   
+					text: 'Klik Ok untuk input data kembali',
+					type: 'success',
+					}).then((result) => {
+					if (result.value) {
+						
+						window.location.href='?p=Monitoring-Tempelan'; 
+					}
+					});</script>";
+				}
+		if ($sqlData === false) {
+			$errors = sqlsrv_errors();
+			$msg = "";
+			if ($errors !== null) {
+				foreach ($errors as $err) {
+					$msg .= "SQLSTATE: " . $err['SQLSTATE'] . "\n";
+					$msg .= "Kode: " . $err['code'] . "\n";
+					$msg .= "Pesan: " . $err['message'] . "\n\n";
+				}
+			}
+			echo "
+			<script>
+				swal({
+					title: 'Error SQL Server!',
+					text: `" . addslashes($msg) . "`,
+					icon: 'error',
+				});
+			</script>";
+
+			exit; 
+		}	
 	}
 ?>
 <script>

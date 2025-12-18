@@ -217,6 +217,11 @@ include "helpers.php";
         document.getElementById('del_link').setAttribute('href', delete_url);
     }
 
-    function confirm_del2(url) { swal({ title: "Yakin ingin menghapus?", text: "Data yang dihapus tidak dapat dikembalikan", icon: "warning", buttons: { cancel: { text: "Batal", value: false, visible: true, className: "", closeModal: true, }, confirm: { text: "Ya, hapus!", value: true, visible: true, className: "", closeModal: true } }, dangerMode: true, }).then((willDelete) => { if (willDelete) { window.location.href = url; } }); }
+    function confirm_del2(url) {
+        if (confirm("Yakin ingin menghapus?\nData yang dihapus tidak dapat dikembalikan.")) {
+            window.location.href = url;
+        } else {
+        }
+    }
 
 </script>
