@@ -4,6 +4,7 @@ ini_set("error_reporting", 1);
 include "../../koneksi.php";
 include "../../koneksiLAB.php";
 include "../../tgl_indo.php";
+include "../../helpers.php";
 // Monitoring_air.php - Form cetak ukuran F4 (210mm x 330mm)
 
 function q(string $key, string $default = ''): string {
@@ -16,7 +17,7 @@ $no_demand = q('nodemand');
 $no_prod   = q('idkk');
 
 
-$data = mysqli_query($con, "SELECT
+$data = sqlsrv_query($con, "SELECT
                                         *,
                                          b.buyer,
                                         b.no_order,
@@ -47,12 +48,12 @@ $data = mysqli_query($con, "SELECT
                                         LEFT JOIN db_dying.tbl_setting_mesin c ON b.nokk = c.nokk
                                         LEFT JOIN db_dying.tbl_bakbul d ON c.nokk = d.no_kk
                                     WHERE
-                                        ( a.`status` = 'antri mesin' OR a.`status` = 'sedang jalan' ) 
-                                        AND ( b.`status` = 'antri mesin' OR b.`status` = 'sedang jalan' ) 
+                                        ( a.status = 'antri mesin' OR a.status = 'sedang jalan' ) 
+                                        AND ( b.status = 'antri mesin' OR b.status = 'sedang jalan' ) 
                                         and a.nokk = '$no_prod' and a.nodemand ='$no_demand' and a.id = '$no_mesin'
                                     ORDER BY
                                         a.id ASC");
-$rowd = mysqli_fetch_array($data)
+$rowd = sqlsrv_fetch_array($data)
 
 ?>
 <!doctype html>
@@ -301,7 +302,7 @@ $rowd = mysqli_fetch_array($data)
         <tr>
           <td class="field-label">Tanggal Proses</td>
           <td class="field-colon">:</td>
-          <td class="field-value"><?php echo $rowd['tgl_buat']; ?></td>
+          <td class="field-value"><?php echo formatDateTime($rowd['tgl_buat'],'Y-m-d H:i:s'); ?></td>
         </tr>
         <tr>
           <td class="field-label">Roll × Qty</td>

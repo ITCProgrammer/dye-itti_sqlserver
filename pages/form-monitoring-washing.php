@@ -58,9 +58,9 @@ $query_cek2 = "SELECT
 				ORDER BY
 					id ASC";
 	// echo $query_cek2;
-	$sqlcek2 =	sqlsrv_query($con,$query_cek2);
-	$rcek2	 =sqlsrv_fetch_array($sqlcek2);
-	$cek2	 =sqlsrv_num_rows($sqlcek2);
+	$sqlcek2 = sqlsrv_query($con,$query_cek2);
+	$rcek2	 = sqlsrv_fetch_array($sqlcek2);
+	$cek2	 = $rcek2['total_rows'];
 if($rcek2['ket_kartu']!=""){$ketsts=$rcek2['ket_kartu']."\n(".$rcek2['g_kk'].")";}else{$ketsts="";}
 
 
@@ -583,7 +583,7 @@ function cekDesimal($angka){
 <?php 
 	if($_POST['save']=="save"){
 	  $benang=str_replace("'","''",$_POST['benang']);
-	  $tglbuat=$_POST['tgl_buat']." ".$_POST['waktu_buat'];	
+	  $tglbuat = ($_POST['tgl_buat'] != '' && $_POST['waktu_buat'] != '') ? $_POST['tgl_buat'] . " " . $_POST['waktu_buat'] : null;
 	  $pakai_air=is_numeric($_POST['pakai_air']) ? ceil($_POST['pakai_air']) : null;
 	  $target_menit = is_numeric($_POST['target']) ? $_POST['target'] : 0;
 	  $query = "INSERT INTO db_dying.tbl_montemp 

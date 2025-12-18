@@ -51,7 +51,9 @@ $sqlCekMc = sqlsrv_query($con, $query_Mc);
 $rCekMc = sqlsrv_fetch_array($sqlCekMc);
 
 $query_Cek1 ="SELECT
-					TOP 1 *
+					TOP 1 
+					COUNT(*) OVER() as total_rows, 
+					*
 				FROM
 					db_dying.tbl_montemp
 				WHERE
@@ -60,11 +62,12 @@ $query_Cek1 ="SELECT
 						or status = 'sedang jalan')
 				ORDER BY
 					id DESC";
-$sqlCek1 = sqlsrv_query($con,$query_Cek1 );
-// $cek1 = mysqli_num_rows($sqlCek1);
-$rcek1 = sqlsrv_fetch_array($sqlCek1);
+$sqlCek1 	= sqlsrv_query($con,$query_Cek1 );
+$rcek1 		= sqlsrv_fetch_array($sqlCek1);
+$cek1 		= $rcek1['total_rows'];
 
 $query_Cek2 ="SELECT
+				COUNT(*) OVER() as total_rows, 
 				MAX(id) as id,
 				CASE
 					WHEN COUNT(lot)>1 THEN 'Gabung Kartu'
@@ -91,9 +94,9 @@ $query_Cek2 ="SELECT
 			ORDER BY
 				id ASC";
 // echo $query_Cek2;
-$sqlcek2 = sqlsrv_query($con,$query_Cek2);
-// $cek2 = mysqli_num_rows($sqlcek2);
-$rcek2 = sqlsrv_fetch_array($sqlcek2);
+$sqlcek2= sqlsrv_query($con,$query_Cek2);
+$rcek2 	= sqlsrv_fetch_array($sqlcek2);
+$cek2 	= $rcek2['total_rows'];;
 if ($rcek2['ket_kartu'] != "") {
 	$ketsts = $rcek2['ket_kartu'] . "\n(" . $rcek2['g_kk'] . ")";
 } else {

@@ -7,35 +7,68 @@
 // $connInfo = array( "Database"=>$db_name1, "UID"=>$username1, "PWD"=>$password1);
 // $conn     = sqlsrv_connect( $host1, $connInfo);
 include "koneksiLAB.php";
+include "koneksi.php";
+include "helpers.php";
 //db_connect($db_name);
-$con=mysqli_connect("10.0.0.10","dit","4dm1n","db_dying");
+// $con=sqlsrv_connect("10.0.0.10","dit","4dm1n","db_dying");
 $nokk=$_GET['nokk'];
-$sqlCek=mysqli_query($con,"SELECT * FROM tbl_schedule WHERE nokk='$nokk' ORDER BY id DESC LIMIT 1");
-$cek=mysqli_num_rows($sqlCek);
-$rcek=mysqli_fetch_array($sqlCek);
-$sqlCek1=mysqli_query($con,"SELECT * FROM tbl_montemp WHERE nokk='$nokk' and (status='antri mesin' or status='sedang jalan') ORDER BY id DESC LIMIT 1");
-$cek1=mysqli_num_rows($sqlCek1);
-$rcek1=mysqli_fetch_array($sqlCek1);
-$sqlcek2=mysqli_query($con,"SELECT
-   	id,
-	if(COUNT(lot)>1,'Gabung Kartu','') as ket_kartu,
-	if(COUNT(lot)>1,CONCAT('(',COUNT(lot),'kk',')'),'') as kk,
-	GROUP_CONCAT(nokk SEPARATOR ', ') as g_kk,
-	no_mesin,
-	no_urut,	
-	sum(rol) as rol,
-	sum(bruto) as bruto
-FROM
-	tbl_schedule 
-WHERE
-	(status='antri mesin' or status='sedang jalan') and no_mesin='".$rcek['no_mesin']."'  and no_urut='".$rcek['no_urut']."'
-GROUP BY
-	no_mesin,
-	no_urut 
-ORDER BY
-	id ASC");
-$cek2=mysqli_num_rows($sqlcek2);
-$rcek2=mysqli_fetch_array($sqlcek2);
+$query_cek = "SELECT TOP 1
+				COUNT(*) OVER() as total_rows, 
+					* 
+				FROM db_dying.tbl_schedule 
+				WHERE 
+					nokk='$nokk' 
+				ORDER BY 
+					id DESC 
+				";
+$sqlCek	=sqlsrv_query($con,$query_cek);
+$rcek	=sqlsrv_fetch_array($sqlCek);
+$cek	=$rcek['total_rows'];
+$query_cek1 = "SELECT TOP 1 
+					COUNT(*) OVER() as total_rows, 
+					* 
+				FROM 
+					db_dying.tbl_montemp 
+				WHERE 
+					nokk='$nokk' 
+					and (status='antri mesin' or status='sedang jalan') 
+				ORDER BY id DESC";
+$sqlCek1=	sqlsrv_query($con,$query_cek1);
+$rcek1	=	sqlsrv_fetch_array($sqlCek1);
+$cek1	=	$rcek1['total_rows'];
+$query_cek2 = "SELECT
+					COUNT(*) OVER() as total_rows,
+					MAX(id) as id,
+					CASE
+						WHEN COUNT(lot)>1 THEN 'Gabung Kartu'
+						ELSE ''
+					END AS ket_kartu,
+					CASE 
+						WHEN COUNT(lot) > 1 
+						THEN CONCAT('(', CAST(COUNT(lot) AS VARCHAR), 'kk', ')') 
+						ELSE '' 
+					END AS kk,
+					STRING_AGG(nokk, ', ') AS g_kk,
+					no_mesin,
+					no_urut,
+					sum(rol) as rol,
+					sum(bruto) as bruto
+				FROM
+					db_dying.tbl_schedule
+				WHERE
+					NOT status = 'selesai'
+					and no_mesin='".$rcek['no_mesin']."'
+					and no_urut= '".$rcek['no_urut']."'
+				GROUP BY
+					no_mesin,
+					no_urut
+				ORDER BY
+					id ASC";
+// echo $query_cek2;
+$sqlcek2 = sqlsrv_query($con,$query_cek2);
+$rcek2	 = sqlsrv_fetch_array($sqlcek2);
+$cek2	 = $rcek2['total_rows'];
+
 if($rcek2['ket_kartu']!=""){$ketsts=$rcek2['ket_kartu']."\n(".$rcek2['g_kk'].")";}else{$ketsts="";}
 
 
@@ -324,8 +357,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 				    <select name="operator" class="form-control" required>
 							  	<option value="">Pilih</option>
 							  <?php 
-							  $sqlKap=mysqli_query($con,"SELECT nama FROM tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
-							  while($rK=mysqli_fetch_array($sqlKap)){
+							  $sqlKap=sqlsrv_query($con,"SELECT nama FROM db_dying.tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
+							  while($rK=sqlsrv_fetch_array($sqlKap)){
 							  ?>
 								  <option value="<?php echo $rK['nama']; ?>"><?php echo $rK['nama']; ?></option>
 							 <?php } ?>	  
@@ -340,8 +373,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 				    <select name="colorist" class="form-control" required>
 							  	<option value="">Pilih</option>
 							  <?php 
-							  $sqlKap=mysqli_query($con,"SELECT nama FROM tbl_staff WHERE jabatan='Colorist' ORDER BY nama ASC");
-							  while($rK=mysqli_fetch_array($sqlKap)){
+							  $sqlKap=sqlsrv_query($con,"SELECT nama FROM db_dying.tbl_staff WHERE jabatan='Colorist' ORDER BY nama ASC");
+							  while($rK=sqlsrv_fetch_array($sqlKap)){
 							  ?>
 								  <option value="<?php echo $rK['nama']; ?>"><?php echo $rK['nama']; ?></option>
 							 <?php } ?>	  
@@ -356,8 +389,8 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 				    <select name="leader" class="form-control" required>
 							  	<option value="">Pilih</option>
 							  <?php 
-							  $sqlKap=mysqli_query($con,"SELECT nama FROM tbl_staff WHERE jabatan='Leader' ORDER BY nama ASC");
-							  while($rK=mysqli_fetch_array($sqlKap)){
+							  $sqlKap=sqlsrv_query($con,"SELECT nama FROM db_dying.tbl_staff WHERE jabatan='Leader' ORDER BY nama ASC");
+							  while($rK=sqlsrv_fetch_array($sqlKap)){
 							  ?>
 								  <option value="<?php echo $rK['nama']; ?>"><?php echo $rK['nama']; ?></option>
 							 <?php } ?>	  
@@ -559,116 +592,75 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 
 <?php 
 	if($_POST['save']=="save"){
-	  $benang=str_replace("'","''",$_POST['benang']);
-	  $tglbuat=$_POST['tgl_buat']." ".$_POST['waktu_buat'];	
-  	  $sqlData=mysqli_query($con,"INSERT INTO tbl_montemp SET
-	  	id_schedule='$_POST[id]',
-		nokk='$_POST[nokk]',
-		operator='$_POST[operator]',
-		colorist='$_POST[colorist]',
-		leader='$_POST[leader]',
-		pakai_air='$_POST[pakai_air]',
-		carry_over='$_POST[carry_over]',
-		shift='$_POST[shift]',
-		gramasi_a='$_POST[grms_a]',
-		lebar_a='$_POST[lebar_a]',
-		gramasi_s='$_POST[grms1_a]',
-		lebar_s='$_POST[lebar1_a]',
-		pjng_kain='$_POST[pjng_kain]',
-		rol='$_POST[qty3]',
-		bruto='$_POST[qty4]',
-		g_shift='$_POST[g_shift]',
-		no_program='$_POST[no_program]',
-		benang='$benang',
-		std_cok_wrn='$_POST[std_cok_wrn]',
-		speed='$_POST[speed]',
-		susut_lebar='$_POST[susut_lebar]',
-		susut_panjang='$_POST[susut_panjang]',
-		sc1='$_POST[sc1]',
-		sc2='$_POST[sc2]',
-		sc3='$_POST[sc3]',
-		sc4='$_POST[sc4]',
-		sk='$_POST[sk]',
-		stm='$_POST[stm]',
-		ws_abc='$_POST[ws_abc]',
-		ws='$_POST[ws]',
-		ket='$_POST[ket]',
-		tgl_buat=now(),
-		tgl_target=ADDDATE(now(), INTERVAL '$_POST[target]' HOUR_MINUTE),
-		tgl_update=now()"); 	  
-	  
+	$benang=str_replace("'","''",$_POST['benang']);
+	$tglbuat = ($_POST['tgl_buat'] != '' && $_POST['waktu_buat'] != '') ? $_POST['tgl_buat'] . " " . $_POST['waktu_buat'] : null;
+	$target_menit = is_numeric($_POST['target']) ? $_POST['target'] : 0;  
+	$query_insert = "INSERT INTO db_dying.tbl_montemp (id_schedule,nokk,operator,colorist,leader,pakai_air,
+					carry_over,shift,gramasi_a,lebar_a,gramasi_s,lebar_s,
+					pjng_kain,rol,bruto,g_shift,no_program,benang,
+					std_cok_wrn,speed,susut_lebar,susut_panjang,
+					sc1,sc2,sc3,sc4,sk,stm,ws_abc,ws,ket,
+					tgl_buat,tgl_target,tgl_update
+					)VALUES(
+						?,?,?,?,?,?,?,?,?,?,?,?,?,
+						?,?,?,?,?,?,?,?,?,?,?,?,?,
+						?,?,?,?,?,GETDATE(), DATEADD(MINUTE, CAST(? AS INT), GETDATE()), GETDATE()
+						)";
+					$params= [$_POST['id'],$_POST['nokk'],$_POST['operator'],$_POST['colorist'],$_POST['leader'],
+								$_POST['pakai_air'],$_POST['carry_over'],$_POST['shift'],$_POST['grms_a'],$_POST['lebar_a'],
+								$_POST['grms1_a'],$_POST['lebar1_a'],$_POST['pjng_kain'],$_POST['qty3'],$_POST['qty4'],
+								$_POST['g_shift'],$_POST['no_program'],$benang,$_POST['std_cok_wrn'],$_POST['speed'],
+								$_POST['susut_lebar'],$_POST['susut_panjang'],$_POST['sc1'],$_POST['sc2'],$_POST['sc3'],
+								$_POST['sc4'],$_POST['sk'],$_POST['stm'],$_POST['ws_abc'],$_POST['ws'],$_POST['ket'],
+								$target_menit
+							];
+	$sqlData	= sqlsrv_query($con,$query_insert, $params);
+		
 		if($sqlData){
-			/*$sqlD=mysqli_query("UPDATE tbl_schedule SET 
+			/*$sqlD=sqlsrv_query("UPDATE tbl_schedule SET 
 		  status='sedang jalan',
 		  tgl_update=now()
 		  WHERE id='$_POST[id]'");*/
-			$sqlD=mysqli_query($con,"UPDATE tbl_schedule SET 
-		  status='sedang jalan',
-		  tgl_update=now()
-		  WHERE status='antri mesin' and no_mesin='".$rcek['no_mesin']."' and no_urut='1' ");
+			$sqlD=sqlsrv_query($con,"UPDATE db_dying.tbl_schedule SET 
+		  							status='sedang jalan',
+		  							tgl_update=GETDATE()
+		  							WHERE 
+										status='antri mesin' 
+										and no_mesin='".$rcek['no_mesin']."' 
+										and no_urut='1' ");
 			echo "<script>swal({
-  title: 'Data Tersimpan',   
-  text: 'Klik Ok untuk input data kembali',
-  type: 'success',
-  }).then((result) => {
-  if (result.value) {
-    
-	 window.location.href='?p=Monitoring-Tempelan'; 
-  }
-});</script>";
-		}
-		
-			
-	}
-    if($_POST['update']=="update"){
-	  $warna=str_replace("'","''",$_POST['warna']);
-	  $nowarna=str_replace("'","''",$_POST['no_warna']);	
-	  $jns=str_replace("'","''",$_POST['jns_kain']);
-	  $po=str_replace("'","''",$_POST['no_po']);
-	  $lot=trim($_POST['lot']);	
-  	  $sqlData=mysqli_query($con,"UPDATE tbl_montemp SET 
-		  operator='$_POST[operator]',
-		  colorist='$_POST[colorist]',
-		  leader='$_POST[leader]',
-		  shift='$_POST[shift]',
-		  gramasi_a='$_POST[grms_a]',
-		  lebar_a='$_POST[lebar_a]',
-		  rol='$_POST[qty3]',
-		  bruto='$_POST[qty4]',
-		  pjng_kain='$_POST[pjng_kain]',
-		  g_shift='$_POST[g_shift]',
-		  speed='$_POST[speed]',
-		  susut_lebar='$_POST[susut_lebar]',
-		  susut_panjang='$_POST[susut_panjang]',
-		  sc1='$_POST[sc1]',
-		  sc2='$_POST[sc2]',
-		  sc3='$_POST[sc3]',
-		  sc4='$_POST[sc4]',
-		  sk='$_POST[sk]',
-		  stm='$_POST[stm]',
-		  ws_abc='$_POST[ws_abc]',
-		  ws='$_POST[ws]',
-		  ket='$_POST[ket]',
-		  tgl_update=now()
-		  WHERE nokk='$_POST[nokk]'");	 	  
-	  
-		if($sqlData){
-			// echo "<script>alert('Data Telah Diubah');</script>";
-			// echo "<script>window.location.href='?p=Input-Data-KJ;</script>";
-			echo "<script>swal({
-  title: 'Data Telah DiUbah',   
-  text: 'Klik Ok untuk input data kembali',
-  type: 'success',
-  }).then((result) => {
-  if (result.value) {
-    
-	 window.location.href='?p=Monitoring-Tempelan'; 
-  }
-});</script>";
-		}
-		
-			
-	}
+				title: 'Data Tersimpan',   
+				text: 'Klik Ok untuk input data kembali',
+				type: 'success',
+				}).then((result) => {
+				if (result.value) {
+					
+					window.location.href='?p=Monitoring-Tempelan'; 
+				}
+				});</script>";
+		}	
+	if ($sqlData === false) {
+			$errors = sqlsrv_errors();
+			$msg = "";
+			if ($errors !== null) {
+				foreach ($errors as $err) {
+					$msg .= "SQLSTATE: " . $err['SQLSTATE'] . "\n";
+					$msg .= "Kode: " . $err['code'] . "\n";
+					$msg .= "Pesan: " . $err['message'] . "\n\n";
+				}
+			}
+			echo "
+			<script>
+				swal({
+					title: 'Error SQL Server!',
+					text: `" . addslashes($msg) . "`,
+					icon: 'error',
+				});
+			</script>";
+
+			exit; 
+		}	
+}
 ?>
 <script>
 function roundToTwo(num) {    

@@ -1,36 +1,64 @@
 <?php
   include "koneksiLAB.php";
   include "koneksi.php";
+  session_start();
   $nokk=$_GET['nokk'];
-  $sqlCek=mysqli_query($con,"SELECT * FROM tbl_schedule WHERE nokk='$nokk' ORDER BY id DESC LIMIT 1");
-  $cek=mysqli_num_rows($sqlCek);
-  $rcek=mysqli_fetch_array($sqlCek);
-  $monCek1=mysqli_query($con,"SELECT * FROM tbl_montemp WHERE nokk='$nokk' ORDER BY id DESC LIMIT 1");
-  $mcek1=mysqli_num_rows($monCek1);
-  $rmcek1=mysqli_fetch_array($monCek1);
-  $sqlCek1=mysqli_query($con,"SELECT * FROM tbl_bakbul WHERE no_kk='$nokk' ORDER BY rec_datecreated DESC LIMIT 1");
-  $cek1=mysqli_num_rows($sqlCek1);
-  $rcek1=mysqli_fetch_array($sqlCek1);
-  $sqlcek2=mysqli_query($con,"SELECT
-   	id,
-	  if(COUNT(lot)>1,'Gabung Kartu','') as ket_kartu,
-	  if(COUNT(lot)>1,CONCAT('(',COUNT(lot),'kk',')'),'') as kk,
-	  GROUP_CONCAT(nokk SEPARATOR ', ') as g_kk,
-	  no_mesin,
-	  no_urut,	
-	  sum(rol) as rol,
-	  sum(bruto) as bruto
-  FROM
-	  tbl_schedule 
-  WHERE
-	  (status='antri mesin' or status='sedang jalan') and no_mesin='".$rcek['no_mesin']."'  and no_urut='".$rcek['no_urut']."'
-  GROUP BY
-	  no_mesin,
-	  no_urut 
-  ORDER BY
-	  id ASC");
-  $cek2=mysqli_num_rows($sqlcek2);
-  $rcek2=mysqli_fetch_array($sqlcek2);
+  $query_cek = "SELECT TOP 1
+          COUNT(*) OVER() as total_rows, 
+            * 
+          FROM db_dying.tbl_schedule 
+          WHERE 
+            nokk='$nokk' 
+          ORDER BY 
+            id DESC 
+          ";
+  $sqlCek	=sqlsrv_query($con,$query_cek);
+  $rcek	=sqlsrv_fetch_array($sqlCek);
+  $cek	=$rcek['total_rows'];
+  $query_cek1 = "SELECT TOP 1 
+            COUNT(*) OVER() as total_rows, 
+            * 
+          FROM 
+            db_dying.tbl_montemp 
+          WHERE 
+            nokk='$nokk' 
+            and (status='antri mesin' or status='sedang jalan' or status='selesai') 
+          ORDER BY id DESC";
+  $sqlCek1=	sqlsrv_query($con,$query_cek1);
+  $rcek1	=	sqlsrv_fetch_array($sqlCek1);
+  $cek1	=	$rcek1['total_rows'];
+  $query_cek2 = "SELECT
+            COUNT(*) OVER() as total_rows,
+            MAX(id) as id,
+            CASE
+              WHEN COUNT(lot)>1 THEN 'Gabung Kartu'
+              ELSE ''
+            END AS ket_kartu,
+            CASE 
+              WHEN COUNT(lot) > 1 
+              THEN CONCAT('(', CAST(COUNT(lot) AS VARCHAR), 'kk', ')') 
+              ELSE '' 
+            END AS kk,
+            STRING_AGG(nokk, ', ') AS g_kk,
+            no_mesin,
+            no_urut,
+            sum(rol) as rol,
+            sum(bruto) as bruto
+          FROM
+            db_dying.tbl_schedule
+          WHERE
+            NOT status = 'selesai'
+            and no_mesin='".$rcek['no_mesin']."'
+            and no_urut= '".$rcek['no_urut']."'
+          GROUP BY
+            no_mesin,
+            no_urut
+          ORDER BY
+            id ASC";
+  // echo $query_cek2;
+  $sqlcek2 = sqlsrv_query($con,$query_cek2);
+  $rcek2	 = sqlsrv_fetch_array($sqlcek2);
+  $cek2	 = $rcek2['total_rows'];
   if($rcek2['ket_kartu']!=""){$ketsts=$rcek2['ket_kartu']."\n(".$rcek2['g_kk'].")";}else{$ketsts="";}
 ?>
 <?php
@@ -186,8 +214,8 @@
             <select id="operator" name="operator" class="form-control" required>
               <option value="">Pilih</option>
                 <?php 
-							    $sqlKap=mysqli_query($con,"SELECT nama FROM tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
-							    while($rK=mysqli_fetch_array($sqlKap)){
+							    $sqlKap=sqlsrv_query($con,"SELECT nama FROM db_dying.tbl_staff WHERE jabatan='Operator' ORDER BY nama ASC");
+							    while($rK=sqlsrv_fetch_array($sqlKap)){
 							  ?>
 							<option value="<?php echo $rK['nama']; ?>"><?php echo $rK['nama']; ?></option>
 							 <?php } ?>	  
@@ -200,8 +228,8 @@
             <select id="leader" name="leader" class="form-control" required>
               <option value="">Pilih</option>
 							  <?php 
-							    $sqlKap=mysqli_query($con,"SELECT nama FROM tbl_staff WHERE jabatan='Leader' ORDER BY nama ASC");
-							    while($rK=mysqli_fetch_array($sqlKap)){
+							    $sqlKap=sqlsrv_query($con,"SELECT nama FROM db_dying.tbl_staff WHERE jabatan='Leader' ORDER BY nama ASC");
+							    while($rK=sqlsrv_fetch_array($sqlKap)){
 							  ?>
 							<option value="<?php echo $rK['nama']; ?>"><?php echo $rK['nama']; ?></option>
 							 <?php } ?>	  
@@ -294,28 +322,28 @@
 <?php
   // if($_POST['save']=="save"){
   //   $rec_usercreated = $_SESSION['user_id10'];
-  //   $no_kk = mysqli_real_escape_string($con, $_POST['no_kk']);
-  //   $gmrs = mysqli_real_escape_string($con, $_POST['grms']);
-  //   $qty_order = mysqli_real_escape_string($con, $_POST['qty1']);
-  //   $lot = mysqli_real_escape_string($con, $_POST['lot']);
-  //   $rol = mysqli_real_escape_string($con, $_POST['qty3']);
-  //   $qty_rol = mysqli_real_escape_string($con, $_POST['qty_rol']);
-  //   $benang = mysqli_real_escape_string($con, $_POST['benang']);
-  //   $standar_cok_col = mysqli_real_escape_string($con, $_POST['std_cok_wrn']);
-  //   $shift = mysqli_real_escape_string($con, $_POST['shift']);
-  //   $g_shift = mysqli_real_escape_string($con, $_POST['g_shift']);
-  //   $color_code = mysqli_real_escape_string($con, $_POST['colCode']);
-  //   $operator = mysqli_real_escape_string($con, $_POST['operator']);
-  //   $leader = mysqli_real_escape_string($con, $_POST['leader']);
-  //   $speed = mysqli_real_escape_string($con, $_POST['speed']);
-  //   $singeing1 = mysqli_real_escape_string($con, $_POST['singeing1']);
-  //   $presure1 = mysqli_real_escape_string($con, $_POST['presure1']);
-  //   $singeing2 = mysqli_real_escape_string($con, $_POST['singeing2']);
-  //   $presure2 = mysqli_real_escape_string($con, $_POST['presure2']);
-  //   $singeing_type = mysqli_real_escape_string($con, $_POST['singeing_type']);
-  //   $proses = mysqli_real_escape_string($con, $_POST['proses']);
+  //   $no_kk = sqlsrv_real_escape_string($con, $_POST['no_kk']);
+  //   $gmrs = sqlsrv_real_escape_string($con, $_POST['grms']);
+  //   $qty_order = sqlsrv_real_escape_string($con, $_POST['qty1']);
+  //   $lot = sqlsrv_real_escape_string($con, $_POST['lot']);
+  //   $rol = sqlsrv_real_escape_string($con, $_POST['qty3']);
+  //   $qty_rol = sqlsrv_real_escape_string($con, $_POST['qty_rol']);
+  //   $benang = sqlsrv_real_escape_string($con, $_POST['benang']);
+  //   $standar_cok_col = sqlsrv_real_escape_string($con, $_POST['std_cok_wrn']);
+  //   $shift = sqlsrv_real_escape_string($con, $_POST['shift']);
+  //   $g_shift = sqlsrv_real_escape_string($con, $_POST['g_shift']);
+  //   $color_code = sqlsrv_real_escape_string($con, $_POST['colCode']);
+  //   $operator = sqlsrv_real_escape_string($con, $_POST['operator']);
+  //   $leader = sqlsrv_real_escape_string($con, $_POST['leader']);
+  //   $speed = sqlsrv_real_escape_string($con, $_POST['speed']);
+  //   $singeing1 = sqlsrv_real_escape_string($con, $_POST['singeing1']);
+  //   $presure1 = sqlsrv_real_escape_string($con, $_POST['presure1']);
+  //   $singeing2 = sqlsrv_real_escape_string($con, $_POST['singeing2']);
+  //   $presure2 = sqlsrv_real_escape_string($con, $_POST['presure2']);
+  //   $singeing_type = sqlsrv_real_escape_string($con, $_POST['singeing_type']);
+  //   $proses = sqlsrv_real_escape_string($con, $_POST['proses']);
 
-  //   $sqlData = mysqli_query($con,"INSERT INTO tbl_bakbul SET
+  //   $sqlData = sqlsrv_query($con,"INSERT INTO tbl_bakbul SET
   //     rec_usercreated = '$rec_usercreated',
   //     rec_userupdate = '$rec_usercreated',
   //     rec_datecreated = now(),
@@ -343,7 +371,7 @@
   // 		proses = '$proses'"); 	  
   
   //   if($sqlData){
-  //     $sqlData2 = mysqli_query($con,"INSERT INTO tbl_montemp SET
+  //     $sqlData2 = sqlsrv_query($con,"INSERT INTO tbl_montemp SET
   //       id_schedule='$rcek[id]',
 	// 	    nokk='$no_kk',
   //       nodemand='$rcek[nodemand]',
@@ -361,7 +389,7 @@
 	// 	    tgl_update=now()
   //     ");
   //     if($sqlData2){
-  //       $sqlD=mysqli_query($con,"UPDATE tbl_schedule SET 
+  //       $sqlD=sqlsrv_query($con,"UPDATE tbl_schedule SET 
 	// 	    status='sedang jalan',
 	// 	    tgl_update=now()
 	// 	    WHERE status='antri mesin' and no_mesin='".$rcek['no_mesin']."' and no_urut='1' ");
@@ -392,118 +420,247 @@
 
 <?php
   if($_POST['save']=="save"){
-    $rec_usercreated = $_SESSION['user_id10'];
-    $no_kk = mysqli_real_escape_string($con, $_POST['no_kk']);
-    $gmrs = mysqli_real_escape_string($con, $_POST['grms']);
-    $qty_order = mysqli_real_escape_string($con, $_POST['qty1']);
-    $lot = mysqli_real_escape_string($con, $_POST['lot']);
-    $rol = mysqli_real_escape_string($con, $_POST['qty3']);
-    $qty_rol = mysqli_real_escape_string($con, $_POST['qty_rol']);
-    $benang = mysqli_real_escape_string($con, $_POST['benang']);
-    $standar_cok_col = mysqli_real_escape_string($con, $_POST['std_cok_wrn']);
-    $shift = mysqli_real_escape_string($con, $_POST['shift']);
-    $g_shift = mysqli_real_escape_string($con, $_POST['g_shift']);
-    $color_code = mysqli_real_escape_string($con, $_POST['colCode']);
-    $operator = mysqli_real_escape_string($con, $_POST['operator']);
-    $leader = mysqli_real_escape_string($con, $_POST['leader']);
-    $speed = mysqli_real_escape_string($con, $_POST['speed']);
-    $singeing1 = mysqli_real_escape_string($con, $_POST['singeing1']);
-    $presure1 = mysqli_real_escape_string($con, $_POST['presure1']);
-    $singeing2 = mysqli_real_escape_string($con, $_POST['singeing2']);
-    $presure2 = mysqli_real_escape_string($con, $_POST['presure2']);
-    $singeing_type = mysqli_real_escape_string($con, $_POST['singeing_type']);
-    $proses = mysqli_real_escape_string($con, $_POST['proses']);
+    function clean($data, $is_int = false) {
+        $val = isset($data) ? trim($data) : '';
+        if ($val === '') return null; 
+        return $is_int ? (int)$val : $val;
+    }
+    // $rec_usercreated = $_SESSION['user_id10'];
+    // $no_kk = sqlsrv_real_escape_string($con, $_POST['no_kk']);
+    // $gmrs = sqlsrv_real_escape_string($con, $_POST['grms']);
+    // $qty_order = sqlsrv_real_escape_string($con, $_POST['qty1']);
+    // $lot = sqlsrv_real_escape_string($con, $_POST['lot']);
+    // $rol = sqlsrv_real_escape_string($con, $_POST['qty3']);
+    // $qty_rol = sqlsrv_real_escape_string($con, $_POST['qty_rol']);
+    // $benang = sqlsrv_real_escape_string($con, $_POST['benang']);
+    // $standar_cok_col = sqlsrv_real_escape_string($con, $_POST['std_cok_wrn']);
+    // $shift = sqlsrv_real_escape_string($con, $_POST['shift']);
+    // $g_shift = sqlsrv_real_escape_string($con, $_POST['g_shift']);
+    // $color_code = sqlsrv_real_escape_string($con, $_POST['colCode']);
+    // $operator = sqlsrv_real_escape_string($con, $_POST['operator']);
+    // $leader = sqlsrv_real_escape_string($con, $_POST['leader']);
+    // $speed = sqlsrv_real_escape_string($con, $_POST['speed']);
+    // $singeing1 = sqlsrv_real_escape_string($con, $_POST['singeing1']);
+    // $presure1 = sqlsrv_real_escape_string($con, $_POST['presure1']);
+    // $singeing2 = sqlsrv_real_escape_string($con, $_POST['singeing2']);
+    // $presure2 = sqlsrv_real_escape_string($con, $_POST['presure2']);
+    // $singeing_type = sqlsrv_real_escape_string($con, $_POST['singeing_type']);
+    // $proses = sqlsrv_real_escape_string($con, $_POST['proses']);
 
-    mysqli_autocommit($con, false);
-    try{
+    $status         = 1; // Default status
+
+    // Variabel dari $_POST
+    $no_kk           = clean($_POST['no_kk']);
+    $gmrs            = clean($_POST['grms']);
+    $qty_order       = clean($_POST['qty1'], true); // Kolom INT
+    $lot             = clean($_POST['lot']);
+    $rol             = clean($_POST['qty3']);
+    $qty_rol         = clean($_POST['qty_rol'], true); // Kolom INT
+    $benang          = clean($_POST['benang']);
+    $standar_cok_col = clean($_POST['std_cok_wrn']);
+    $shift           = clean($_POST['shift']);
+    $g_shift         = clean($_POST['g_shift']);
+    $color_code      = clean($_POST['colCode']);
+    $operator        = clean($_POST['operator']);
+    $leader          = clean($_POST['leader']);
+    $speed           = clean($_POST['speed']);
+    $singeing1       = clean($_POST['singeing1']);
+    $presure1        = clean($_POST['presure1']);
+    $singeing2       = clean($_POST['singeing2']);
+    $presure2        = clean($_POST['presure2']);
+    $singeing_type   = clean($_POST['singeing_type']);
+    $proses          = clean($_POST['proses']);
+    $target_menit    = is_numeric($_POST['target']) ? $_POST['target'] : 0;  
       // Query 1: Insert ke tbl_bakbul
-      $sqlData = mysqli_query($con,"INSERT INTO tbl_bakbul SET
-        rec_usercreated = '$rec_usercreated',
-        rec_userupdate = '$rec_usercreated',
-        rec_datecreated = now(),
-        rec_dateupdate = now(),
-        rec_status = '1',
-        no_kk = '$no_kk',
-        gmrs = '$gmrs',
-        qty_order = '$qty_order',
-        lot = '$lot',
-        rol = '$rol',
-        qty_rol = '$qty_rol',
-        benang = '$benang',
-        standar_cok_col='$standar_cok_col',
-        shift = '$shift',
-        g_shift = '$g_shift',
-        color_code = '$color_code',
-        operator = '$operator',
-        leader = '$leader',
-        speed = '$speed',
-        singeing1 = '$singeing1',
-        presure1 = '$presure1',
-        singeing2 = '$singeing2',
-        presure2 = '$presure2',
-        singeing_type = '$singeing_type',
-        proses = '$proses'"
-      );
-      if (!$sqlData) {
-        throw new Exception("Gagal insert ke tbl_bakbul");
-      }
+    
+      // if (!$sqlData) {
+      //   throw new Exception("Gagal insert ke tbl_bakbul");
+      // }
 
       // Query 2: Insert ke tbl_montemp
-      $sqlData2 = mysqli_query($con,"INSERT INTO tbl_montemp SET
-        id_schedule='$rcek[id]',
-        nokk='$no_kk',
-        nodemand='$rcek[nodemand]',
-        operator='$operator',
-        leader='$leader',
-        shift='$shift',
-        gramasi_a='$gmrs',
-        rol='$rol',
-        g_shift='$g_shift',
-        benang='$benang',
-        std_cok_wrn='$standar_cok_col',
-        speed='$speed',
-        bruto='$qty_order',
-        jammasukkain=now(),
-        tgl_buat=now(),
-        tgl_target=ADDDATE(now(), INTERVAL '$_POST[target]' HOUR_MINUTE),
-        tgl_update=now()
-      ");
-      if (!$sqlData2) {
-        throw new Exception("Gagal insert ke tbl_montemp: " . mysqli_error($con));
-      }
-      mysqli_commit($con);
+      $query_montemp = "INSERT INTO db_dying.tbl_montemp(
+                        id_schedule, nokk, nodemand, operator, leader, 
+                        shift, gramasi_a, rol, g_shift, benang, std_cok_wrn, speed, bruto, 
+                        jammasukkain, tgl_buat, tgl_target, tgl_update)
+                        VALUES(
+                                ?,?,?,?,?,?,?,?,?,?,?,?,?,GETDATE(),GETDATE(),DATEADD(MINUTE, CAST(? AS INT), GETDATE()),GETDATE()
+                        )";
+            
+      $params2 = [
+                      $rcek['id'],        
+                      $no_kk,             
+                      $rcek['nodemand'],  
+                      $operator,          
+                      $leader,            
+                      $shift,             
+                      $gmrs,              
+                      $rol,               
+                      $g_shift,           
+                      $benang,            
+                      $standar_cok_col,   
+                      $speed,             
+                      $qty_order,         
+                      $target_menit_val   
+                  ];
+      $sqlData2 = sqlsrv_query($con,$query_montemp, $params2);
+      // $sqlData2 = sqlsrv_query($con,"INSERT INTO db_dying.tbl_montemp SET
+      //   id_schedule=
+      //   nokk=
+      //   nodemand=
+      //   operator=
+      //   leader=
+      //   shift=
+      //   gramasi_a=
+      //   rol=
+      //   g_shift=
+      //   benang=
+      //   std_cok_wrn=
+      //   speed=
+      //   bruto=
+      //   jammasukkain=
+      //   tgl_buat=
+      //   tgl_target=
+      //   tgl_update=
+      // ");
+       
+      // if (!$sqlData2) {
+      //   throw new Exception("Gagal insert ke tbl_montemp: " . sqlsrv_error($con));
+      // }
+      // sqlsrv_commit($con);
+
+      if($sqlData2){
+        $query = "INSERT INTO db_dying.tbl_bakbul (
+            rec_usercreated, 
+            rec_userupdate, 
+            rec_datecreated, 
+            rec_dateupdate, 
+            rec_status,
+            no_kk, 
+            gmrs, 
+            qty_order, 
+            lot, 
+            rol, 
+            qty_rol, 
+            benang,
+            standar_cok_col, 
+            shift, 
+            g_shift, 
+            color_code, 
+            operator, 
+            leader, 
+            speed, 
+            singeing1, 
+            presure1, 
+            singeing2, 
+            presure2, 
+            singeing_type, 
+            proses
+        ) VALUES (
+            ?, ?, GETDATE(), GETDATE(), '1',
+            ?, ?, ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+            ?, ?
+        )";
+
+        $params = [
+            $rec_usercreated,
+            $rec_usercreated, // untuk rec_userupdate
+            $no_kk,
+            $gmrs,
+            $qty_order,
+            $lot,
+            $rol,
+            $qty_rol,
+            $benang,
+            $standar_cok_col,
+            $shift,
+            $g_shift,
+            $color_code,
+            $operator,
+            $leader,
+            $speed,
+            $singeing1,
+            $presure1,
+            $singeing2,
+            $presure2,
+            $singeing_type,
+            $proses
+          ];
+
+      $sqlData = sqlsrv_query($con, $query, $params);
+			/*$sqlD=sqlsrv_query("UPDATE tbl_schedule SET 
+		  status='sedang jalan',
+		  tgl_update=now()
+		  WHERE id='$_POST[id]'");*/
+        $sqlD=sqlsrv_query($con,"UPDATE db_dying.tbl_schedule SET 
+                      status='sedang jalan',
+                      tgl_update=GETDATE()
+                      WHERE 
+                      status='antri mesin' 
+                      and no_mesin='".$rcek['no_mesin']."' 
+                      and no_urut='1' ");
+        echo "<script>swal({
+          title: 'Data Tersimpan',   
+          text: 'Klik Ok untuk input data kembali',
+          type: 'success',
+          }).then((result) => {
+          if (result.value) {
+            
+            window.location.href='?p=Monitoring-Tempelan'; 
+          }
+          });</script>";
+      }	
+      if ($sqlData2 === false) {
+          $errors = sqlsrv_errors();
+          $msg = "";
+          if ($errors !== null) {
+            foreach ($errors as $err) {
+              $msg .= "SQLSTATE: " . $err['SQLSTATE'] . "\n";
+              $msg .= "Kode: " . $err['code'] . "\n";
+              $msg .= "Pesan: " . $err['message'] . "\n\n";
+            }
+          }
+          echo "
+          <script>
+            swal({
+              title: 'Error SQL Server!',
+              text: `" . addslashes($msg) . "`,
+              icon: 'error',
+            });
+          </script>";
+
+          exit; 
+        }
       // Query 3: Update tbl_schedule
-      $sqlD = mysqli_query($con,"UPDATE tbl_schedule SET 
-        status='sedang jalan',
-        tgl_update=now()
-        WHERE status='antri mesin' AND no_mesin='".$rcek['no_mesin']."' AND no_urut='1'"
-      );
-      if (!$sqlD) {
-        throw new Exception("Gagal update tbl_schedule");
-      }
+      // $sqlD = sqlsrv_query($con,"UPDATE db_dying.tbl_schedule SET 
+      //   status='sedang jalan',
+      //   tgl_update=GETDATE()
+      //   WHERE status='antri mesin' AND no_mesin='".$rcek['no_mesin']."' AND no_urut='1'"
+      // );
+      // if (!$sqlD) {
+      //   throw new Exception("Gagal update tbl_schedule");
+      // }
 
-      echo "<script>swal({
-        title: 'Data Tersimpan',   
-        text: 'Klik Ok untuk input data kembali',
-        type: 'success',
-      }).then((result) => {
-        if (result.value) {
-          window.location.href='?p=Monitoring-Tempelan'; 
-        }
-      });</script>";
-    } catch (Exception $e) {
-      mysqli_rollback($con);
+      // echo "<script>swal({
+      //   title: 'Data Tersimpan',   
+      //   text: 'Klik Ok untuk input data kembali',
+      //   type: 'success',
+      // }).then((result) => {
+      //   if (result.value) {
+      //     window.location.href='?p=Monitoring-Tempelan'; 
+      //   }
+      // });</script>";
+      // sqlsrv_rollback($con);
 
-      echo "<script>swal({
-        title: 'Gagal Menyimpan Data',   
-        text: 'Kesalahan: " . addslashes($e->getMessage()) . "',
-        type: 'error',
-      }).then((result) => {
-        if (result.value) {
-          window.location.href='?p=Monitoring-Tempelan'; 
-        }
-      });</script>";
-    }
-  }
-  mysqli_autocommit($con, true);
+      // echo "<script>swal({
+      //   title: 'Gagal Menyimpan Data',   
+      //   text: 'Kesalahan: " . addslashes($e->getMessage()) . "',
+      //   type: 'error',
+      // }).then((result) => {
+      //   if (result.value) {
+      //     window.location.href='?p=Monitoring-Tempelan'; 
+      //   }
+      // });</script>";
+}
+  
 ?>

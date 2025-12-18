@@ -3,12 +3,13 @@
 //session_start();
 ini_set("error_reporting", 1);
 include "../../koneksi.php";
+include "../../helpers.php";
 include "../../koneksiLAB.php";
 //--
 $idkk = $_REQUEST['idkk'];
 $act = $_GET['g'];
-$sqlbg = mysqli_query($con, "select * from tbl_schedule where id='$_GET[ids]'");
-$rowbg = mysqli_fetch_array($sqlbg);
+$sqlbg = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id='$_GET[ids]'");
+$rowbg = sqlsrv_fetch_array($sqlbg);
 //-
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -283,10 +284,10 @@ $jb3='';
 // WHERE  JobOrders.documentno='$ssr[documentno]' and processcontrolJO.pcid='$r[pcid]'");
 // 	$r3 = sqlsrv_fetch_array($bng11);
 	//
-	$sqlsmp = mysqli_query($con, "select * from tbl_schedule where id='$_GET[ids]'");
-	$rowsmp = mysqli_fetch_array($sqlsmp);
-	$sqlsmp1 = mysqli_query($con, "select * from tbl_montemp where id='$_GET[idm]'");
-	$rowsmp1 = mysqli_fetch_array($sqlsmp1);
+	$sqlsmp = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule where id='$_GET[ids]'");
+	$rowsmp = sqlsrv_fetch_array($sqlsmp);
+	$sqlsmp1 = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_montemp where id='$_GET[idm]'");
+	$rowsmp1 = sqlsrv_fetch_array($sqlsmp1);
 	if ($rowsmp['kapasitas'] > 0) {
 		$loading = round($rowsmp1['bruto'] / $rowsmp['kapasitas'], 4) * 100;
 	}
@@ -328,9 +329,9 @@ $jb3='';
 			</td>
 			<td colspan="2">
 				<pre>Tanggal	: <?php if ($rowsmp['tgl_buat'] == '') {
-										echo date("d-m-Y", strtotime($rowsmp['tgl_update']));
+										echo date("d-m-Y", strtotime(formatDateTime($rowsmp['tgl_update'],'Y-m-d H:i:s')));
 									} else {
-										echo date("d-m-Y", strtotime($rowsmp['tgl_buat']));
+										echo date("d-m-Y", strtotime(formatDateTime($rowsmp['tgl_buat'],'Y-m-d H:i:s')));
 									} ?></pre>
 			</td>
 			<td colspan="2">
@@ -370,7 +371,7 @@ $jb3='';
 			<td>Dye: <?php echo $rowsmp1['grm_dye']; ?></td>
 			<td colspan="2">
 				<pre>Masuk Kain Jam 	: <?php if ($rowsmp1['tgl_buat'] != "") {
-												echo date('H:i', strtotime($rowsmp1['tgl_buat']));
+												echo date('H:i', strtotime(formatDateTime($rowsmp1['tgl_buat'], 'Y-m-d H:i:s')));
 											} ?></pre>
 			</td>
 		</tr>
@@ -470,7 +471,7 @@ $jb3='';
 	</table>
 	
 	<?php
-		echo date("d-m-Y H:i:s", strtotime($rowsmp1['tgl_buat']));
+		echo date("d-m-Y H:i:s", strtotime(formatDateTime($rowsmp1['tgl_buat'],'Y-m-d H:i:s')));
 	//} 
 	?>
 	<script>

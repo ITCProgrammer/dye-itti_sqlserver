@@ -3,11 +3,12 @@
 //session_start();
 ini_set("error_reporting", 1);
 include "../../koneksi.php";
+include "../../helpers.php";
 //--
 $idkk = $_REQUEST['idkk'];
 $act = $_GET['g'];
-$sqlbg = mysqli_query($con, "select * from tbl_schedule where id='$_GET[ids]'");
-$rowbg = mysqli_fetch_array($sqlbg);
+$sqlbg = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule where id='$_GET[ids]'");
+$rowbg = sqlsrv_fetch_array($sqlbg);
 //-
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -279,8 +280,8 @@ $rowbg = mysqli_fetch_array($sqlbg);
   // WHERE  JobOrders.documentno='$ssr[documentno]' and processcontrolJO.pcid='$r[pcid]'");
   // $r3 = sqlsrv_fetch_array($bng11);
   //
-  $sqlsmp = mysqli_query($con, "select * from tbl_schedule where id='$_GET[ids]'");
-  $rowsmp = mysqli_fetch_array($sqlsmp);
+  $sqlsmp = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id='$_GET[ids]'");
+  $rowsmp = sqlsrv_fetch_array($sqlsmp);
   $target = explode(".", $rowsmp['target']);
   $jamtarget = $target[0];
   $menittarget = $target[1];
@@ -289,8 +290,8 @@ $rowbg = mysqli_fetch_array($sqlbg);
   } else {
     $mintarget = 0;
   }
-  $sqlsmp1 = mysqli_query($con, "SELECT * FROM tbl_montemp WHERE id='$_GET[idm]'");
-  $rowsmp1 = mysqli_fetch_array($sqlsmp1);
+  $sqlsmp1 = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_montemp WHERE id='$_GET[idm]'");
+  $rowsmp1 = sqlsrv_fetch_array($sqlsmp1);
 
   if ($rowsmp['kapasitas'] > 0) {
     $loading = round($rowsmp1['bruto'] / $rowsmp['kapasitas'], 4) * 100;
@@ -336,9 +337,9 @@ $rowbg = mysqli_fetch_array($sqlbg);
       </td>
       <td colspan="2">
         <pre>Tanggal	: <?php if ($rowsmp['tgl_buat'] == '') {
-                          echo date("d-m-Y", strtotime($rowsmp['tgl_update']));
+                          echo date("d-m-Y", strtotime(formatDateTime($rowsmp['tgl_update'])));
                         } else {
-                          echo date("d-m-Y", strtotime($rowsmp['tgl_buat']));
+                          echo date("d-m-Y", strtotime(formatDateTime($rowsmp['tgl_buat'])));
                         } ?></pre>
       </td>
       <td colspan="3">
@@ -381,7 +382,7 @@ $rowbg = mysqli_fetch_array($sqlbg);
       <td>Dye: <?php echo $rowsmp1['lebar_a'] . "x" . $rowsmp1['gramasi_a']; ?></td>
       <td colspan="3">
         <pre>Masuk Kain Jam 	: <?php if ($rowsmp1['tgl_buat'] != "") {
-                                  echo date('H:i', strtotime($rowsmp1['tgl_buat']));
+                                  echo date('H:i', strtotime(formatDateTime($rowsmp1['tgl_buat'], 'Y-m-d H:i:s')));
                                 } ?></pre>
       </td>
     </tr>
@@ -401,8 +402,8 @@ $rowbg = mysqli_fetch_array($sqlbg);
                         } ?> %</td>
       <td colspan="3">
         <?php
-        $db_benang  = mysqli_query($con, "SELECT * FROM tbl_montemp WHERE id = '$_GET[idm]'");
-        $rowsmp3    = mysqli_fetch_assoc($db_benang);
+        $db_benang  = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_montemp WHERE id = '$_GET[idm]'");
+        $rowsmp3    = sqlsrv_fetch_array($db_benang,SQLSRV_FETCH_ASSOC);
         ?>
         <pre>Benang			: <font size="-7"><?php echo strtoupper(substr(htmlentities($rowsmp3['benang'], ENT_QUOTES), 0, 30)); ?></font></pre>
       </td>
@@ -877,12 +878,12 @@ $rowbg = mysqli_fetch_array($sqlbg);
         <font size="-4">:</font>
       </td>
       <td width="20%" valign="top">
-        <font size="-4"><?php echo $rowsmp1['tgl_buat']; ?></font><br>
+        <font size="-4"><?php echo formatDateTime($rowsmp1['tgl_buat'], 'Y-m-d H:i:s'); ?></font><br>
         <font size="-4">
           <?php
 
-          $waktu_awal = $rowsmp1['jammasukkain'];
-          $target = $rowsmp['target'];
+          $waktu_awal = formatDateTime($rowsmp1['jammasukkain'], 'Y-m-d H:i:s');
+          $target = formatDateTime($rowsmp['target'], 'Y-m-d H:i:s');
 
           $date = new DateTime($waktu_awal);
 
@@ -898,7 +899,7 @@ $rowbg = mysqli_fetch_array($sqlbg);
           ?>
         </font><br>
         <font size="-4"><?php echo $rowsmp['target']; ?> jam</font><br>
-        <?php echo date("d-m-Y H:i:s", strtotime($rowsmp1['tgl_buat'])); ?>
+        <?php echo date("d-m-Y H:i:s", strtotime(formatDateTime($rowsmp1['tgl_buat'], 'Y-m-d H:i:s'))); ?>
       </td>
       <td rowspan="5">
         <img src="barcode.php?text=<?= $rowsmp1['id']; ?>&print=true&size=30" width="130">

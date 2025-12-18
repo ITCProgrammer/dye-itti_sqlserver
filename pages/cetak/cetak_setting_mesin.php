@@ -3,11 +3,12 @@
 ini_set("error_reporting", 1);
 include "../../koneksi.php";
 include "../../koneksiLAB.php";
+include "../../helpers.php";
 //--
 $idkk=$_REQUEST['idkk'];
 $act=$_GET['g'];
-$sqlbg=mysqli_query($con,"SELECT * FROM tbl_setting_mesin where id='$_GET[idstm]'");
-$rowbg=mysqli_fetch_array($sqlbg);
+$sqlbg=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_setting_mesin where id='$_GET[idstm]'");
+$rowbg=sqlsrv_fetch_array($sqlbg);
 //-
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -171,11 +172,11 @@ body {
 date_default_timezone_set('Asia/Jakarta');
  
  //
-$sqlstm=mysqli_query($con,"SELECT * FROM tbl_setting_mesin where id='$_GET[idstm]'");
-$rowstm=mysqli_fetch_array($sqlstm); 
+$sqlstm=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_setting_mesin where id='$_GET[idstm]'");
+$rowstm=sqlsrv_fetch_array($sqlstm); 
 
-$sqlm=mysqli_query($con,"SELECT kode FROM tbl_mesin where no_mesin='$rowstm[no_mc]'");
-$rowm=mysqli_fetch_array($sqlm); 
+$sqlm=sqlsrv_query($con,"SELECT kode FROM db_dying.tbl_mesin where no_mesin='$rowstm[no_mc]'");
+$rowm=sqlsrv_fetch_array($sqlm); 
  ?>
 <table width="100%" border="0" class="table-list1">
   <tr>
@@ -190,7 +191,7 @@ $rowm=mysqli_fetch_array($sqlm);
     <td width="10%" style="border-bottom:0px #000000 solid; border-top:0px #000000 solid; border-right:0px #000000 solid; border-left:0px #000000 solid;" align="left">&nbsp;</td>
     <td width="10%" style="border-bottom:0px #000000 solid; border-top:0px #000000 solid; border-right:0px #000000 solid; border-left:0px #000000 solid; font-size:11px;" align="left"><strong>TANGGAL CETAK</strong></td>
     <td width="2%" style="border-bottom:0px #000000 solid; border-top:0px #000000 solid; border-right:0px #000000 solid; border-left:0px #000000 solid; font-size:11px;" align="center">:</td>
-    <td width="15%" style="border-bottom:0px #000000 solid; border-top:0px #000000 solid; border-right:0px #000000 solid; border-left:0px #000000 solid; font-size:11px;" align="left"><strong><?php if($rowstm['tgl_buat']!=""){echo date("d-M-Y",strtotime($rowstm['tgl_buat']));} ?></strong></td>
+    <td width="15%" style="border-bottom:0px #000000 solid; border-top:0px #000000 solid; border-right:0px #000000 solid; border-left:0px #000000 solid; font-size:11px;" align="left"><strong><?php if($rowstm['tgl_buat']!=""){echo date("d-M-Y",strtotime(formatDateTime($rowstm['tgl_buat'],'Y-m-d H:i:s')));} ?></strong></td>
   </tr>
   <tr>
     <td width="10%" style="font-size:11px;" align="left"><strong>JENIS KAIN</strong></td>

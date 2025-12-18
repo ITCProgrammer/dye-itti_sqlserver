@@ -2,12 +2,13 @@
     //$lReg_username=$_SESSION['labReg_username'];
     ini_set("error_reporting", 1);
     include "../../koneksi.php";
+    include "../../helpers.php";
     include "../../koneksiLAB.php";
     //--
     $idkk  = $_REQUEST['idkk'];
     $act   = $_GET['g'];
-    $sqlbg = mysqli_query($con, "select * from tbl_schedule where id='$_GET[ids]'");
-    $rowbg = mysqli_fetch_array($sqlbg);
+    $sqlbg = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id='$_GET[ids]'");
+    $rowbg = sqlsrv_fetch_array($sqlbg);
     //-
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -295,8 +296,8 @@
       }
 
       //
-      $sqlsmp1     = mysqli_query($con, "SELECT * FROM tbl_schedule where id='$_GET[ids]'");
-      $rowmt       = mysqli_fetch_array($sqlsmp1);
+      $sqlsmp1     = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule where id='$_GET[ids]'");
+      $rowmt       = sqlsrv_fetch_array($sqlsmp1);
       $target      = explode(".", $rowmt['target']);
       $jamtarget   = $target[0];
       $menittarget = $target[1];
@@ -305,8 +306,8 @@
       } else {
           $mintarget = 0;
       }
-      $sqlsmp2 = mysqli_query($con, "SELECT * FROM tbl_montemp where id='$_GET[idm]'");
-      $rowmt2  = mysqli_fetch_array($sqlsmp2);
+      $sqlsmp2 = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_montemp where id='$_GET[idm]'");
+      $rowmt2  = sqlsrv_fetch_array($sqlsmp2);
       if ($rowmt['kapasitas'] > 0) {
           $loading = round($rowmt2['bruto'] / $rowmt['kapasitas'], 4) * 100;
       }
@@ -365,7 +366,7 @@
         <pre>Tanggal</pre>
       </td>
       <td colspan="2" style="border-left:0px #000000 solid;">:                                                               <?php if ($rowmt2['tgl_buat'] != "") {
-                                                                   echo date("d-m-Y", strtotime($rowmt2['tgl_buat']));
+                                                                   echo date("d-m-Y", strtotime(formatDateTime($rowmt2['tgl_buat'],'Y-m-d H:i:s')));
                                                                }?></td>
     </tr>
     <tr>
@@ -515,7 +516,7 @@
       <td style="border-right:0px #000000 solid;">
         <pre>Jam Masuk Kain</pre>
       </td>
-      <td style="border-left:0px #000000 solid;border-right:0px #000000 solid;">:                                                                                  <?php echo substr($rowmt2['tgl_buat'], 11, 5); ?></td>
+      <td style="border-left:0px #000000 solid;border-right:0px #000000 solid;">:                                                                                  <?php echo substr(formatDateTime($rowmt2['tgl_buat'], 'Y-m-d H:i:s'), 11, 5); ?></td>
       <td style="border-left:0px #000000 solid;">
         <pre>LB8 =                   <?php echo $rowmt2['lb8']; ?></pre>
       </td>
@@ -531,7 +532,7 @@
         <?php // echo date('H:i', strtotime('+' . $jamtarget . ' hour +' . $mintarget . ' minutes', strtotime($rowmt2['tgl_buat']))); ?>
 <?php
                                                                      // $jam_tambahan = $rowmt['target']; // Jam yang ingin ditambahkan
-    $waktu_awal     = strtotime(substr($rowmt2['tgl_buat'], 11, 5)); // Waktu awal
+    $waktu_awal     = strtotime(substr(formatDateTime($rowmt2['tgl_buat'],'Y-m-d H:i:s'), 11, 5)); // Waktu awal
     $jam_tambahan   = $target[0];                                    // Jam tambahan
     $menit_tambahan = $target[1];                                    // Menit tambahan
 
@@ -814,12 +815,12 @@
     <tr>
       <td>Tanggal </td>
       <td align="center"><?php if ($rowmt2['tgl_buat'] != "") {
-                             echo date("d-m-Y", strtotime($rowmt2['tgl_buat']));
+                             echo date("d-m-Y", strtotime(formatDateTime($rowmt2['tgl_buat'],'Y-m-d H:i:s')));
                          }?></td>
       <td>&nbsp;</td>
       <td>&nbsp;</td>
       <td align="center"><?php if ($rowmt2['tgl_buat'] != "") {
-                             echo date("d-m-Y", strtotime($rowmt2['tgl_buat']));
+                             echo date("d-m-Y", strtotime(formatDateTime($rowmt2['tgl_buat'],'Y-m-d H:i:s')));
                          }?></td>
     </tr>
     <tr>
