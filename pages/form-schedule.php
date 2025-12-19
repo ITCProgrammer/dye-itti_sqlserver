@@ -1158,6 +1158,11 @@
 
 <?php
 	if ($_POST['save'] == "save") {
+		function sqlsrv_last_insert_id($con) {
+			$stmt = sqlsrv_query($con, "SELECT SCOPE_IDENTITY() AS last_id");
+			$row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+			return $row['last_id'] ?? null;
+		}
 		// Cek mesin sedang jalan untuk no_urut 1
 		$sqlCekMesin = "SELECT COUNT(*) AS jml FROM db_dying.tbl_schedule WHERE status = 'sedang jalan' AND no_mesin = ?";
 		$paramsCekMesin = array($_POST['no_mc']);
@@ -1223,6 +1228,7 @@
 				 loading, resep, no_resep, no_resep2, suffix, suffix2, energi, dyestuff, proses,
 				 revisi, kategori_warna, ket_status, ket_kain, tgl_masuk,
 				 kk_kestabilan, kk_normal, tgl_update)
+				OUTPUT INSERTED.id
 				VALUES
 				(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 				 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,  GETDATE(), ?, ?, GETDATE())";
@@ -1274,6 +1280,33 @@
 
 			$sqlData = sqlsrv_query($con, $sqlInsert, $paramsInsert);
 			if ($sqlData) {
+				$rowInsert = sqlsrv_fetch_array($sqlData, SQLSRV_FETCH_ASSOC);
+				$last_id_schedule = $rowInsert['id'];
+				// $last_id_schedule = sqlsrv_last_insert_id($con); 
+				$nodemand   = $_POST['demand']; 
+				$nokk       = $kartu;           
+				$nomc       = $_POST['no_mc'];  
+				$urut       = $_POST['no_urut'];  
+				$user_id    = $_SESSION['nama10']; 
+				$getdate    = date('Y-m-d H:i:s'); 
+				$remote_add = $_SERVER['REMOTE_ADDR']; 
+				$query_log 	= "INSERT INTO db_dying.tbl_log_mc_schedule(id_schedule,
+																nodemand,
+																nokk,
+																no_mc,
+																user_update,
+																user_insert,
+																date_insert,
+																date_update,
+																no_urut,
+																no_sch,
+																ip_update,
+																ip_insert,
+																col_update)
+																VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'FIRST_INSERT_SCHEDULE')";
+				$params_log = [$last_id_schedule,$nodemand,$nokk,$nomc,$user_id,
+								$user_id,$getdate,$getdate,$urut,$urut,$remote_add,$remote_add];
+				$sqlLog 		= sqlsrv_query($con, $query_log, $params_log);
 				echo "<script>swal({
 				title: 'Data Tersimpan',   
 				text: 'Klik Ok untuk input data kembali',
