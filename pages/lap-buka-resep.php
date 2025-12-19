@@ -1,45 +1,45 @@
 <?PHP
-	ini_set("error_reporting", 1);
-	session_start();
-	include "koneksi.php";
-    $Awal   = isset($_POST['awal']) ? $_POST['awal'] : '';
-    $Akhir  = isset($_POST['akhir']) ? $_POST['akhir'] : '';
-    $jamA   = isset($_POST['jam_awal']) ? $_POST['jam_awal'] : '';
-    $jamAr  = isset($_POST['jam_akhir']) ? $_POST['jam_akhir'] : '';
-    $GShift = isset($_POST['gshift']) ? $_POST['gshift'] : '';
-    if (strlen($jamA) == 5) {
-        $start_date = $Awal . ' ' . $jamA;
-    } else {
-        $start_date = $Awal . ' 0' . $jamA;
-    }
-    if (strlen($jamAr) == 5) {
-        $stop_date  = $Akhir . ' ' . $jamAr;
-    } else {
-        $stop_date  = $Akhir . ' 0' . $jamAr;
-    }
-    if($jamA & $jamAr){
-        $where_jam  = "createdatetime BETWEEN '$start_date' AND '$stop_date'";
-    }else{
-        $where_jam  = "DATE(createdatetime) BETWEEN '$Awal' AND '$Akhir'";
-    }
+ini_set("error_reporting", 1);
+session_start();
+include "koneksi.php";
+$Awal   = isset($_POST['awal']) ? $_POST['awal'] : '';
+$Akhir  = isset($_POST['akhir']) ? $_POST['akhir'] : '';
+$jamA   = isset($_POST['jam_awal']) ? $_POST['jam_awal'] : '';
+$jamAr  = isset($_POST['jam_akhir']) ? $_POST['jam_akhir'] : '';
+$GShift = isset($_POST['gshift']) ? $_POST['gshift'] : '';
+if (strlen($jamA) == 5) {
+    $start_date = $Awal . ' ' . $jamA;
+} else {
+    $start_date = $Awal . ' 0' . $jamA;
+}
+if (strlen($jamAr) == 5) {
+    $stop_date  = $Akhir . ' ' . $jamAr;
+} else {
+    $stop_date  = $Akhir . ' 0' . $jamAr;
+}
+if ($jamA & $jamAr) {
+    $where_jam  = "createdatetime BETWEEN '$start_date' AND '$stop_date'";
+} else {
+    $where_jam  = "CONVERT(date, createdatetime) BETWEEN '$Awal' AND '$Akhir'";
+}
 
-    if($GShift == 'ALL'){
-        $where_gshift = "";
-    }else{
-        $where_gshift = "AND gshift = '$GShift'";
-    }
+if ($GShift == 'ALL') {
+    $where_gshift = "";
+} else {
+    $where_gshift = "AND gshift = '$GShift'";
+}
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	<title>laporan Harian Buka Resep</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>laporan Harian Buka Resep</title>
 </head>
 
 <body>
-	<div class="row">
-		<div class="col-xs-12">
-			<div class="box">
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="box">
                 <div class="box-header with-border">
                     <h3 class="box-title"> Filter Laporan Harian Buka Resep</h3>
                     <div class="box-tools pull-right">
@@ -98,7 +98,7 @@
                         </div>
                     </div>
                 </form>
-                <?php if(isset($_POST['submit'])) : ?>
+                <?php if (isset($_POST['submit'])) : ?>
                     <div class="row">
                         <div class="col-xs-12">
                             <div class="box">
@@ -127,56 +127,65 @@
                                         </thead>
                                         <tbody>
                                             <?php
-
-                                                $q_bukaresep    = mysqli_query($con, "SELECT
-                                                                                        DATE(createdatetime) AS TGL,
+                                            function format_tanggal_sqlsrv($value)
+                                                {
+                                                    if ($value instanceof DateTime) {
+                                                        return $value->format('Y-m-d');
+                                                    }
+                                                    return $value;
+                                                }
+                                            $q_bukaresep    = sqlsrv_query($con, "SELECT
+                                                                                        CONVERT(date, createdatetime) AS TGL,
                                                                                         COUNT(nokk) AS buka_resep
                                                                                     FROM
-                                                                                        tbl_bukaresep 
+                                                                                        db_dying.tbl_bukaresep 
                                                                                     WHERE 
                                                                                         $where_jam $where_gshift
                                                                                     GROUP BY 
-                                                                                        DATE(createdatetime)");
-                                                $no = 1;
+                                                                                        CONVERT(date, createdatetime)");
+                                            $no = 1;
                                             ?>
-                                            <?php while ($row_bukaresep = mysqli_fetch_array($q_bukaresep)) { ?>
+                                            <?php while ($row_bukaresep = sqlsrv_fetch_array($q_bukaresep, SQLSRV_FETCH_ASSOC)) { ?>
                                                 <?php
-                                                    $q_bukaresep_ok     = mysqli_query($con, "SELECT
-                                                                                                DATE(createdatetime) AS TGL,
+                                                $q_bukaresep_ok     = sqlsrv_query($con, "SELECT
+                                                                                                CONVERT(date, createdatetime) AS TGL,
                                                                                                 COUNT(nokk) AS ok
                                                                                             FROM
-                                                                                                tbl_bukaresep 
+                                                                                                db_dying.tbl_bukaresep 
                                                                                             WHERE 
                                                                                                 cek_resep = 'Resep Ok' AND $where_jam $where_gshift
                                                                                             GROUP BY 
-                                                                                                DATE(createdatetime)");
-                                                    $row_bukaresep_ok   = mysqli_fetch_assoc($q_bukaresep_ok);
-                                                    
-                                                    $q_bukaresep_tidakok     = mysqli_query($con, "SELECT
-                                                                                                DATE(createdatetime) AS TGL,
+                                                                                                CONVERT(date, createdatetime)");
+                                                $row_bukaresep_ok   = sqlsrv_fetch_array($q_bukaresep_ok, SQLSRV_FETCH_ASSOC);
+
+                                                $q_bukaresep_tidakok     = sqlsrv_query($con, "SELECT
+                                                                                                CONVERT(date, createdatetime) AS TGL,
                                                                                                 COUNT(nokk) AS tidak_ok
                                                                                             FROM
-                                                                                                tbl_bukaresep 
+                                                                                                db_dying.tbl_bukaresep 
                                                                                             WHERE 
                                                                                                 cek_resep = 'Resep Tidak Ok' AND $where_jam $where_gshift
                                                                                             GROUP BY 
-                                                                                                DATE(createdatetime)");
-                                                    $row_bukaresep_tidakok   = mysqli_fetch_assoc($q_bukaresep_tidakok);
-                                                    
-                                                    $q_bukaresep_blmdiperiksa     = mysqli_query($con, "SELECT
-                                                                                                            DATE(createdatetime) AS TGL,
+                                                                                                CONVERT(date, createdatetime)");
+                                                $row_bukaresep_tidakok   = sqlsrv_fetch_array($q_bukaresep_tidakok, SQLSRV_FETCH_ASSOC);
+
+                                                $q_bukaresep_blmdiperiksa     = sqlsrv_query($con, "SELECT
+                                                                                                            CONVERT(date, createdatetime) AS TGL,
                                                                                                             COUNT(nokk) AS belum_diperiksa
                                                                                                         FROM
-                                                                                                            tbl_bukaresep
+                                                                                                            db_dying.tbl_bukaresep
                                                                                                         WHERE 
                                                                                                             cek_resep is null AND $where_jam $where_gshift
                                                                                                         GROUP BY 
-                                                                                                            DATE(createdatetime)");
-                                                    $row_bukaresep_blmdiperiksa   = mysqli_fetch_assoc($q_bukaresep_blmdiperiksa);
+                                                                                                            CONVERT(date, createdatetime)");
+                                                $row_bukaresep_blmdiperiksa   = sqlsrv_fetch_array($q_bukaresep_blmdiperiksa, SQLSRV_FETCH_ASSOC);
+
+                                             
+                                                $row_bukaresep['TGL'] = format_tanggal_sqlsrv($row_bukaresep['TGL']);
                                                 ?>
                                                 <tr bgcolor="antiquewhite">
                                                     <td align="center"><?= $no++; ?></td>
-                                                    <td align="center"><?= $row_bukaresep['TGL']; ?></td>
+                                                    <td align="center"><?= format_tanggal_sqlsrv($row_bukaresep['TGL']); ?></td>
                                                     <td align="center"><?= $row_bukaresep['buka_resep']; ?></td>
                                                     <td align="center"><?= $row_bukaresep_ok['ok']; ?></td>
                                                     <td align="center"><?= $row_bukaresep_tidakok['tidak_ok']; ?></td>
@@ -192,8 +201,9 @@
                         </div>
                     </div>
                 <?php endif; ?>
-			</div>
-		</div>
-	</div>
+            </div>
+        </div>
+    </div>
 </body>
+
 </html>
