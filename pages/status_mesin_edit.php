@@ -6,12 +6,15 @@ include("../koneksi.php");
 // Proses ubah urutan & personil
 if (isset($_POST['ubah'])) { 
     extract($_POST);
-    $urut     = $_POST['no_urut'];
-    $personil = $_POST['personil'];
+    $urut       = $_POST['no_urut'];
+    $personil   = $_POST['personil'];
+    $user_id    = $_SESSION['nama10']; 
+    $getdate    = date('Y-m-d H:i:s'); 
+    $remote_add = $_SERVER['REMOTE_ADDR']; 
 
     foreach ($urut as $urut_key => $urut_value) {
         // Ambil data urutan lama dari database (SQL Server)
-        $q_old = sqlsrv_query($con, "SELECT no_urut FROM db_dying.tbl_schedule WHERE id = ?", array($urut_key));
+        $q_old = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id = ?", array($urut_key));
         if ($q_old === false) {
             die('Gagal ambil data lama: ' . print_r(sqlsrv_errors(), true));
         }
@@ -38,6 +41,16 @@ if (isset($_POST['ubah'])) {
             if ($result === false) {
                 die('Gagal update: ' . print_r(sqlsrv_errors(), true));
             }
+            else
+            {
+                $query_log = "INSERT INTO db_dying.tbl_log_mc_schedule 
+                                    (id_schedule, nodemand, nokk,no_mc,no_urut,no_sch,user_update,date_update,ip_update,col_update) 
+                             VALUES (?,?,?,?,?,?,?,?,?,'UPDATE_NO_URUT')";
+                $params_log = [$urut_key,$d_old['nodemand'],$d_old['nokk'],$d_old['no_mesin'], 
+                            $urut_value, $d_old['no_sch'], $user_id,$getdate,$remote_add];
+                $sqlLog = sqlsrv_query($con, $query_log, $params_log);
+                // echo " <script>window.location='?p=Schedule';</script>";
+            }
         }
     }
 
@@ -49,6 +62,9 @@ if (isset($_POST['ubah'])) {
     $urut             = $_POST['no_urut'];
     $personil         = $_POST['personil'];
     $creationdatetime = date('Y-m-d H:i:s');
+    $user_id            = $_SESSION['nama10']; 
+    $getdate            = date('Y-m-d H:i:s'); 
+    $remote_add         = $_SERVER['REMOTE_ADDR'];
 
     foreach ($urut as $urut_key => $urut_value) {
         // Normalisasi nilai target agar sesuai dengan kolom decimal(5,2)
@@ -70,7 +86,8 @@ if (isset($_POST['ubah'])) {
         }
 
         $nama_personil = $personil[$urut_key];
-
+        $q_old = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id = ?", array($urut_key));
+        $d_old = sqlsrv_fetch_array($q_old, SQLSRV_FETCH_ASSOC);
         // Pada ubah_stdtarget juga boleh mengubah no_urut
         $query  = "UPDATE db_dying.tbl_schedule 
                    SET target = ?, 
@@ -83,7 +100,16 @@ if (isset($_POST['ubah'])) {
 
         if ($result === false) {
             die('cant update: ' . print_r(sqlsrv_errors(), true));
-        }
+        }else{
+                $query_log = "INSERT INTO db_dying.tbl_log_mc_schedule 
+                                    (id_schedule, nodemand, nokk,no_mc,no_urut,no_sch,user_update,date_update,ip_update,col_update) 
+                             VALUES (?,?,?,?,?,?,?,?,?,'UPDATE_STD_TARGET')";
+                $params_log = [$urut_key,$d_old['nodemand'],$d_old['nokk'],$d_old['no_mesin'], 
+                            $urut_value, $d_old['no_sch'], $user_id,$getdate,$remote_add];
+                $sqlLog = sqlsrv_query($con, $query_log, $params_log);
+        // echo " <script>window.location='?p=Schedule';</script>";
+    }
+
     }
 
     echo " <script>window.location='?p=Schedule';</script>";

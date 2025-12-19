@@ -33,6 +33,14 @@ if($_POST){
 	$kk_kestabilan = (isset($_POST['kk_kestabilan']) && $_POST['kk_kestabilan'] == "1") ? "1" : "0";
 	$kk_normal     = (isset($_POST['kk_normal']) && $_POST['kk_normal'] == "1") ? "1" : "0";
 
+	$user_id   = $_SESSION['nama10']; 
+	$getdate   = date('Y-m-d H:i:s'); 
+	$remote_add= $_SERVER['REMOTE_ADDR'];
+	
+	$query_old = "SELECT * FROM db_dying.tbl_schedule WHERE id = '$id'";
+	$q_old 		 = sqlsrv_query($con, $query_old);
+  $d_old 		 = sqlsrv_fetch_array($q_old,SQLSRV_FETCH_ASSOC);
+
 	// Ambil kapasitas mesin dari db_dying.tbl_mesin
 	$sqlMesin   = "SELECT TOP 1 kapasitas FROM db_dying.tbl_mesin WHERE no_mesin = ?";
 	$paramsMesin = array($mesin);
@@ -101,6 +109,21 @@ if($_POST){
 					 WHERE id_schedule = ?";
 	$paramsMon    = array($minutesToAdd, $id);
 	$sqlupdate1   = sqlsrv_query($con, $sqlUpdateMon, $paramsMon);
+
+	$query_log 		= "INSERT INTO db_dying.tbl_log_mc_schedule (
+											id_schedule,
+											nodemand,   
+											nokk,       
+											no_mc,      
+											no_urut,    
+											no_sch,     
+											user_update,
+											date_update,
+											ip_update,  
+											col_update) VALUES(?,?,?,?,?,?,?,?,?,'UPDATE_SCHEDULE' )";
+	$params_log = [$id, $d_old['nodemand'], $d_old['nokk'], $mesin, 
+									$urut, $urut, $user_id, $getdate, $remote_add];
+	$sqlLog 	  	= sqlsrv_query($con, $query_log, $params_log);
 
 	echo " <script>window.location='?p=Schedule';</script>";
 				
