@@ -510,7 +510,7 @@ desired effect
                         </li>
                     <?php } ?>
 
-                    <?php if ($_SESSION['lvl_id10'] == "1") { ?>
+                    <?php if ($_SESSION['lvl_id10'] == "1" || $_SESSION['lvl_id10'] == "5") { ?>
                         <?php if (strtoupper($_SESSION['user_id10']) == "ANDRI" or strtoupper($_SESSION['user_id10']) == "USMANAS") {
                         ?>
                             <li class="treeview <?php if ($_GET['p'] == "Input-Dokumen" or $_GET['p'] == "Lap-Dokumen") {

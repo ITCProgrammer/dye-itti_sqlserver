@@ -188,6 +188,7 @@ $no_prod = q('idkk');
                                             a.tgl_buat, 
                                             b.loading,
                                             b.no_mesin,
+                                            a.operator,
                                             b.no_hanger,
                                             c.no_item,
                                             b.jenis_kain,
@@ -345,9 +346,36 @@ $no_prod = q('idkk');
                 <pre>Keterangan</pre>
             </td>
             <td style="border:none !important;" width="10%">:
-                
             </td>
-            
+        </tr>
+        <tr>           
+            <td style=" border:none !important;" width="2%">
+                <pre> </pre>
+            </td>
+            <td style="border:none !important;" width="10%">
+            </td>
+        </tr>
+        <tr>           
+            <td style=" border:none !important;" width="2%">
+                <pre></pre>
+            </td>
+            <td style="border:none !important;" width="10%">
+            </td>
+        </tr>
+        <tr>           
+            <td style=" border:none !important;" width="2%">
+                <pre></pre>
+            </td>
+            <td style="border:none !important;" width="10%">
+            </td>
+        </tr>
+        <tr>           
+            <td style=" border:none !important;" width="2%">
+                <pre>Operator</pre>
+            </td>
+            <td style="border:none !important;" width="10%">:
+                <?php echo $rowmt['operator']; ?>
+            </td>    
         </tr>                
     </table>   
 
