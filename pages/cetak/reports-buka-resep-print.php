@@ -132,7 +132,7 @@
                 function format_tanggal_sqlsrv($value)
                                             {
                                                 if ($value instanceof DateTime) {
-                                                    return $value->format('Y-m-d');
+                                                    return $value->format('Y-m-d H:i:s');
                                                 }
                                                 return $value;
                                             }
