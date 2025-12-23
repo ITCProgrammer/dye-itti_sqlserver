@@ -221,6 +221,8 @@
                mt.blower,
                mt.tgl_buat as tgl_in,
                hc.tgl_buat as tgl_out,
+               FORMAT(mt.tgl_buat, 'HH:mm') as jam_in,
+               FORMAT(hc.tgl_buat, 'HH:mm') as jam_out,
                ISNULL(hc.g_shift, mt.g_shift) as shft,
                mt.status as status_montemp,
                mt.tgl_mulai,

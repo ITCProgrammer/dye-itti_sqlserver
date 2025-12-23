@@ -181,7 +181,24 @@ $shft = $_GET['shft'];
                                         a.mulai_stop,
                                         a.selesai_stop,
                                         a.ket,
-                                        a.lama_proses,
+                                        CASE 
+                                          WHEN c.tgl_mulai IS NULL OR c.tgl_stop IS NULL 
+                                            THEN CONVERT(VARCHAR(5), a.lama_proses, 108)
+                                          ELSE
+                                            RIGHT('0' + CAST(
+                                              FLOOR((
+                                                (DATEPART(HOUR, a.lama_proses) * 60 + DATEPART(MINUTE, a.lama_proses))
+                                                - DATEDIFF(MINUTE, c.tgl_stop, c.tgl_mulai)
+                                              ) / 60) AS VARCHAR(2)
+                                            ), 2)
+                                            + ':' +
+                                            RIGHT('0' + CAST(
+                                              (
+                                                (DATEPART(HOUR, a.lama_proses) * 60 + DATEPART(MINUTE, a.lama_proses))
+                                                - DATEDIFF(MINUTE, c.tgl_stop, c.tgl_mulai)
+                                              ) % 60 AS VARCHAR(2)
+                                            ), 2)
+                                        END AS lama_proses,
                                         a.status as sts,
                                         a.point,
                                         CONVERT(varchar(10), a.mulai_stop, 23) as t_mulai,
@@ -292,7 +309,7 @@ $shft = $_GET['shft'];
       function format_tanggal_sqlsrv($value)
                     {
                         if ($value instanceof DateTime) {
-                            return $value->format('Y-m-d H:i:s');
+                            return $value->format('Y-m-d');
                         }
                         return $value;
                     }
@@ -401,24 +418,23 @@ $shft = $_GET['shft'];
         <td><?php echo $rowd['jam_out']; ?></td>
         <td>
           <?php
-            if ($rowd['lama_proses']) {
-              echo $rowd['jam'] . ":" . $rowd['menit'];
-            }else{
+            if (!empty($rowd['lama_proses'])) {
+              // Hasil sesuai MySQL lama (sudah dikurangi stop mesin bila ada)
+              echo $rowd['lama_proses'];
+            } else {
+              // Jika belum ada lama_proses (masih jalan), hitung dari tgl_buat sampai sekarang
               $qryLama = sqlsrv_query($con, "SELECT
-                                                DATEDIFF(MINUTE, b.tgl_buat, GETDATE()) AS lama 
-                                              FROM
-                                                db_dying.tbl_schedule a
-                                                LEFT JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule 
-                                              WHERE
-                                                b.nokk = '".$rowd['nokk']."' 
-                                                AND b.STATUS = 'sedang jalan' 
-                                              ORDER BY
-                                                a.no_urut ASC");
+                                      CONVERT(varchar(5), DATEADD(SECOND, DATEDIFF(SECOND, b.tgl_buat, GETDATE()), 0), 108) AS lama
+                                      FROM
+                                      db_dying.tbl_schedule a
+                                      LEFT JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule
+                                      WHERE
+                                      b.nokk = '".$rowd['nokk']."'
+                                      AND b.STATUS = 'sedang jalan'
+                                      ORDER BY
+                                      a.no_urut ASC");
               if ($qryLama !== false && $rLama = sqlsrv_fetch_array($qryLama, SQLSRV_FETCH_ASSOC)) {
-                $minutes = (int)$rLama['lama'];
-                $jam   = floor($minutes / 60);
-                $menit = $minutes % 60;
-                echo sprintf('%02d:%02d', $jam, $menit);
+                echo $rLama['lama'];
               }
             }
           ?>
