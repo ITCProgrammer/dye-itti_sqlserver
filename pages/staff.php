@@ -12,7 +12,7 @@ include"koneksi.php";
 
 <body>
 <?php
-   $data=mysqli_query($con,"SELECT * FROM tbl_staff ORDER BY nama ASC");
+   $data=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_staff ORDER BY nama ASC");
 	$no=1;
 	$n=1;
 	$c=0;
@@ -36,7 +36,7 @@ include"koneksi.php";
   <tbody>
   <?php
 	  $col=0;
-  while($rowd=mysqli_fetch_array($data)){
+  while($rowd=sqlsrv_fetch_array($data)){
 			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
 		 ?>
   <tr align="center" bgcolor="<?php echo $bgcolor; ?>">

@@ -6,23 +6,23 @@ include "koneksi.php";
 if (isset($_POST['delete'])) {
         $id = $_POST['delete_id'];
 
-        // Mengamankan input terhadap SQL Injection
-        $id = mysqli_real_escape_string($con, $id);
+        $sql = "DELETE FROM db_dying.tbl_mesin WHERE id = ?";
+        $params = array($id);
+        $stmt = sqlsrv_query($con, $sql, $params);
 
-        // Query untuk menghapus item
-        $sql = "DELETE FROM tbl_mesin WHERE id='$id'";
-
-        if (mysqli_query($con, $sql)) {
-          $_SESSION['message'] = "Data mesin berhasil dihapus.";
+        if ($stmt) {
+            echo "<script>
+                    swal({
+                        title: 'Berhasil!',
+                        text: 'Data mesin berhasil dihapus.',
+                        type: 'success'
+                    }).then(function() {
+                        window.location = '?p=Mesin';
+                    });
+                  </script>";
         } else {
-          $_SESSION['message'] = "Error deleting record: " . mysqli_error($con);
+            echo "<script>swal('Gagal!', 'Gagal menghapus data mesin.', 'error');</script>";
         }
-
-        // Set a flag to indicate that the deletion process is complete
-        echo '<script type="text/javascript">
-          sessionStorage.setItem("deleteMessage", "' . $_SESSION['message'] . '");
-          window.location = "https://online.indotaichen.com/dye-itti/index1.php?p=Mesin";
-        </script>';
   exit();
 }
 ?>
@@ -66,7 +66,7 @@ if (isset($_POST['delete'])) {
     unset($_SESSION['message']);
   }
 
-  $data = mysqli_query($con, "SELECT * FROM tbl_mesin ORDER BY no_mesin ASC");
+  $data = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_mesin ORDER BY no_mesin ASC");
   $no = 1;
   $col = 0;
   ?>
@@ -93,7 +93,7 @@ if (isset($_POST['delete'])) {
               <tbody>
                 <?php
                 $col = 0;
-                while ($rowd = mysqli_fetch_array($data)) {
+                while ($rowd = sqlsrv_fetch_array($data)) {
                   $bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
                 ?>
                   <tr align="center" bgcolor="<?php echo $bgcolor; ?>">
@@ -107,12 +107,12 @@ if (isset($_POST['delete'])) {
                       <a href="#" id='<?php echo $rowd['id'] ?>' class="btn btn-info mesin_edit"><i class="fa fa-edit"></i> </a>
                       <?php
                                             // Hanya tampilkan tombol delete untuk pengguna Lukman dan Andri
-                                            if ($_SESSION['user_id10'] == 'lukman' || $_SESSION['user_id10'] == 'andri'|| $_SESSION['user_id10'] == 'dit') {
-                                            ?>
-                                                <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteModal<?php echo $rowd['id']; ?>"><i class="fa fa-trash"></i></button>
-                                            <?php
-                                            }
-                                            ?>
+                        if ($_SESSION['user_id10'] == 'lukman' || $_SESSION['user_id10'] == 'andri'|| $_SESSION['user_id10'] == 'dit') {
+                      ?>
+                        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteModal<?php echo $rowd['id']; ?>"><i class="fa fa-trash"></i></button>
+                      <?php
+                        }
+                      ?>
                       
                     </td>
                   </tr>

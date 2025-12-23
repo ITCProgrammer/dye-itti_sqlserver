@@ -1,25 +1,34 @@
 <?PHP
-ini_set("error_reporting", 1);
+// ini_set("error_reporting", 1);
 session_start();
 include "koneksi.php";
 
 if (isset($_GET['delete_id'])) {
     $id = $_GET['delete_id'];
 
-    $queryDelete = "DELETE FROM tbl_user WHERE id = '$id'";
-    $resultDelete = mysqli_query($con, $queryDelete);
+    $queryDelete = "DELETE FROM db_dying.tbl_user WHERE id = ?";
+    $params = array($id);
+    $resultDelete = sqlsrv_query($con, $queryDelete, $params);
 
     if ($resultDelete) {
-        echo "<script>alert('User berhasil dihapus.'); window.location.href='?p=User';</script>";
+        echo "<script>
+                swal({
+                    title: 'Berhasil!',
+                    text: 'User berhasil dihapus.',
+                    type: 'success'
+                }).then(function() {
+                    window.location.href='?p=User';
+                });
+              </script>";
     } else {
-        echo "<script>alert('Gagal menghapus user.');</script>";
+        echo "<script>swal('Gagal!', 'Gagal menghapus user.', 'error');</script>";
     }
 }
 
 ?>
 <?php
 //set base constant
-if ($_SESSION['lvl_id10'] != "1") {
+if ($_SESSION['lvl_id10'] != ("5"||"10")) {
     echo 'Illegal Acces';
 } else {
 ?>
@@ -33,7 +42,7 @@ if ($_SESSION['lvl_id10'] != "1") {
 
     <body>
         <?php
-        $datauser = mysqli_query($con, "SELECT * FROM tbl_user WHERE dept='DYE' ORDER BY username ASC");
+        $datauser = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_user WHERE dept='DYE' ORDER BY username ASC");
         $no = 1;
         $n = 1;
         $c = 0;
@@ -71,7 +80,7 @@ if ($_SESSION['lvl_id10'] != "1") {
                             <tbody>
                                 <?php
                                 $col = 0;
-                                while ($rowd = mysqli_fetch_array($datauser)) {
+                                while ($rowd = sqlsrv_fetch_array($datauser)) {
                                     $bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
                                 ?>
                                     <tr align="center" bgcolor="<?php echo $bgcolor; ?>">

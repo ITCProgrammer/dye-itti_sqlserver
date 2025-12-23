@@ -1,7 +1,8 @@
 <?php
 ini_set("error_reporting", 1);
 session_start();
-include"koneksi.php";
+include "koneksi.php";
+include "helpers.php";
 ?>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -13,7 +14,7 @@ include"koneksi.php";
   </head>
 
   <body>
-    <?php 	$news=mysqli_query($con,"SELECT * FROM tbl_news_line"); ?>
+    <?php 	$news=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_news_line"); ?>
     <div class="row">
       <div class="col-xs-12">
         <div class="box">
@@ -35,7 +36,7 @@ include"koneksi.php";
                 <?php
   $col=0;
   $no=1;
-  while ($rNews=mysqli_fetch_array($news)) {
+  while ($rNews=sqlsrv_fetch_array($news)) {
       $bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite'; ?>
                 <tr align="center" bgcolor="<?php echo $bgcolor; ?>">
                   <td align="center">
@@ -46,7 +47,7 @@ include"koneksi.php";
                   </td>
                   <td align="center"><span class="label <?php if($rNews['status']=="Tampil"){echo"label-success";}else{echo"label-warning";}?>"><?php echo $rNews['status']; ?></span></td>
                   <td align="center">
-                    <?php echo $rNews['tgl_update']; ?>
+                    <?php echo formatDateTime($rNews['tgl_update'],'Y-m-d H:i:s'); ?>
                   </td>
                   <td align="center"><div class="btn-group"><a href="#" id='<?php echo $rNews['id'] ?>' class="btn btn-xs btn-info news_edit"><i class="fa fa-edit"></i> </a><a href="#" onclick="confirm_del('?p=news_hapus&id=<?php echo $rNews['id'] ?>');" class="btn btn-xs btn-danger"><i class="fa fa-trash"></i> </a></div></th>
                 </tr>
