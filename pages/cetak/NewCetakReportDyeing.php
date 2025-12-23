@@ -2807,7 +2807,7 @@ $sheet->getStyle('A5:G6')->getBorders()->getAllBorders()->setBorderStyle(\PhpOff
             $sheet->getStyle('K11:L11')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
             $sheet->mergeCells('K12:L12');
-            $sheet->setCellValue('K12', $$PolyTotPerbaikanA);
+            $sheet->setCellValue('K12', $PolyTotPerbaikanA);
             $sheet->getStyle('K12')->getAlignment()->setHorizontal('center')->setVertical('center');
             $sheet->getStyle('K12:L12')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
             
