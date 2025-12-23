@@ -3,8 +3,8 @@ ini_set("error_reporting", 1);
 session_start();
 include("../koneksi.php");
     $modal_id=$_GET['id'];
-	$modal=mysqli_query($con,"SELECT * FROM `tbl_hasilcelup` WHERE id='$modal_id' ");
-while($r=mysqli_fetch_array($modal)){
+	$modal=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_hasilcelup WHERE id='$modal_id' ");
+while($r=sqlsrv_fetch_array($modal, SQLSRV_FETCH_ASSOC)) {
 ?>
           <div class="modal-dialog modal-sm">
             <div class="modal-content">

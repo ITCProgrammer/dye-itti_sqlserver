@@ -20,33 +20,37 @@
                 $response->addMessage("Tidak ada perubahan");
                 $response->send();
             }
-            $sqlUpdate = "INSERT INTO tbl_log_proses 
-                 SET username = ?   ,
-                 user_ip = ?,
-                 id_table_hasil_celup =? ,
-                 proses_lama = ? ,
-                 proses_baru =? ";
-            $prepare=mysqli_prepare( $con, $sqlUpdate );
-            mysqli_stmt_bind_param($prepare, "sssss", $username,$ip,$id,$proses_lama,$proses_baru );
-            if(mysqli_stmt_execute($prepare)){    
-                $prepareR = mysqli_stmt_get_result($prepare);
+            $sqlUpdate = "INSERT INTO db_dying.tbl_log_proses 
+                            (username, user_ip, id_table_hasil_celup, proses_lama, proses_baru)
+                          VALUES (?, ?, ?, ?, ?)";
+            $paramsUpdate = array($username, $ip, $id, $proses_lama, $proses_baru);
+            $prepare = sqlsrv_query($con, $sqlUpdate, $paramsUpdate);
+            if($prepare !== false){    
                 $response->setSuccess(true);
                 $response->addMessage("Berhasil");
                 $response->send();
             }
             else {
                 $response->setSuccess(false);
-                $response->addMessage(mysqli_error($con));
+                $err = sqlsrv_errors();
+                $response->addMessage($err ? $err[0]['message'] : 'Gagal insert log proses');
                 $response->send();
             }
         }
         else if($_POST['status']=="get_log" && $id != 0){
             $log=array();
-            $prepare=mysqli_prepare( $con, "SELECT * from tbl_log_proses where id_table_hasil_celup = ? " );
-            mysqli_stmt_bind_param($prepare, "s", $id );
-            mysqli_stmt_execute($prepare);
-            $logData = mysqli_stmt_get_result($prepare);
-            while ($rowLog = mysqli_fetch_assoc($logData)) {
+            $prepare = sqlsrv_query(
+                $con,
+                "SELECT * FROM db_dying.tbl_log_proses WHERE id_table_hasil_celup = ?",
+                array($id)
+            );
+            if ($prepare === false) {
+                $response->setSuccess(false);
+                $err = sqlsrv_errors();
+                $response->addMessage($err ? $err[0]['message'] : 'Gagal mengambil log proses');
+                $response->send();
+            }
+            while ($rowLog = sqlsrv_fetch_array($prepare, SQLSRV_FETCH_ASSOC)) {
                 $log[]=$rowLog;
             }
             $response->setSuccess(true);
@@ -54,47 +58,62 @@
             $response->send();
         }
         else if($_POST['status']=="update_laporan" && $id != 0){
-            $updateHslClp = "UPDATE tbl_hasilcelup 
+            $updateHslClp = "UPDATE db_dying.tbl_hasilcelup 
                  SET g_shift = ?   ,
                  proses = ?,
                  k_resep =? ,
                  status = ? ,
                  air_akhir =? 
-                 WHERE id = ? LIMIT 1";
-            $hslclp=mysqli_prepare( $con, $updateHslClp );
-            mysqli_stmt_bind_param($hslclp, "ssssss", $_POST['shift'],$_POST['proses'],$_POST['k_resep'],$_POST['sts'],$_POST['air_akhir'],$id );
-            if(mysqli_stmt_execute($hslclp)){
-                $hslclpR = mysqli_stmt_get_result($hslclp);
+                 WHERE id = ?";
+            $paramsHslclp = array(
+                $_POST['shift'],
+                $_POST['proses'],
+                $_POST['k_resep'],
+                $_POST['sts'],
+                $_POST['air_akhir'],
+                $id
+            );
+            $hslclp = sqlsrv_query($con, $updateHslClp, $paramsHslclp);
+            if($hslclp !== false){
                 $response->addMessage("Berhasil Update Hasil Celup");
             }
             else {
-                $response->addMessage("Gagal Update Hasil Celup : ".mysqli_error($con));
+                $err = sqlsrv_errors();
+                $response->addMessage("Gagal Update Hasil Celup : ".($err ? $err[0]['message'] : 'Error'));
             }
-            $updateScdl = "UPDATE tbl_schedule
+            $updateScdl = "UPDATE db_dying.tbl_schedule
                  SET buyer = ? ,
                  kategori_warna = ?,
                  resep =? 
-                 WHERE id = ? LIMIT 1";
-            $schdl=mysqli_prepare( $con, $updateScdl );
-            mysqli_stmt_bind_param($schdl, "ssss", $_POST['buyer'],$_POST['kategori_warna'],$_POST['resep'],$_POST['idshedule'] );
-            if(mysqli_stmt_execute($schdl)){
-                $schdR = mysqli_stmt_get_result($schdl);
+                 WHERE id = ?";
+            $paramsScdl = array(
+                $_POST['buyer'],
+                $_POST['kategori_warna'],
+                $_POST['resep'],
+                $_POST['idshedule']
+            );
+            $schdl = sqlsrv_query($con, $updateScdl, $paramsScdl);
+            if($schdl !== false){
                 $response->addMessage("Berhasil Update Schedule");
             }
             else {
-                $response->addMessage("Gagal Update Schedule : ".mysqli_error($con));
+                $err = sqlsrv_errors();
+                $response->addMessage("Gagal Update Schedule : ".($err ? $err[0]['message'] : 'Error'));
             }
-            $updateMontemp = "UPDATE tbl_montemp 
+            $updateMontemp = "UPDATE db_dying.tbl_montemp 
                  SET air_awal = ?   
-                 WHERE id = ? LIMIT 1";
-            $montemp=mysqli_prepare ( $con, $updateMontemp );
-            mysqli_stmt_bind_param($montemp, "ss", $_POST['air_awal'],$_POST['idmontemp'] );
-            if(mysqli_stmt_execute($montemp)){
-                $montempR = mysqli_stmt_get_result($montemp);
+                 WHERE id = ?";
+            $paramsMontemp = array(
+                $_POST['air_awal'],
+                $_POST['idmontemp']
+            );
+            $montemp = sqlsrv_query($con, $updateMontemp, $paramsMontemp);
+            if($montemp !== false){
                 $response->addMessage("Berhasil Update Monitoring Tempelan");
             }
             else {
-                $response->addMessage("Gagal Update Monitoring Tempelan : ".mysqli_error($con));
+                $err = sqlsrv_errors();
+                $response->addMessage("Gagal Update Monitoring Tempelan : ".($err ? $err[0]['message'] : 'Error'));
             }
 
             $response->setSuccess(true);

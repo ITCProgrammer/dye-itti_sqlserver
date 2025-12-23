@@ -14,8 +14,13 @@ include "../../tgl_indo.php";
 $idkk = $_REQUEST['idkk'];
 $act = $_GET['g'];
 //-
-$qTgl = mysqli_query($con, "SELECT DATE_FORMAT(now(),'%Y-%m-%d') as tgl_skrg, DATE_FORMAT(now(),'%Y-%m-%d')+ INTERVAL 1 DAY as tgl_besok");
-$rTgl = mysqli_fetch_array($qTgl);
+$qTgl = sqlsrv_query(
+  $con,
+  "SELECT 
+     CONVERT(varchar(10), GETDATE(), 23) AS tgl_skrg,
+     CONVERT(varchar(10), DATEADD(DAY, 1, GETDATE()), 23) AS tgl_besok"
+);
+$rTgl = sqlsrv_fetch_array($qTgl, SQLSRV_FETCH_ASSOC);
 $Awal = $_GET['awal'];
 $Akhir = $_GET['akhir'];
 if ($Awal == $Akhir) {
@@ -159,34 +164,33 @@ $shft = $_GET['shft'];
       $Akhir = $_GET['akhir'];
       $Tgl = substr($Awal, 0, 10);
       if ($Awal != $Akhir) {
-        $Where = " DATE_FORMAT(c.tgl_update, '%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir' ";
+        $Where = " c.tgl_update BETWEEN '$Awal' AND '$Akhir' ";
       } else {
-        $Where = " DATE_FORMAT(c.tgl_update, '%Y-%m-%d')='$Tgl' ";
+        $Where = " CONVERT(date, c.tgl_update) = CONVERT(date, '$Tgl') ";
       }
       if ($_GET['shft'] == "ALL") {
         $shft = " ";
       } else {
-        $shft = " if(ISNULL(a.g_shift),c.g_shift,a.g_shift)='$_GET[shft]' AND ";
+        $shft = " ISNULL(a.g_shift, c.g_shift)='$_GET[shft]' AND ";
       }
-      $sql = mysqli_query($con, "SELECT x.*, a.no_mesin as mc 
-                                    FROM tbl_mesin a
+      $sql = sqlsrv_query($con, "SELECT x.*, a.no_mesin as mc 
+                                    FROM db_dying.tbl_mesin a
                                         LEFT JOIN
                                         (SELECT
                                         a.kd_stop,
                                         a.mulai_stop,
                                         a.selesai_stop,
-                                        a.ket,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),a.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama_proses,
+                                        a.ket,
+                                        a.lama_proses,
                                         a.status as sts,
-                                        TIME_FORMAT(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),a.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))),'%H') as jam,
-                                        TIME_FORMAT(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),a.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))),'%i') as menit,
                                         a.point,
-                                        DATE_FORMAT(a.mulai_stop,'%Y-%m-%d') as t_mulai,
-                                        DATE_FORMAT(a.selesai_stop,'%Y-%m-%d') as t_selesai,
-                                        TIME_FORMAT(a.mulai_stop,'%H:%i') as j_mulai,
-                                        TIME_FORMAT(a.selesai_stop,'%H:%i') as j_selesai,
-                                        TIMESTAMPDIFF(MINUTE,a.mulai_stop,a.selesai_stop) as lama_stop_menit,
+                                        CONVERT(varchar(10), a.mulai_stop, 23) as t_mulai,
+                                        CONVERT(varchar(10), a.selesai_stop, 23) as t_selesai,
+                                        CONVERT(varchar(5), a.mulai_stop, 108) as j_mulai,
+                                        CONVERT(varchar(5), a.selesai_stop, 108) as j_selesai,
+                                        DATEDIFF(MINUTE, a.mulai_stop, a.selesai_stop) as lama_stop_menit,
                                         a.acc_keluar,
-                                        if(a.proses='' or ISNULL(a.proses),b.proses,a.proses) as proses,
+                                        CASE WHEN (a.proses = '' OR a.proses IS NULL) THEN b.proses ELSE a.proses END as proses,
                                         b.buyer,
                                         b.langganan,
                                         b.no_order,
@@ -201,12 +205,12 @@ $shft = $_GET['shft'];
                                         b.loading,
                                         b.resep,
                                         CASE
-                                          WHEN SUBSTR(b.kategori_warna, 1,1) = 'D' THEN 'Dark'
-                                          WHEN SUBSTR(b.kategori_warna, 1,1) = 'H' THEN 'Heater'
-                                          WHEN SUBSTR(b.kategori_warna, 1,1) = 'L' THEN 'Light'
-                                          WHEN SUBSTR(b.kategori_warna, 1,1) = 'M' THEN 'Medium'
-                                          WHEN SUBSTR(b.kategori_warna, 1,1) = 'S' THEN 'Dark'
-                                          WHEN SUBSTR(b.kategori_warna, 1,1) = 'W' THEN 'White'
+                                          WHEN SUBSTRING(b.kategori_warna, 1,1) = 'D' THEN 'Dark'
+                                          WHEN SUBSTRING(b.kategori_warna, 1,1) = 'H' THEN 'Heater'
+                                          WHEN SUBSTRING(b.kategori_warna, 1,1) = 'L' THEN 'Light'
+                                          WHEN SUBSTRING(b.kategori_warna, 1,1) = 'M' THEN 'Medium'
+                                          WHEN SUBSTRING(b.kategori_warna, 1,1) = 'S' THEN 'Dark'
+                                          WHEN SUBSTRING(b.kategori_warna, 1,1) = 'W' THEN 'White'
                                         END AS kategori_warna,
                                         b.target,
                                         c.l_r,
@@ -221,11 +225,11 @@ $shft = $_GET['shft'];
                                         c.nozzle,
                                         c.plaiter,
                                         c.blower,
-                                        DATE_FORMAT(c.tgl_buat,'%Y-%m-%d') as tgl_in,
-                                        DATE_FORMAT(a.tgl_buat,'%Y-%m-%d') as tgl_out,
-                                        DATE_FORMAT(c.tgl_buat,'%H:%i') as jam_in,
-                                        DATE_FORMAT(a.tgl_buat,'%H:%i') as jam_out,
-                                        if(ISNULL(a.g_shift),c.g_shift,a.g_shift) as shft,
+                                        CONVERT(varchar(10), c.tgl_buat, 23) as tgl_in,
+                                        CONVERT(varchar(10), a.tgl_buat, 23) as tgl_out,
+                                        CONVERT(varchar(5), c.tgl_buat, 108) as jam_in,
+                                        CONVERT(varchar(5), a.tgl_buat, 108) as jam_out,
+                                        ISNULL(a.g_shift, c.g_shift) as shft,
                                         a.operator_keluar,
                                         a.k_resep,
                                         a.status,
@@ -272,9 +276,9 @@ $shft = $_GET['shft'];
 		                                    a.operatorcotton,
                                         a.penanggungjawabbuyer
                                       FROM
-                                        tbl_schedule b
-                                          LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-                                          LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
+                                        db_dying.tbl_schedule b
+                                          LEFT JOIN  db_dying.tbl_montemp c ON c.id_schedule = b.id
+                                          LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
                                       WHERE
                                         $shft 
                                         $Where
@@ -285,23 +289,31 @@ $shft = $_GET['shft'];
       $c = 0;
       $totrol = 0;
       $totberat = 0;
+      function format_tanggal_sqlsrv($value)
+                    {
+                        if ($value instanceof DateTime) {
+                            return $value->format('Y-m-d H:i:s');
+                        }
+                        return $value;
+                    }
 
-      while ($rowd = mysqli_fetch_array($sql)) {
+      if ($sql === false) {
+        $err = sqlsrv_errors();
+        $msg = $err ? $err[0]['message'] : 'Gagal mengambil data produksi.';
+        echo '<tr><td colspan="10">Error SQL: ' . htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') . '</td></tr>';
+      } else {
+      while ($rowd = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)) {
         if ($_GET['shft'] == "ALL") {
           $shftSM = " ";
         } else {
           $shftSM = " g_shift='$_GET[shft]' AND ";
         }
-        $sqlSM = mysqli_query($con, "SELECT *, TIME_FORMAT(timediff(selesai,mulai),'%H:%i') as menitSM,
-          DATE_FORMAT(mulai,'%Y-%m-%d') as tgl_masuk,
-          DATE_FORMAT(selesai,'%Y-%m-%d') as tgl_selesai,
-          TIME_FORMAT(mulai,'%H:%i') as jam_masuk,
-          TIME_FORMAT(selesai,'%H:%i') as jam_selesai,
+        $sqlSM = sqlsrv_query($con, "SELECT *,
           kapasitas as kapSM,
           g_shift as shiftSM
-          FROM tbl_stopmesin
-          WHERE $shftSM tgl_update BETWEEN '$_GET[awal]' AND '$_GET[akhir]' AND no_mesin='$rowd[mc]'");
-        $rowSM = mysqli_fetch_array($sqlSM);
+          FROM db_dying.tbl_stopmesin
+          WHERE $shftSM tgl_update BETWEEN '$_GET[awal]' AND '$_GET[akhir]' AND no_mesin='".$rowd['mc']."'");
+        $rowSM = sqlsrv_fetch_array($sqlSM, SQLSRV_FETCH_ASSOC);
         if (strlen($rowd['rol']) > 5) {
           $jk = strlen($rowd['rol']) - 5;
           $rl = substr($rowd['rol'], 0, $jk);
@@ -392,18 +404,22 @@ $shft = $_GET['shft'];
             if ($rowd['lama_proses']) {
               echo $rowd['jam'] . ":" . $rowd['menit'];
             }else{
-              $qryLama = mysqli_query($con, "SELECT
-                                                TIME_FORMAT( timediff( now(), b.tgl_buat ), '%H:%i' ) AS lama 
+              $qryLama = sqlsrv_query($con, "SELECT
+                                                DATEDIFF(MINUTE, b.tgl_buat, GETDATE()) AS lama 
                                               FROM
-                                                tbl_schedule a
-                                                LEFT JOIN tbl_montemp b ON a.id = b.id_schedule 
+                                                db_dying.tbl_schedule a
+                                                LEFT JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule 
                                               WHERE
-                                                b.nokk = '$rowd[nokk]' 
+                                                b.nokk = '".$rowd['nokk']."' 
                                                 AND b.STATUS = 'sedang jalan' 
                                               ORDER BY
                                                 a.no_urut ASC");
-              $rLama = mysqli_fetch_array($qryLama);
-              echo $rLama['lama'];
+              if ($qryLama !== false && $rLama = sqlsrv_fetch_array($qryLama, SQLSRV_FETCH_ASSOC)) {
+                $minutes = (int)$rLama['lama'];
+                $jam   = floor($minutes / 60);
+                $menit = $minutes % 60;
+                echo sprintf('%02d:%02d', $jam, $menit);
+              }
             }
           ?>
         </td>
@@ -473,7 +489,7 @@ $shft = $_GET['shft'];
         <td><?php echo $rowd['no_hanger']; ?></td>
         <td><?php echo $rowd['no_item']; ?></td>
         <td><?php echo $rowd['po']; ?></td>
-        <td><?php echo $rowd['tgl_delivery']; ?></td>
+        <td><?php echo format_tanggal_sqlsrv($rowd['tgl_delivery']); ?></td>
         <td><?php echo $rowd['proses_point']; ?></td>
         <td><?php echo $rowd['penanggungjawabbuyer']; ?></td>
         <td><?php echo $rowd['analisa']; ?></td>
@@ -545,7 +561,7 @@ $shft = $_GET['shft'];
       $totrol += $rol;
       $totberat += $brt;
       $no++;
-    } ?>
+    } } ?>
     <tr>
       <td colspan="8" bgcolor="#99FF99">&nbsp;</td>
       <td bgcolor="#99FF99">&nbsp;</td>

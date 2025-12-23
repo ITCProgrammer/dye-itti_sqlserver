@@ -8,19 +8,59 @@
 
 <?php
   include "koneksi.php";
-  mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+  function formatDurationHM($start, $end = null) {
+    if (empty($start)) {
+      return '';
+    }
+
+    if ($start instanceof DateTimeInterface) {
+      $startDt = $start;
+    } else {
+      try {
+        $startDt = new DateTime($start);
+      } catch (Exception $e) {
+        return '';
+      }
+    }
+
+    if ($end === null) {
+      $endDt = new DateTime();
+    } elseif ($end instanceof DateTimeInterface) {
+      $endDt = $end;
+    } else {
+      try {
+        $endDt = new DateTime($end);
+      } catch (Exception $e) {
+        return '';
+      }
+    }
+
+    $interval = $startDt->diff($endDt);
+    $minutes  = ($interval->days * 24 * 60) + ($interval->h * 60) + $interval->i;
+    $hours    = floor($minutes / 60);
+    $mins     = $minutes % 60;
+
+    return sprintf('%02d:%02d', $hours, $mins);
+  }
+
   if (isset($_POST['update_proses'])) {
     $nokk = $_POST['nokk'];
     $proses = $_POST['proses'];
   
     try {
-      $query = "UPDATE tbl_schedule SET proses = ?, tgl_update = NOW() WHERE nokk = ?";
-      $stmt = $con->prepare($query);
-      $stmt->bind_param("si", $proses, $nokk);
-      $stmt->execute();
-  
+      $query  = "UPDATE db_dying.tbl_schedule SET proses = ?, tgl_update = GETDATE() WHERE nokk = ?";
+      $params = array($proses, $nokk);
+      $stmt   = sqlsrv_query($con, $query, $params);
+
+      if ($stmt === false) {
+        $errors = sqlsrv_errors();
+        $msg    = $errors ? $errors[0]['message'] : 'Unknown error';
+        throw new Exception($msg);
+      }
+
       echo "OK";
-    } catch (mysqli_sql_exception $e) {
+    } catch (Exception $e) {
       echo "Gagal: " . $e->getMessage();
     }
     exit();
@@ -31,13 +71,18 @@
     $kresep = $_POST['kresep'];
   
     try {
-      $query = "UPDATE tbl_hasilcelup SET k_resep = ?, tgl_update = NOW() WHERE nokk = ?";
-      $stmt = $con->prepare($query);
-      $stmt->bind_param("si", $kresep, $nokk);
-      $stmt->execute();
-  
+      $query  = "UPDATE db_dying.tbl_hasilcelup SET k_resep = ?, tgl_update = GETDATE() WHERE nokk = ?";
+      $params = array($kresep, $nokk);
+      $stmt   = sqlsrv_query($con, $query, $params);
+
+      if ($stmt === false) {
+        $errors = sqlsrv_errors();
+        $msg    = $errors ? $errors[0]['message'] : 'Unknown error';
+        throw new Exception($msg);
+      }
+
       echo "OK";
-    } catch (mysqli_sql_exception $e) {
+    } catch (Exception $e) {
       echo "Gagal: " . $e->getMessage();
     }
     exit();
@@ -48,13 +93,18 @@
     $resep = $_POST['resep'];
   
     try {
-      $query = "UPDATE tbl_schedule SET resep = ?, tgl_update = NOW() WHERE nokk = ?";
-      $stmt = $con->prepare($query);
-      $stmt->bind_param("si", $resep, $nokk);
-      $stmt->execute();
-  
+      $query  = "UPDATE db_dying.tbl_schedule SET resep = ?, tgl_update = GETDATE() WHERE nokk = ?";
+      $params = array($resep, $nokk);
+      $stmt   = sqlsrv_query($con, $query, $params);
+
+      if ($stmt === false) {
+        $errors = sqlsrv_errors();
+        $msg    = $errors ? $errors[0]['message'] : 'Unknown error';
+        throw new Exception($msg);
+      }
+
       echo "OK";
-    } catch (mysqli_sql_exception $e) {
+    } catch (Exception $e) {
       echo "Gagal: " . $e->getMessage();
     }
     exit();
@@ -65,13 +115,18 @@
     $statusresep  = $_POST['statusResep'];
 
     try {
-      $query = "UPDATE tbl_hasilcelup SET status_resep = ? WHERE nokk = ?";
-      $stmt = $con->prepare($query);
-      $stmt->bind_param("si", $statusresep, $nokk);
-      $stmt->execute();
-  
+      $query  = "UPDATE db_dying.tbl_hasilcelup SET status_resep = ? WHERE nokk = ?";
+      $params = array($statusresep, $nokk);
+      $stmt   = sqlsrv_query($con, $query, $params);
+
+      if ($stmt === false) {
+        $errors = sqlsrv_errors();
+        $msg    = $errors ? $errors[0]['message'] : 'Unknown error';
+        throw new Exception($msg);
+      }
+
       echo "OK";
-    } catch (mysqli_sql_exception $e) {
+    } catch (Exception $e) {
       echo "Gagal: " . $e->getMessage();
     }
     exit();
@@ -89,28 +144,45 @@
 
 <body>
   <?php
-    $Awal  = isset($_POST['awal']) ? $_POST['awal'] : '';
+    $Awal   = isset($_POST['awal']) ? $_POST['awal'] : '';
     $Akhir  = isset($_POST['akhir']) ? $_POST['akhir'] : '';
-    $GShift  = isset($_POST['gshift']) ? $_POST['gshift'] : '';
-    $Fs    = isset($_POST['fasilitas']) ? $_POST['fasilitas'] : '';
-    $jamA  = isset($_POST['jam_awal']) ? $_POST['jam_awal'] : '';
+    $GShift = isset($_POST['gshift']) ? $_POST['gshift'] : '';
+    $Fs     = isset($_POST['fasilitas']) ? $_POST['fasilitas'] : '';
+    $jamA   = isset($_POST['jam_awal']) ? $_POST['jam_awal'] : '';
     $jamAr  = isset($_POST['jam_akhir']) ? $_POST['jam_akhir'] : '';
     $Rcode  = isset($_POST['rcode']) ? $_POST['rcode'] : '';
-    if (strlen($jamA) == 5) {
-      $start_date = $Awal . ' ' . $jamA;
-    } else {
-      $start_date = $Awal . ' 0' . $jamA;
+
+    $start_date = '';
+    $stop_date  = '';
+
+    if ($Awal !== '') {
+      if ($jamA !== '') {
+        if (strlen($jamA) === 5) {
+          $start_date = $Awal . ' ' . $jamA;
+        } else {
+          $start_date = $Awal . ' 0' . $jamA;
+        }
+      } else {
+        $start_date = $Awal;
+      }
     }
-    if (strlen($jamAr) == 5) {
-      $stop_date  = $Akhir . ' ' . $jamAr;
-    } else {
-      $stop_date  = $Akhir . ' 0' . $jamAr;
+
+    if ($Akhir !== '') {
+      if ($jamAr !== '') {
+        if (strlen($jamAr) === 5) {
+          $stop_date = $Akhir . ' ' . $jamAr;
+        } else {
+          $stop_date = $Akhir . ' 0' . $jamAr;
+        }
+      } else {
+        $stop_date = $Akhir;
+      }
     }
     //$stop_date  = date('Y-m-d', strtotime($Awal . ' +1 day')).' 07:00:00';	
 
     $daftarProses = [];
-    $queryProses = mysqli_query($con, "SELECT DISTINCT proses FROM tbl_proses ORDER BY proses ASC");
-    while ($rowProses = mysqli_fetch_assoc($queryProses)) {
+    $queryProses = sqlsrv_query($con, "SELECT DISTINCT proses FROM db_dying.tbl_proses ORDER BY proses ASC");
+    while ($rowProses = sqlsrv_fetch_array($queryProses, SQLSRV_FETCH_ASSOC)) {
       $daftarProses[] = $rowProses['proses'];
     }
 
@@ -310,10 +382,17 @@
             </thead>
             <tbody>
               <?php
+                function format_tanggal_sqlsrv($value)
+                    {
+                        if ($value instanceof DateTime) {
+                            return $value->format('Y-m-d H:i:s');
+                        }
+                        return $value;
+                    }
                 $c = 0;
                 $no = 0;
                 if($Rcode){
-                  $sql = mysqli_query($con, "SELECT x.*,a.no_mesin as mc,a.no_mc_lama as mc_lama FROM tbl_mesin a
+                  $sql = sqlsrv_query($con, "SELECT x.*,a.no_mesin as mc,a.no_mc_lama as mc_lama FROM db_dying.tbl_mesin a
                                               RIGHT JOIN
                                               (SELECT
                                                 a.rcode,
@@ -332,8 +411,13 @@
                                                 a.k_resep,
                                                 b.resep,
                                                 a.status,
-                                                if(ISNULL(a.g_shift),c.g_shift,a.g_shift) as shft,
-                                                c.operator,	if(c.status='selesai',if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),a.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))),TIME_FORMAT(timediff(now(),c.tgl_buat),'%H:%i')) as lama,
+                                                ISNULL(a.g_shift, c.g_shift) as shft,
+                                                c.operator,
+                                                c.status as status_montemp,
+                                                c.tgl_mulai,
+                                                c.tgl_stop,
+                                                c.tgl_buat,
+                                                a.lama_proses,
                                                 b.`status` as sts,
                                                 a.`status` as stscelup,
                                                 a.proses as proses_aktual,
@@ -343,9 +427,9 @@
                                                 b.no_hanger,
                                                 b.qty_order
                                               FROM
-                                                tbl_schedule b
-                                                LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-                                                LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id
+                                                db_dying.tbl_schedule b
+                                                LEFT JOIN  db_dying.tbl_montemp c ON c.id_schedule = b.id
+                                                LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id
                                               WHERE
                                                   a.rcode LIKE '%$Rcode%'
                                                   ) x ON (a.no_mesin=x.no_mesin or a.no_mc_lama=x.no_mesin)
@@ -356,16 +440,17 @@
                   if ($GShift == "ALL") {
                     $shft = " ";
                   } else {
-                    $shft = " if(ISNULL(a.g_shift),c.g_shift,a.g_shift)='$GShift' AND ";
+                    $shft = " ISNULL(a.g_shift, c.g_shift)='$GShift' AND ";
                   }
               
-                  $Where = " DATE_FORMAT(c.tgl_update, '%Y-%m-%d %H:%i') BETWEEN '$start_date' AND '$stop_date' ";
-                  if ($Awal != "" and $Akhir != "") {
+                  if ($Awal != "" && $Akhir != "") {
+                    $Where  = " c.tgl_update BETWEEN '$start_date' AND '$stop_date' ";
                     $Where1 = "WHERE NOT x.nokk IS NULL";
                   } else {
+                    $Where  = " 1=1 ";
                     $Where1 = " WHERE a.id='' AND NOT x.nokk IS NULL";
                   }
-                  $sql = mysqli_query($con, "SELECT x.*,a.no_mesin as mc,a.no_mc_lama as mc_lama FROM tbl_mesin a
+                  $sql = sqlsrv_query($con, "SELECT x.*,a.no_mesin as mc,a.no_mc_lama as mc_lama FROM db_dying.tbl_mesin a
                                               LEFT JOIN
                                               (SELECT
                                                 a.rcode,
@@ -383,10 +468,15 @@
                                                 b.target,
                                                 a.k_resep,
                                                 b.resep,
-                                                if(ISNULL(a.g_shift),c.g_shift,a.g_shift) as shft,
-                                                c.operator,	if(c.status='selesai',if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),a.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))),TIME_FORMAT(timediff(now(),c.tgl_buat),'%H:%i')) as lama,
-                                                b.`status` as sts,
-                                                a.`status` as stscelup,
+                                                ISNULL(a.g_shift, c.g_shift) as shft,
+                                                c.operator,
+                                                c.status as status_montemp,
+                                                c.tgl_mulai,
+                                                c.tgl_stop,
+                                                c.tgl_buat,
+                                                a.lama_proses,
+                                                b.status as sts,
+                                                a.status as stscelup,
                                                 a.proses as proses_aktual,
                                                 a.id as idclp,
                                                 a.analisa_resep,
@@ -395,9 +485,9 @@
                                                 b.qty_order,
                                                 a.tambah_dyestuff
                                               FROM
-                                                tbl_schedule b
-                                                LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-                                                LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id
+                                                db_dying.tbl_schedule b
+                                                LEFT JOIN  db_dying.tbl_montemp c ON c.id_schedule = b.id
+                                                LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id
                                               WHERE
                                                   $shft
                                                   $Where
@@ -405,25 +495,62 @@
                                               $Where1 
                                               ORDER BY tgl_update DESC");
                 }
-                while ($rowd = mysqli_fetch_array($sql)) {
+
+                if ($sql === false) {
+                  $errors = sqlsrv_errors();
+                  $msg    = $errors ? $errors[0]['message'] : 'Unknown error saat mengambil data produksi.';
+                  echo '<tr><td colspan="20">Terjadi kesalahan saat mengambil data produksi: ' . htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') . '</td></tr>';
+                } else {
+                while ($rowd = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)) {
+                  if (!empty($rowd['status_montemp']) && $rowd['status_montemp'] === 'selesai') {
+                    if (!empty($rowd['tgl_mulai']) && !empty($rowd['tgl_stop'])) {
+                      $rowd['lama'] = formatDurationHM($rowd['tgl_mulai'], $rowd['tgl_stop']);
+                    } else {
+                      $rowd['lama'] = isset($rowd['lama_proses']) ? $rowd['lama_proses'] : '';
+                    }
+                  } else {
+                    $rowd['lama'] = !empty($rowd['tgl_buat']) ? formatDurationHM($rowd['tgl_buat']) : '';
+                  }
+
                   if ($GShift == "ALL") {
                     $shftSM = " ";
                   } else {
                     $shftSM = " g_shift='$GShift' AND ";
                   }
-                  $sqlSM = mysqli_query($con, "SELECT *, g_shift as shiftSM, TIME_FORMAT(timediff(selesai,mulai),'%H:%i') as lamaSM FROM tbl_stopmesin
-                                                WHERE $shftSM tgl_update BETWEEN '$start_date' AND '$stop_date' AND (no_mesin='$rowd[mc]' or no_mesin='$rowd[mc_lama]') ORDER BY id DESC LIMIT 1");
-                  $rowSM = mysqli_fetch_array($sqlSM);
+
+                  $rowSM = null;
+                  if ($start_date !== '' && $stop_date !== '') {
+                    $sqlSM = sqlsrv_query($con, "SELECT TOP 1 *, g_shift as shiftSM FROM db_dying.tbl_stopmesin
+                                                WHERE $shftSM tgl_update BETWEEN '$start_date' AND '$stop_date' AND (no_mesin='".$rowd['mc']."' or no_mesin='".$rowd['mc_lama']."') ORDER BY id DESC");
+                    if ($sqlSM !== false) {
+                      $rowSM = sqlsrv_fetch_array($sqlSM, SQLSRV_FETCH_ASSOC);
+                    }
+                  }
+                  if ($rowSM) {
+                    if (!empty($rowSM['mulai']) && !empty($rowSM['selesai'])) {
+                      $rowSM['lamaSM'] = formatDurationHM($rowSM['mulai'], $rowSM['selesai']);
+                    } else {
+                      $rowSM['lamaSM'] = '';
+                    }
+                  } else {
+                    $rowSM = array(
+                      'shiftSM' => '',
+                      'proses'  => '',
+                      'lamaSM'  => '',
+                      'no_stop' => '',
+                      'keterangan' => ''
+                    );
+                  }
                   $no++;
                   $bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
-                  $qCek = mysqli_query($con, "SELECT id as idb FROM tbl_potongcelup WHERE nokk='$rowd[nokk]' LIMIT 1");
-                  $rCEk = mysqli_fetch_array($qCek);
+                  $qCek = sqlsrv_query($con, "SELECT TOP 1 id as idb FROM db_dying.tbl_potongcelup WHERE nokk='".$rowd['nokk']."'");
+                  $rCEk = sqlsrv_fetch_array($qCek, SQLSRV_FETCH_ASSOC);
               ?>
                 <tr bgcolor="<?php echo $bgcolor; ?>" class="table table-bordered table-hover table-striped">
                   <td align="center"><?php echo $rowd['mc']; ?><br>
                     <div class="btn-group <?php if ($rCEk['idb'] == "") {
                                             echo "hidden";
-                                          } ?>"><a href="pages/cetak/cetak_celup.php?id=<?php echo $rCEk['idb'] ?>" class="btn btn-xs btn-warning" target="_blank"><i class="fa fa-print"></i> </a><a href="#" id='<?php echo $rowd['idclp']; ?>' class="btn btn-xs btn-info edit_stscelup"><i class="fa fa-edit"></i> </a></div>
+                                          } ?>"><a href="pages/cetak/cetak_celup.php?id=<?php echo $rCEk['idb'] ?>" class="btn btn-xs btn-warning" target="_blank"><i class="fa fa-print"></i> </a><a href="#" id='<?php echo $rowd['idclp']; ?>' class="btn btn-xs btn-info edit_stscelup-didesibel-sementara"><i class="fa fa-edit"></i> </a></div>
                   </td>
                   <td align="center"><?php if ($rowd['no_order'] == "" and substr($rowd['proses'], 0, 10) != "Cuci Mesin") {
                                         echo $rowSM['shiftSM'];
@@ -431,7 +558,7 @@
                                         echo $rowd['shft'];
                                       } ?></td>
                   <td align="center"><?php echo $rowd['buyer']; ?><br><?= $rowd['langganan']; ?></td>
-                  <td><?= $rowd['tgl_update'] ?></td>
+                  <td><?= format_tanggal_sqlsrv($rowd['tgl_update']); ?></td>
                   <td align="center"><?php echo $rowd['no_order']; ?><br><?= $rowd['nodemand'] ?></td>
                   <td><?php echo $rowd['jenis_kain']; ?></td>
                   <td align="center"><?php echo $rowd['lot']; ?></td>
@@ -552,7 +679,7 @@
                   </td>
 									<td><?= $rowd['analisa_resep'] ?></td>
                 </tr>
-              <?php } ?>
+              <?php } } ?>
             </tbody>
           </table>
           </form>

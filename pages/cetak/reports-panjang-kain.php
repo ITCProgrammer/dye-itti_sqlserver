@@ -50,20 +50,20 @@
     <tbody>
         <?php
             include "../../koneksi.php";
-            $Awal = $_GET['awal'];
+            $Awal  = $_GET['awal'];
             $Akhir = $_GET['akhir'];
             if ($Awal != $Akhir) {
-                $Where = " DATE_FORMAT(c.tgl_update, '%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir' ";
+                $Where = " c.tgl_update BETWEEN '$Awal' AND '$Akhir' ";
             } else {
-                $Where = " DATE_FORMAT(c.tgl_update, '%Y-%m-%d')='$Tgl' ";
+                $Where = " CONVERT(date, c.tgl_update) = CONVERT(date, '$Awal') ";
             }
 
             if ($_GET['shft'] == "ALL") {
                 $shft = " ";
             } else {
-                $shft = " a.g_shift='$_GET[shft]' AND ";
+                $shft = " a.g_shift='".$_GET['shft']."' AND ";
             }
-            $sql = mysqli_query($con, "SELECT
+            $sql = sqlsrv_query($con, "SELECT
                                             a.tgl_buat,
                                             a.nokk,
                                             a.nodemand,
@@ -110,9 +110,9 @@
                                             c.tgl_update,
                                             a.proses
                                         FROM
-                                            tbl_schedule b
-                                        LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-                                        LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id
+                                            db_dying.tbl_schedule b
+                                        LEFT JOIN db_dying.tbl_montemp c ON c.id_schedule = b.id
+                                        LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id
                                         WHERE
                                             $shft 
                                             $Where
@@ -122,8 +122,14 @@
             $no = 1;
 
             $c = 0;
-
-            while ($rowd = mysqli_fetch_array($sql)) {
+            function format_tanggal_sqlsrv($value)
+                                                  {
+                                                      if ($value instanceof DateTime) {
+                                                          return $value->format('Y-m-d');
+                                                      }
+                                                      return $value;
+                                                  }
+            while ($rowd = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)) {
 	            ini_set("error_reporting", 1);
                 $q_itxviewkk        = db2_exec($conn2, "SELECT 
                                                             LISTAGG(TRIM(SUBCODE01), '') AS SUBCODE01,
@@ -164,7 +170,7 @@
         ?>
             <tr>
                 <td><?= $no++; ?></td>
-                <td><?= substr($rowd['tgl_buat'], 0,10); ?></td>
+                <td><?= format_tanggal_sqlsrv(($rowd['tgl_buat'])); ?></td>
                 <td><?= $row_itxviewkk['SUBCODE01']; ?></td>
                 <td><?= $row_itxviewkk['SUBCODE02']; ?></td>
                 <td><?= $row_itxviewkk['SUBCODE03']; ?></td>

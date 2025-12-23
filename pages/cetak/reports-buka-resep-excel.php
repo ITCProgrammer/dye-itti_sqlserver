@@ -8,11 +8,41 @@ header("Expires: 0");
 <?php
 ini_set("error_reporting", 1);
 include "../../koneksi.php";
-$Awal   = $_GET['awal'];
-$Akhir  = $_GET['akhir'];
-$jamA   = $_GET['jam_awal'];
-$jamAr  = $_GET['jam_akhir'];
-$GShift = $_GET['gshift'];
+
+// Normalisasi format tanggal dari input (mis. dd/mm/YYYY -> YYYY-mm-dd)
+function format_input_tanggal_sqlsrv($value)
+{
+    $value = trim((string)$value);
+    if ($value === '') {
+        return '';
+    }
+
+    $formats = array('Y-m-d', 'd/m/Y', 'd-m-Y', 'm/d/Y', 'm-d-Y');
+    foreach ($formats as $fmt) {
+        $dt = DateTime::createFromFormat($fmt, $value);
+        if ($dt instanceof DateTime && $dt->format($fmt) === $value) {
+            return $dt->format('Y-m-d');
+        }
+    }
+
+    $ts = strtotime($value);
+    if ($ts !== false) {
+        return date('Y-m-d', $ts);
+    }
+
+    return $value;
+}
+
+$Awal_raw   = isset($_GET['awal']) ? $_GET['awal'] : '';
+$Akhir_raw  = isset($_GET['akhir']) ? $_GET['akhir'] : '';
+$jamA       = isset($_GET['jam_awal']) ? $_GET['jam_awal'] : '';
+$jamAr      = isset($_GET['jam_akhir']) ? $_GET['jam_akhir'] : '';
+$GShift     = isset($_GET['gshift']) ? $_GET['gshift'] : '';
+
+// Konversi ke format yang aman untuk SQL Server
+$Awal  = format_input_tanggal_sqlsrv($Awal_raw);
+$Akhir = format_input_tanggal_sqlsrv($Akhir_raw);
+
 if (strlen($jamA) == 5) {
     $start_date = $Awal . ' ' . $jamA;
 } else {
@@ -23,13 +53,15 @@ if (strlen($jamAr) == 5) {
 } else {
     $stop_date  = $Akhir . ' 0' . $jamAr;
 }
-if ($jamA & $jamAr) {
-    $where_jam  = "createdatetime BETWEEN '$start_date' AND '$stop_date'";
+
+if ($jamA && $jamAr) {
+    // Gunakan TRY_CONVERT agar data tanggal/timestamp yang jelek tidak mem‑trigger error 241
+    $where_jam  = "TRY_CONVERT(datetime, createdatetime) BETWEEN '$start_date' AND '$stop_date'";
 } else {
-    $where_jam  = "CONVERT(date,createdatetime) BETWEEN '$Awal' AND '$Akhir'";
+    $where_jam  = "TRY_CONVERT(date, createdatetime) BETWEEN '$Awal' AND '$Akhir'";
 }
 
-if ($GShift == 'ALL') {
+if ($GShift === 'ALL' || $GShift === '') {
     $where_gshift = "";
 } else {
     $where_gshift = "AND gshift = '$GShift'";
