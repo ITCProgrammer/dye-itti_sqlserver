@@ -334,6 +334,7 @@
 			$nipbr = $format . $Nol . $Urut;
 			return $nipbr;
 		}
+		// echo $nou;
 		$nou = nourut();
 		$nokk = $_GET['nokk'];
 		
@@ -534,6 +535,7 @@
 			document.getElementById("suffix2").value = data2.SUFFIX_CODE;
 		});
 	}
+		
 </script>
 <form class="form-horizontal" action="" method="post" enctype="multipart/form-data" name="form1">
 	<div class="box box-info">
@@ -1157,6 +1159,9 @@
 </form>
 
 <?php
+	function toDateOrNull($v) {
+    	return ($v === '' || $v === null) ? null : $v; 
+	}
 	if ($_POST['save'] == "save") {
 		function sqlsrv_last_insert_id($con) {
 			$stmt = sqlsrv_query($con, "SELECT SCOPE_IDENTITY() AS last_id");
@@ -1181,7 +1186,7 @@
 			if ($_POST['nokk'] != "") {
 				$kartu = $_POST['nokk'];
 			} else {
-				$kartu = $nou;
+				$kartu = 'asdf';
 			}
 			$warna = str_replace("'", "''", $_POST['warna']);
 			$nowarna = str_replace("'", "''", $_POST['no_warna']);
@@ -1232,6 +1237,33 @@
 				VALUES
 				(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 				 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,  GETDATE(), ?, ?, GETDATE())";
+			// $sqlInsert = "INSERT INTO db_dying.tbl_schedule
+			// 	(nokk, 
+			// 	nodemand, 
+			// 	langganan, 
+			// 	buyer, 
+			// 	no_order, 
+			// 	po, 
+			// 	no_hanger, 
+			// 	no_item, 
+			// 	jenis_kain,
+			// 	tgl_delivery, 
+			// 	lebar, 
+			// 	gramasi, 
+			// 	warna, 
+			// 	no_warna, 
+			// 	qty_order, 
+			// 	pjng_order, 
+			// 	satuan_order,
+			// 	lot, rol, bruto, no_rajut, shift, g_shift, kapasitas, no_mesin, no_urut, no_sch,
+			// 	 loading, resep, no_resep, no_resep2, suffix, suffix2, energi, dyestuff, proses,
+			// 	 revisi, kategori_warna, ket_status, ket_kain, tgl_masuk,
+			// 	 kk_kestabilan, kk_normal, tgl_update)
+			// 	OUTPUT INSERTED.id
+			// 	VALUES
+			// 	($kartu, $_POST[demand], $_POST[langganan], $_POST[buyer], $_POST[no_order], $po, $_POST[no_hanger], $_POST[no_item], $jns, $paramTglDelivery, $_POST[lebar], $_POST[grms], $warna, $nowarna, $_POST[qty1], $_POST[qty2], $_POST[satuan1], $lot, $_POST[qty3], $_POST[qty4], $_POST[no_rajut], $_POST[shift], $_POST[g_shift], $_POST[kapasitas], $_POST[no_mc], $_POST[no_urut], $_POST[no_urut], $loading1, $_POST[resep], $_POST[no_resep], $_POST[no_resep2], $_POST[suffix], $_POST[suffix2], $_POST[energi], $_POST[dyestuff], $_POST[proses], $_POST[revisi], $_POST[kategori_warna], $ket_status_db, $ket_kain_db, GETDATE(), $kk_kestabilan, $kk_normal, GETDATE())";
+
+				 echo $kartu; // Debug: Tampilkan query insert
 
 			$paramsInsert = array(
 				$kartu,
@@ -1244,16 +1276,16 @@
 				$_POST['no_item'],
 				$jns,
 				$paramTglDelivery,
-				(int)$_POST['lebar'],
-				(int)$_POST['grms'],
+				toDateOrNull($_POST['lebar']),
+				toDateOrNull($_POST['grms']),
 				$warna,
 				$nowarna,
-				(float)$_POST['qty1'],
-				(float)$_POST['qty2'],
+				toDateOrNull($_POST['qty1']),
+				toDateOrNull($_POST['qty2']),
 				$_POST['satuan1'],
 				$lot,
 				$_POST['qty3'],
-				$_POST['qty4'],
+				toDateOrNull($_POST['qty4']),
 				$_POST['no_rajut'],
 				$_POST['shift'],
 				$_POST['g_shift'],
