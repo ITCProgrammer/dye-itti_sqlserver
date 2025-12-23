@@ -425,21 +425,21 @@ desired effect
                                 <li class="<?php if ($_GET['p'] == "Hasil-Celup" or $_GET['p'] == "Form-Celup") {
                                                 echo "active";
                                             } ?>"><a href="?p=Hasil-Celup"><i class="fa fa-square text-info"></i> <span>Hasil-Celup</span></a></li>
-                                <li class="<?php if ($_GET['p'] == "Matching-Dyeing" or $_GET['p'] == "Form-Matching-Dyeing") {
-                                                echo "active";
-                                            } ?>"><a href="?p=Matching-Dyeing"><i class="fa fa-folder-o text-info"></i> <span>Matching Dyeing</span></a></li>
+                                <!-- <li class="<?php //if ($_GET['p'] == "Matching-Dyeing" or $_GET['p'] == "Form-Matching-Dyeing") {
+                                                //echo "active";
+                                            //} ?>"><a href="?p=Matching-Dyeing"><i class="fa fa-folder-o text-info"></i> <span>Matching Dyeing</span></a></li> -->
                                 <!--<li class="<?php if ($_GET['p'] == "Potong-Celup" or $_GET['p'] == "Form-Potong") {
                                                     echo "active";
                                                 } ?>"><a href="?p=Potong-Celup"><i class="fa fa-cut text-warning"></i> <span>Potong-Celup</span></a></li> -->
                                 <li class="<?php if ($_GET['p'] == "Schedule-Cek") {
                                                 echo "active";
                                             } ?>"><a href="?p=Schedule-Cek"><i class="fa fa-calendar text-danger"></i> <span>Cek Schedule</span></a></li>
-                                <li class="<?php if ($_GET['p'] == "Masalah-Celupan" or $_GET['p'] == "Form-Masalah-Celupan") {
-                                                echo "active";
-                                            } ?>"><a href="?p=Masalah-Celupan"><i class="fa fa-cut text-primary"></i> <span>Masalah-Celupan</span></a></li>
-                                <li class="<?php if ($_GET['p'] == "Setting-Mesin" or $_GET['p'] == "Form-Setting-Mesin") {
-                                                echo "active";
-                                            } ?>"><a href="?p=Setting-Mesin"><i class="fa fa-gear text-success"></i> <span>Setting-Mesin</span></a></li>
+                                <!-- <li class="<?php //if ($_GET['p'] == "Masalah-Celupan" or $_GET['p'] == "Form-Masalah-Celupan") {
+                                                //echo "active";
+                                            //} ?>"><a href="?p=Masalah-Celupan"><i class="fa fa-cut text-primary"></i> <span>Masalah-Celupan</span></a></li> -->
+                                <!-- <li class="<?php //if ($_GET['p'] == "Setting-Mesin" or $_GET['p'] == "Form-Setting-Mesin") {
+                                                //echo "active";
+                                            //} ?>"><a href="?p=Setting-Mesin"><i class="fa fa-gear text-success"></i> <span>Setting-Mesin</span></a></li> -->
                             </ul>
                         </li>
                         <li class="treeview <?php if ($_GET['p'] == "lap-hasil-celup" or $_GET['p'] == "lap-harian-produksi" or $_GET['p'] == "lap-monitoring-tempelan" or $_GET['p'] == "lap-schedule" or $_GET['p'] == "lap-potong-celup" or $_GET['p'] == "lap-waktu-proses" or $_GET['p'] == "lap-total-point") {
@@ -466,9 +466,9 @@ desired effect
                                 <li class="<?php if ($_GET['p'] == "lap-harian-produksi") {
                                                 echo "active";
                                             } ?>"><a href="?p=lap-harian-produksi"><i class="fa fa-columns text-red"></i> <span>Lap Harian Produksi</span></a></li>
-                                <li class="<?php if ($_GET['p'] == "lap-harian-matching") {
-                                                echo "active";
-                                            } ?>"><a href="?p=lap-harian-dyeing"><i class="fa fa-columns text-red"></i> <span>Laporan Harian Matching Dyeing</span></a></li>
+                                <!-- <li class="<?php //if ($_GET['p'] == "lap-harian-matching") {
+                                                //echo "active";
+                                            //} ?>"><a href="?p=lap-harian-dyeing"><i class="fa fa-columns text-red"></i> <span>Laporan Harian Matching Dyeing</span></a></li> -->
                                 <!-- <li class="<?php if ($_GET['p'] == "lap-harian-produksi") {
                                                     echo "active";
                                                 } ?>"><a href="?p=lap-harian-matching"><i class="fa fa-columns text-yellow"></i> <span>Lap Harian Matching</span></a></li> -->
@@ -481,9 +481,9 @@ desired effect
                                 <li class="<?php if ($_GET['p'] == "lap-total-point") {
                                                 echo "active";
                                             } ?>"><a href="?p=lap-total-point"><i class="fa fa-columns text-aqua"></i> <span>Lap Total Point</span></a></li>
-                                <li class="<?php if ($_GET['p'] == "lap-overtime") {
-                                                echo "active";
-                                            } ?>"><a href="?p=lap-overtime"><i class="fa fa-columns text-aqua"></i> <span>Lap Over Time</span></a></li>
+                                <!-- <li class="<?php //if ($_GET['p'] == "lap-overtime") {
+                                                //echo "active";
+                                            //} ?>"><a href="?p=lap-overtime"><i class="fa fa-columns text-aqua"></i> <span>Lap Over Time</span></a></li> -->
                             </ul>
                         </li>
                     <?php } ?>
@@ -549,40 +549,40 @@ desired effect
                                             } ?>"><a href="?p=Lap-Salah-Resep"><i class="fa fa-columns text-blue"></i> <span>Laporan Salah Resep</span></a></li>
                             </ul>
                         </li>
-                        <li class="treeview <?php if ($_GET['p'] == "Lap-NCP" or $_GET['p'] == "Form-NCP" or $_GET['p'] == "Lap-NCPMemo") {
-                                                echo "active";
-                                            } ?>">
+                        <!-- <li class="treeview <?php //if ($_GET['p'] == "Lap-NCP" or $_GET['p'] == "Form-NCP" or $_GET['p'] == "Lap-NCPMemo") {
+                                                //echo "active";
+                                            //} ?>">
                             <a href="#"><i class="fa fa-file text-blue"></i> <span>NCP</span>
                                 <span class="pull-right-container">
                                     <i class="fa fa-angle-left pull-right"></i>
                                 </span>
                             </a>
-                            <ul class="treeview-menu">
-                                <li class="<?php if ($_GET['p'] == "Form-NCP") {
-                                                echo "active";
-                                            } ?>"><a href="?p=Form-NCP"><i class="fa fa-columns text-yellow"></i> <span>Input NCP-Memo</span>
+                            <ul class="treeview-menu"> -->
+                                <!-- <li class="<?php //if ($_GET['p'] == "Form-NCP") {
+                                                //echo "active";
+                                            //} ?>"><a href="?p=Form-NCP"><i class="fa fa-columns text-yellow"></i> <span>Input NCP-Memo</span>
                                         <span class="pull-right-container">
                                             <small class="label pull-right bg-green blink_me">new</small>
                                         </span></a></li>
-                                <li class="<?php if ($_GET['p'] == "Lap-NCPMemo") {
-                                                echo "active";
-                                            } ?>"><a href="?p=Lap-NCPMemo"><i class="fa fa-columns text-green"></i> <span>Laporan NCP-Memo</span>
+                                <li class="<?php //if ($_GET['p'] == "Lap-NCPMemo") {
+                                               // echo "active";
+                                            //} ?>"><a href="?p=Lap-NCPMemo"><i class="fa fa-columns text-green"></i> <span>Laporan NCP-Memo</span>
                                         <span class="pull-right-container">
                                             <small class="label pull-right bg-green blink_me">new</small>
                                         </span></a></li>
-                                <li class="<?php if ($_GET['p'] == "Status-NCP-New") {
-                                                echo "active";
-                                            } ?>"><a href="?p=Status-NCP-New"><i class="fa fa-area-chart text-navy"></i> <span>Status NCP</span> <span class="pull-right-container">
+                                <li class="<?php //if ($_GET['p'] == "Status-NCP-New") {
+                                                //echo "active";
+                                            //} ?>"><a href="?p=Status-NCP-New"><i class="fa fa-area-chart text-navy"></i> <span>Status NCP</span> <span class="pull-right-container">
                                             <small class="label pull-right bg-green blink_me">new</small>
                                         </span></a></li>
-                                <li class="<?php if ($_GET['p'] == "Lap-Harian-NCP") {
-                                                echo "active";
-                                            } ?>"><a href="?p=Lap-Harian-NCP"><i class="fa fa-columns text-green"></i> <span>Laporan Harian NCP</span></a></li>
-                                <li class="<?php if ($_GET['p'] == "Lap-NCP") {
-                                                echo "active";
-                                            } ?>"><a href="?p=Lap-NCP"><i class="fa fa-columns text-blue"></i> <span>Laporan NCP</span></a></li>
-                            </ul>
-                        </li>
+                                <li class="<?php //if ($_GET['p'] == "Lap-Harian-NCP") {
+                                                //echo "active";
+                                            //} ?>"><a href="?p=Lap-Harian-NCP"><i class="fa fa-columns text-green"></i> <span>Laporan Harian NCP</span></a></li>
+                                <li class="<?php //if ($_GET['p'] == "Lap-NCP") {
+                                                //echo "active";
+                                            //} ?>"><a href="?p=Lap-NCP"><i class="fa fa-columns text-blue"></i> <span>Laporan NCP</span></a></li> -->
+                            <!-- </ul>
+                        </li> -->
                         <li class="treeview <?php if ($_GET['p'] == "Setting-Resep-Dye") {
                                                 echo "active";
                                             } ?>">
