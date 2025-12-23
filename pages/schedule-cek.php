@@ -1,7 +1,7 @@
 <?PHP
 ini_set("error_reporting", 1);
 session_start();
-include"koneksi.php";
+include "koneksi.php";
 
 ?>
 
@@ -105,10 +105,18 @@ $ck		= isset($_POST['ck']) ? $_POST['ck'] : '';
 INNER JOIN tbl_montemp b ON a.id=b.id_schedule 
 WHERE $nokk ((a.`status`='selesai' AND b.`status`='sedang jalan') or (a.`status`='sedang jalan' AND b.`status`='selesai') or (mc_from='' and no_urut='' and no_mesin='' and (a.`status`='sedang jalan' or a.`status`='antri mesin')))");*/	
 	
-  $sql=mysqli_query($con,"SELECT a.* FROM tbl_schedule a
-INNER JOIN tbl_montemp b ON a.id=b.id_schedule 
-WHERE $nokk ((not a.`status`=b.`status`) or (mc_from='' and no_urut='' and no_mesin='' and (a.`status`='sedang jalan' or a.`status`='antri mesin')))");	
-  while($rowd=mysqli_fetch_array($sql)){
+  $sql= sqlsrv_query($con,"SELECT
+                              a.* 
+                            FROM
+                              db_dying.tbl_schedule a
+                              INNER JOIN db_dying.tbl_montemp b ON a.id= b.id_schedule 
+                            WHERE
+                              $nokk (
+                                ( NOT a.status= b.status ) 
+                              OR ( mc_from = '' AND no_urut = '' AND no_mesin = '' AND ( a.status= 'sedang jalan' OR a.status= 'antri mesin' ) ) 
+                              )");	
+   
+  while($rowd= sqlsrv_fetch_array($sql,SQLSRV_FETCH_ASSOC)){
 	 	$no++;
 		$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
 	?>
