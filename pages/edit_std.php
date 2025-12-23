@@ -3,17 +3,31 @@ ini_set("error_reporting", 1);
 session_start();
 include("../koneksi.php");
 if($_POST){ 
-	extract($_POST);
-	$id = mysqli_real_escape_string($con,$_POST['id']);
-	$jenis = mysqli_real_escape_string($con,strtoupper($_POST['jenis'])); 
-	$target = mysqli_real_escape_string($con,$_POST['target']); 
-				$sqlupdate=mysqli_query($con,"UPDATE `tbl_std_jam` SET 
-				`jenis`='$jenis', 
-				`target`='$target'
-				WHERE `id`='$id' LIMIT 1");
-				echo " <script>window.location='?p=Std-Target';</script>";
-						
-		}
-		
+	$id = $_POST['id'];
+	$jenis = strtoupper($_POST['jenis']); 
+	$target = $_POST['target']; 
+
+	$sql = "UPDATE db_dying.tbl_std_jam SET 
+			jenis = ?, 
+			target = ?
+			WHERE id = ?";
+	
+	$params = array($jenis, $target, $id);
+	$stmt = sqlsrv_query($con, $sql, $params);
+
+	if ($stmt) {
+		echo "<script>
+				swal({
+					title: 'Berhasil!',
+					text: 'Data standard target berhasil diperbarui.',
+					type: 'success'
+				}).then(function() {
+					window.location = '?p=Std-Target';
+				});
+			  </script>";
+	} else {
+		echo "<script>swal('Gagal!', 'Gagal memperbarui data. Silakan coba lagi.', 'error');</script>";
+	}
+}
 
 ?>
