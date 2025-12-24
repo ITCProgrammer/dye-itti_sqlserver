@@ -13,7 +13,7 @@ include"koneksi.php";
 
 <body>
 <?php
-   $data=mysqli_query($con,"SELECT * FROM tbl_datatest WHERE no_test != ''
+   $data=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_datatest WHERE no_test != ''
 ORDER BY
 	id ASC");
 	$no=1;
@@ -87,13 +87,13 @@ ORDER BY
           <tbody>
             <?php
 	  $col=0;
-  while($rowd=mysqli_fetch_array($data)){
+  while($rowd=sqlsrv_fetch_array($data, SQLSRV_FETCH_ASSOC)){
 			$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
-	  	$qMT=mysqli_query($con,"SELECT rpm, cycle_time, tekanan, nozzle, blower, plaiter, tgl_buat FROM tbl_montemp WHERE nokk='$rowd[nokk]'");
-	  	$rMT=mysqli_fetch_array($qMT);
+	  	$qMT=sqlsrv_query($con,"SELECT rpm, cycle_time, tekanan, nozzle, blower, plaiter, tgl_buat FROM db_dying.tbl_montemp WHERE nokk='$rowd[nokk]'");
+	  	$rMT=sqlsrv_fetch_array($qMT, SQLSRV_FETCH_ASSOC);
 		 ?>
             <tr bgcolor="<?php echo $bgcolor; ?>">
-              <td align="center"><?php echo date("d/m/y", strtotime($rowd['tgl_buat']));?></td>
+              <td align="center"><?php echo $rowd['tgl_buat'] ? $rowd['tgl_buat']->format('d/m/y') : '';?></td>
 			  <td align="center"><?php echo $rowd['no_test'];?></td>
 			  <td align="center"><?php echo $rowd['no_item'];?></td>
 			  <td align="center"><?php echo $rowd['nokk'];?></td>
@@ -113,22 +113,22 @@ ORDER BY
 			  <td align="center"><?php echo $rowd['masalah'];?></td>
 			  <td align="center"><?php echo $rowd['improve'];?></td>
 			  <td align="center"><?php echo $rowd['no_mesin'];?></td>
-			  <td align="center"><?php echo date("d/m/y", strtotime($rMT['tgl_buat']));?></td>
+			  <td align="center"><?php echo $rMT['tgl_buat'] ? $rMT['tgl_buat']->format('d/m/y') : '';?></td>
 			  <td align="center"><?php echo $rowd['loading'];?></td>
 			  <td align="center"><?php echo $rowd['l_r'];?></td>
 			  <td align="center"><?php echo $rowd['no_program'];?></td>
 			  <td align="center"><?php echo $rowd['rpm'];?></td>
-			  <td align="center"><?php echo $rMT['rpm'];?></td>
+			  <td align="center"><?php echo $rMT ? $rMT['rpm'] : '';?></td>
 			  <td align="center"><?php echo $rowd['cycle_time'];?></td>
-			  <td align="center"><?php echo $rMT['cycle_time'];?></td>
+			  <td align="center"><?php echo $rMT ? $rMT['cycle_time'] : '';?></td>
 			  <td align="center"><?php echo $rowd['tekanan'];?></td>
-			  <td align="center"><?php echo $rMT['tekanan'];?></td>
+			  <td align="center"><?php echo $rMT ? $rMT['tekanan'] : '';?></td>
 			  <td align="center"><?php echo $rowd['nozzle'];?></td>
-			  <td align="center"><?php echo $rMT['nozzle'];?></td>
+			  <td align="center"><?php echo $rMT ? $rMT['nozzle'] : '';?></td>
 			  <td align="center"><?php echo $rowd['blower'];?></td>
-			  <td align="center"><?php echo $rMT['blower'];?></td>
+			  <td align="center"><?php echo $rMT ? $rMT['blower'] : '';?></td>
 			  <td align="center"><?php echo $rowd['plaiter'];?></td>
-			  <td align="center"><?php echo $rMT['plaiter'];?></td>
+			  <td align="center"><?php echo $rMT ? $rMT['plaiter'] : '';?></td>
 			  <td align="center">&nbsp;</td>
 			  <td align="center"><?php echo $rowd['ket_proses'];?></td>
 			  <td align="center"><?php echo $rowd['hasil_qc'];?></td>

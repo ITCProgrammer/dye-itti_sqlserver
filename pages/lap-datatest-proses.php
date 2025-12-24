@@ -94,19 +94,19 @@ $Akhir	= isset($_POST['akhir']) ? $_POST['akhir'] : '';
           <?php
             $no=1;
             if($Awal!=""){
-            $qry1=mysqli_query($con,"SELECT * FROM tbl_datatest
-            WHERE DATE_FORMAT( tgl_buat, '%Y-%m-%d' ) BETWEEN '$Awal' AND '$Akhir' ORDER BY id ASC");
+            $qry1=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_datatest
+            WHERE CONVERT(DATE, tgl_buat) BETWEEN '$Awal' AND '$Akhir' ORDER BY id ASC");
             }else{
-                $qry1=mysqli_query($con,"SELECT * FROM tbl_datatest
-                WHERE DATE_FORMAT( tgl_buat, '%Y-%m-%d' ) BETWEEN '$Awal' AND '$Akhir' ORDER BY id ASC");
+               $qry1=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_datatest
+            WHERE CONVERT(DATE, tgl_buat) BETWEEN '$Awal' AND '$Akhir' ORDER BY id ASC");
             }
-			while($row1=mysqli_fetch_array($qry1)){
+			while($row1=sqlsrv_fetch_array($qry1, SQLSRV_FETCH_ASSOC)){
 		 ?>
           <tr bgcolor="<?php echo $bgcolor; ?>">
             <td align="center"><?php echo $no; ?></td>
             <td align="center"><div class="btn-group">
             <a href="#" class="btn btn-danger btn-xs <?php if($_SESSION['akses']=='biasa'){ echo "disabled"; } ?>" onclick="confirm_delete('index1.php?p=hapusdatatestproses&id=<?php echo $row1['id']; ?>');"><i class="fa fa-trash"></i> </a></div></td>
-            <td align="center"><?php echo $row1['tgl_buat'];?></td>
+            <td align="center"><?php echo $row1['tgl_buat']->format('Y-m-d');?></td>
             <td><?php echo $row1['nokk'];?></td>
             <td><?php echo $row1['langganan'];?></td>
             <td><?php echo $row1['buyer'];?></td>

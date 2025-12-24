@@ -8,8 +8,8 @@ $act=$_GET['g'];
 //-
 $Awal=$_GET['awal'];
 $Akhir=$_GET['akhir'];
-$qTgl=mysqli_query($con,"SELECT DATE_FORMAT(now(),'%d-%b-%y') as tgl_skrg,DATE_FORMAT(now(),'%H:%i:%s') as jam_skrg");
-$rTgl=mysqli_fetch_array($qTgl);
+$qTgl=sqlsrv_query($con,"SELECT FORMAT(GETDATE(), 'dd-MMM-yy') as tgl_skrg, FORMAT(GETDATE(), 'HH:mm:ss') as jam_skrg");
+$rTgl=sqlsrv_fetch_array($qTgl, SQLSRV_FETCH_ASSOC);
 if($Awal!=""){$tgl=substr($Awal,0,10); $jam=$Awal;}else{$tgl=$rTgl['tgl_skrg']; $jam=$rTgl['jam_skrg'];}
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -140,17 +140,16 @@ border:hidden;
 		<?php
         $no=1;
         if($Awal!=""){
-            $qry1=mysqli_query($con,"SELECT * FROM tbl_datatest
-            WHERE DATE_FORMAT( tgl_buat, '%Y-%m-%d' ) BETWEEN '$Awal' AND '$Akhir' ORDER BY id ASC");
+            $qry1=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_datatest
+            WHERE CONVERT(DATE, tgl_buat) BETWEEN '$Awal' AND '$Akhir' ORDER BY id ASC");
         }else{
-            $qry1=mysqli_query($con,"SELECT * FROM tbl_datatest
-            WHERE DATE_FORMAT( tgl_buat, '%Y-%m-%d' ) BETWEEN '$Awal' AND '$Akhir' ORDER BY id ASC");
+            $qry1=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_datatest ORDER BY id ASC");
         }
-        while($row1=mysqli_fetch_array($qry1)){
+        while($row1=sqlsrv_fetch_array($qry1, SQLSRV_FETCH_ASSOC)){
 		 ?>
           <tr valign="top">
             <td align="center" valign="middle"><?php echo $no; ?></td>
-            <td align="center" valign="middle"><?php echo date("d-M-y",strtotime($row1['tgl_buat']));?></td>
+            <td align="center" valign="middle"><?php echo $row1['tgl_buat']->format('d-M-y');?></td>
             <td align="center" valign="middle"><?php echo $row1['nokk'];?></td>
             <td align="center" valign="middle"><?php echo $row1['langganan'];?></td>
             <td align="center" valign="middle"><?php echo $row1['buyer'];?></td>

@@ -1,7 +1,7 @@
 <?php
 ini_set("error_reporting", 1);
 session_start();
-include"koneksi.php";
+include "koneksi.php";
 $nokk=$_GET['nokk'];
 // $sql=sqlsrv_query($conn,"select top 1
 // 			x.*,dbo.fn_StockMovementDetails_GetTotalWeightPCC(0, x.PCBID) as Weight, 
@@ -86,9 +86,9 @@ $child=$r['ChildLevel'];
 
 }
 
-$sqlCek1=mysqli_query($con,"SELECT * FROM tbl_datatest WHERE nokk='$nokk' ORDER BY id DESC LIMIT 1");
-$cek1=mysqli_num_rows($sqlCek1);
-$rcek1=mysqli_fetch_array($sqlCek1);
+$sqlCek1=sqlsrv_query($con,"SELECT TOP 1 * FROM db_dying.tbl_datatest WHERE nokk='$nokk' ORDER BY id DESC");
+$cek1=sqlsrv_num_rows($sqlCek1);
+$rcek1=sqlsrv_fetch_array($sqlCek1, SQLSRV_FETCH_ASSOC);
 ?>
 
 <form class="form-horizontal" action="" method="post" enctype="multipart/form-data" name="form1">
@@ -108,7 +108,7 @@ $rcek1=mysqli_fetch_array($sqlCek1);
                      	onchange="window.location='?p=Input-DataTest-Proses&nokk='+this.value" value="<?php echo $_GET['nokk'];?>" placeholder="No KK" required >
 		  			</div>
 			      	<!--<div class="col-sm-4">
-				  		<input name="id" type="hidden" class="form-control" id="id" value="<?php echo $rcek['idc'];?>" placeholder="ID">
+				  		<input name="id" type="hidden" class="form-control" id="id" value="<?php //echo $rcek['idc'];?>" placeholder="ID">
 		          	</div>-->
         		</div>		  
 				<div class="form-group">
@@ -237,8 +237,8 @@ $rcek1=mysqli_fetch_array($sqlCek1);
 						  <select name="no_mesin" class="form-control" id="no_mesin" required>
 							  	<option value="">Pilih</option>
 							  <?php 
-							  $sqlKap=mysqli_query($con,"SELECT no_mesin FROM tbl_mesin ORDER BY no_mesin ASC");
-							  while($rK=mysqli_fetch_array($sqlKap)){
+							  $sqlKap=sqlsrv_query($con,"SELECT no_mesin FROM db_dying.tbl_mesin ORDER BY no_mesin ASC");
+							  while($rK=sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)){
 							  ?>
 								  <option value="<?php echo $rK['no_mesin']; ?>" <?php if($rcek1['no_mesin']==$rK['no_mesin']){echo "SELECTED";}?>><?php echo $rK['no_mesin']; ?></option>
 							 <?php } ?>	 
@@ -250,7 +250,7 @@ $rcek1=mysqli_fetch_array($sqlCek1);
                   	<div class="col-sm-3">
 						<div class="input-group">  
                     		<input name="loading" type="text" style="text-align: right;" class="form-control" id="loading" 
-                    		value="" placeholder="0.00" >
+                    		value="<?php if($cek1>0){echo $rcek1['loading'];} ?>" placeholder="0.00" >
 							<span class="input-group-addon">%</span>
 						</div>	
                   	</div>				   
@@ -259,26 +259,26 @@ $rcek1=mysqli_fetch_array($sqlCek1);
 					<label for="l_r" class="col-sm-3 control-label">L:R</label>
 						<div class="col-sm-2">
 							<input name="l_r" type="text" class="form-control" id="l_r" 
-							value="" placeholder="L:R" >
+							value="<?php if($cek1>0){echo $rcek1['l_r'];} ?>" placeholder="L:R" >
 						</div>
 				</div>  
 				<div class="form-group">
                   <label for="a_dingin" class="col-sm-3 control-label">No. Program</label>
                   	<div class="col-sm-3">
                     	<input name="no_program" type="text" class="form-control" id="no_program" 
-                    	value="" placeholder="No. Program" >
+                    	value="<?php if($cek1>0){echo $rcek1['no_program'];} ?>" placeholder="No. Program" >
                   	</div>				   
         		</div>
 				<div class="form-group">
 					<label for="rpm" class="col-sm-3 control-label">RPM</label>
 					<div class="col-sm-2">
 						<input name="rpm" type="text" class="form-control" id="rpm" 
-							value="" placeholder="0" style="text-align: right;">
+							value="<?php if($cek1>0){echo $rcek1['rpm'];} ?>" placeholder="0" style="text-align: right;">
 					</div>
 					<label for="tekanan" class="col-sm-3 control-label">Tekanan</label>
           			<div class="col-sm-2">
                     	<input name="tekanan" type="text" class="form-control" id="tekanan" 
-                    	value="" placeholder="0" style="text-align: right;">
+                    	value="<?php if($cek1>0){echo $rcek1['tekanan'];} ?>" placeholder="0" style="text-align: right;">
                   	</div>		
 				</div>
 				<div class="form-group">
@@ -286,7 +286,7 @@ $rcek1=mysqli_fetch_array($sqlCek1);
           			<div class="col-sm-3">
 						<div class="input-group">  
 							<input name="cycle_time" type="text" class="form-control" id="cycle_time" 
-							value="" placeholder="0" style="text-align: right;">
+							value="<?php if($cek1>0){echo $rcek1['cycle_time'];} ?>" placeholder="0" style="text-align: right;">
 							<span class="input-group-addon">dtk</span>
 					  	</div>	
                   	</div>
@@ -297,10 +297,10 @@ $rcek1=mysqli_fetch_array($sqlCek1);
 								<select name="nozzle" class="form-control" required>
 											<option value="">Pilih</option>
 										<?php 
-										$sqlNoz=mysqli_query($con,"SELECT nilai,satuan FROM tbl_nozzle ORDER BY nilai ASC");
-										while($rN=mysqli_fetch_array($sqlNoz)){
+										$sqlNoz=sqlsrv_query($con,"SELECT nilai,satuan FROM db_dying.tbl_nozzle ORDER BY nilai ASC");
+										while($rN=sqlsrv_fetch_array($sqlNoz, SQLSRV_FETCH_ASSOC)){
 										?>
-											<option value="<?php echo $rN['nilai']; ?>"><?php echo $rN['nilai']." ".$rN['satuan']; ?></option>
+											<option value="<?php echo $rN['nilai']; ?>" <?php if($cek1>0 && $rcek1['nozzle']==$rN['nilai']){echo "SELECTED";} ?>><?php echo $rN['nilai']." ".$rN['satuan']; ?></option>
 										<?php } ?>	  
 								</select>	
 							</div>
@@ -310,7 +310,7 @@ $rcek1=mysqli_fetch_array($sqlCek1);
 							<div class="col-sm-3">
 								<div class="input-group">  
 								<input name="blower" type="text" class="form-control" id="blower" 
-								value="" placeholder="0" style="text-align: right;" required>
+								value="<?php if($cek1>0){echo $rcek1['blower'];} ?>" placeholder="0" style="text-align: right;" required>
 								<span class="input-group-addon">%</span>
 								</div>	
 							</div>				   
@@ -320,11 +320,11 @@ $rcek1=mysqli_fetch_array($sqlCek1);
 							<div class="col-sm-3">
 								<select name="plaiter" class="form-control" required>
 									<option value="">Pilih</option>
-									<option value="-">-</option>
-									<option value="1">1</option>
-									<option value="2">2</option>
-									<option value="3">3</option>
-									<option value="4">4</option>
+									<option value="-" <?php if($cek1>0 && $rcek1['plaiter']=="-"){echo "SELECTED";} ?>>-</option>
+									<option value="1" <?php if($cek1>0 && $rcek1['plaiter']=="1"){echo "SELECTED";} ?>>1</option>
+									<option value="2" <?php if($cek1>0 && $rcek1['plaiter']=="2"){echo "SELECTED";} ?>>2</option>
+									<option value="3" <?php if($cek1>0 && $rcek1['plaiter']=="3"){echo "SELECTED";} ?>>3</option>
+									<option value="4" <?php if($cek1>0 && $rcek1['plaiter']=="4"){echo "SELECTED";} ?>>4</option>
 								</select>	
 							</div>
 					</div>
@@ -338,7 +338,7 @@ $rcek1=mysqli_fetch_array($sqlCek1);
 					<div class="form-group">
 							<label for="ket_proses" class="col-sm-3 control-label">Keterangan Proses</label>
 							<div class="col-sm-8">					  
-									<textarea name="ket_proses" class="form-control"></textarea>
+									<textarea name="ket_proses" class="form-control"><?php if($cek1>0){echo $rcek1['ket_proses'];} ?></textarea>
 							</div>
 					</div> 
 					<div class="form-group">
@@ -351,7 +351,7 @@ $rcek1=mysqli_fetch_array($sqlCek1);
 					<div class="form-group">
 							<label for="update_status" class="col-sm-3 control-label">Update Status</label>
 							<div class="col-sm-8">					  
-									<textarea name="update_status" class="form-control"></textarea>
+									<textarea name="update_status" class="form-control"><?php if($cek1>0){echo $rcek1['update_status'];} ?></textarea>
 							</div>
 					</div> 
 			  	<!-- <div class="form-group">
@@ -359,9 +359,9 @@ $rcek1=mysqli_fetch_array($sqlCek1);
                   	<div class="col-sm-2">					  
 						<select name="shift" class="form-control" required>
 							<option value="">Pilih</option>
-							<option value="1" <?php if($rcek1['shift']=="1"){echo "SELECTED";}?>>1</option>
-							<option value="2" <?php if($rcek1['shift']=="2"){echo "SELECTED";}?>>2</option>
-							<option value="3" <?php if($rcek1['shift']=="3"){echo "SELECTED";}?>>3</option>
+							<option value="1" <?php //if($rcek1['shift']=="1"){echo "SELECTED";}?>>1</option>
+							<option value="2" <?php //if($rcek1['shift']=="2"){echo "SELECTED";}?>>2</option>
+							<option value="3" <?php //if($rcek1['shift']=="3"){echo "SELECTED";}?>>3</option>
 					  	</select>
 				  	</div>	
 				</div>
@@ -370,9 +370,9 @@ $rcek1=mysqli_fetch_array($sqlCek1);
 					<div class="col-sm-2">					  
 						<select name="g_shift" class="form-control" required>
 							<option value="">Pilih</option>
-							<option value="A" <?php if($rcek1['g_shift']=="A"){echo "SELECTED";}?>>A</option>
-							<option value="B" <?php if($rcek1['g_shift']=="B"){echo "SELECTED";}?>>B</option>
-							<option value="C" <?php if($rcek1['g_shift']=="C"){echo "SELECTED";}?>>C</option>
+							<option value="A" <?php //if($rcek1['g_shift']=="A"){echo "SELECTED";}?>>A</option>
+							<option value="B" <?php //if($rcek1['g_shift']=="B"){echo "SELECTED";}?>>B</option>
+							<option value="C" <?php //if($rcek1['g_shift']=="C"){echo "SELECTED";}?>>C</option>
 						</select>
 					</div>
 				</div>
@@ -383,11 +383,11 @@ $rcek1=mysqli_fetch_array($sqlCek1);
 				    	<select name="t_jawab" class="form-control select2" required>
 							<option value="">Pilih</option>
 							<?php 
-							$sqlTj=mysqli_query($con,"SELECT nama FROM tbl_tjawabdttest ORDER BY nama ASC");
-							while($rTj=mysqli_fetch_array($sqlTj)){
+							//$sqlTj=mysqli_query($con,"SELECT nama FROM tbl_tjawabdttest ORDER BY nama ASC");
+							//while($rTj=mysqli_fetch_array($sqlTj)){
 							?>
-							<option value="<?php echo $rTj['nama']; ?>" <?php if($rcek1['t_jawab']==$rTj['nama']){echo "SELECTED";} ?>><?php echo $rTj['nama']; ?></option>
-							<?php } ?>
+							<option value="<?php //echo $rTj['nama']; ?>" <?php //if($rcek1['t_jawab']==$rTj['nama']){echo "SELECTED";} ?>><?php echo $rTj['nama']; ?></option>
+							<?php //} ?>
 					  	</select>
                         <span class="input-group-btn"><button type="button" class="btn btn-default" data-toggle="modal" data-target="#DataTJawab"> ...</button></span>
 						</div>
@@ -400,13 +400,13 @@ $rcek1=mysqli_fetch_array($sqlCek1);
 						<select class="form-control select2" multiple="multiple" data-placeholder="Keterangan" name="ket[]" id="ket" required>
 							<option value="">Pilih</option>
 							<?php
-							$dtArr=$rcek1['ket'];	
-							$data = explode(",",$dtArr);
-							$qCek1=mysqli_query($con,"SELECT ket FROM tbl_ketdttest ORDER BY ket ASC");
-							$i=0;	
-							while($dCek1=mysqli_fetch_array($qCek1)){ ?>
-							<option value="<?php echo $dCek1['ket'];?>" <?php if($dCek1['ket']==$data[0] or $dCek1['ket']==$data[1] or $dCek1['ket']==$data[2] or $dCek1['ket']==$data[3] or $dCek1['ket']==$data[4] or $dCek1['ket']==$data[5]){echo "SELECTED";} ?>><?php echo $dCek1['ket'];?></option>
-							<?php $i++;} ?> 
+							//$dtArr=$rcek1['ket'];	
+							//$data = explode(",",$dtArr);
+							//$qCek1=mysqli_query($con,"SELECT ket FROM tbl_ketdttest ORDER BY ket ASC");
+							//$i=0;	
+							//while($dCek1=mysqli_fetch_array($qCek1)){ ?>
+							<option value="<?php //echo $dCek1['ket'];?>" <?php //if($dCek1['ket']==$data[0] or $dCek1['ket']==$data[1] or $dCek1['ket']==$data[2] or $dCek1['ket']==$data[3] or $dCek1['ket']==$data[4] or $dCek1['ket']==$data[5]){echo "SELECTED";} ?>><?php echo $dCek1['ket'];?></option>
+							<?php //$i++;} ?> 
 						</select>
 						<span class="input-group-btn"><button type="button" class="btn btn-default" data-toggle="modal" data-target="#DataKet"> ...</button></span>
 						</div>
@@ -436,9 +436,9 @@ $thn = date('y');
 $bulan = date("Y-m");
 $nomor="/".$bln."/".$thn."/DYE";
 //Cari nomor terakhir pada database
-$sql = "SELECT max(no_test) as maxKode FROM tbl_datatest WHERE tgl_buat LIKE '$bulan%'";
-$hasil = mysqli_query($con,$sql) or die (mysqli_error());
-$data = mysqli_fetch_array($hasil);
+$sql = "SELECT max(no_test) as maxKode FROM db_dying.tbl_datatest WHERE tgl_buat LIKE '$bulan%'";
+$hasil = sqlsrv_query($con,$sql);
+$data = sqlsrv_fetch_array($hasil, SQLSRV_FETCH_ASSOC);
 $notest= $data['maxKode'];
 $noUrut=$notest + 1;
 $kode =  sprintf("%03s", $noUrut);
@@ -446,11 +446,21 @@ $nomorbaru = $kode.$nomor;
 
 	if($_POST['simpan']=="simpan"){
 	  $no_test=$nomorbaru;			
-	  $ket=str_replace("'","''",$_POST['ket']);
 	  $masalah=str_replace("'","''",$_POST['masalah']);
 	  $improve=str_replace("'","''",$_POST['improve']);
 	  $ket_proses=str_replace("'","''",$_POST['ket_proses']);
 	  $update_status=str_replace("'","''",$_POST['update_status']);
+      // normalisasi nilai numerik: kosong -> NULL
+      $lebarVal      = ($_POST['lebar']      === '' ? null : $_POST['lebar']);
+      $gramasiVal    = ($_POST['grms']       === '' ? null : $_POST['grms']);
+      $rollVal       = ($_POST['roll']       === '' ? null : $_POST['roll']);
+      $brutoVal      = ($_POST['bruto']      === '' ? null : $_POST['bruto']);
+      $loadingVal    = ($_POST['loading']    === '' ? null : $_POST['loading']);
+      $rpmVal        = ($_POST['rpm']        === '' ? null : $_POST['rpm']);
+      $cycleTimeVal  = ($_POST['cycle_time'] === '' ? null : $_POST['cycle_time']);
+      $tekananVal    = ($_POST['tekanan']    === '' ? null : $_POST['tekanan']);
+      $nozzleVal     = ($_POST['nozzle']     === '' ? null : $_POST['nozzle']);
+      $blowerVal     = ($_POST['blower']     === '' ? null : $_POST['blower']);
 	  $file_grafik = $_FILES['file_grafik']['name'];
 	  $file_inspek = $_FILES['file_inspek']['name'];
 	// ambil data file
@@ -467,56 +477,58 @@ $nomorbaru = $kode.$nomor;
 	$dirUpload = "dist/pdf-inspekdatatest/";
 	// pindahkan file
 	$terupload_inspek = move_uploaded_file($namaSementara_inspek, $dirUpload.$namaFile_inspek);
-	  if(isset($_POST["ket"]))  
-        { 
-            // Retrieving each selected option 
-            foreach ($_POST['ket'] as $index => $subject1){
-				   if($index>0){
-					  $jk1=$jk1.",".$subject1; 
-				   }else{
-					   $jk1=$subject1;
-				   }	
-				    
-			}
-        } 
-  	  $sqlData=mysqli_query($con,"INSERT INTO tbl_datatest SET
-		nokk='$_POST[nokk]',
-		no_test='$no_test',
-        langganan='$_POST[langganan]',
-        buyer='$_POST[buyer]',
-        no_order='$_POST[no_order]',
-        po='$_POST[no_po]',
-        no_hanger='$_POST[no_hanger]',
-        no_item='$_POST[no_item]',
-        jenis_kain='$_POST[jns_kain]',
-        warna='$_POST[warna]',
-        no_warna='$_POST[no_warna]',
-        roll='$_POST[roll]',
-        bruto='$_POST[bruto]',
-        lot='$_POST[lot]',
-        lebar='$_POST[lebar]',
-        gramasi='$_POST[gramasi]',
-		no_mesin='$_POST[no_mesin]',
-		masalah='$masalah',
-		improve='$improve',
-		loading='$_POST[loading]',
-		l_r='$_POST[l_r]',
-		no_program='$_POST[no_program]',
-		demand_erp='$_POST[demand_erp]',
-		prodorder_erp='$_POST[prodorder_erp]',
-		rpm='$_POST[rpm]',
-		cycle_time='$_POST[cycle_time]',
-		tekanan	='$_POST[tekanan]',
-		nozzle='$_POST[nozzle]',
-		blower='$_POST[blower]',
-		plaiter='$_POST[plaiter]',
-		file_grafik='$file_grafik',
-		ket_proses='$ket_proses',
-		file_inspek='$file_inspek',
-		update_status='$update_status',
-		tgl_buat=now(),
-		tgl_update=now()
-        ");	 	  
+        $sqlInsert = "INSERT INTO db_dying.tbl_datatest (
+                nokk, no_test, langganan, buyer, no_order, po, no_hanger, no_item,
+                jenis_kain, warna, no_warna, roll, bruto, lot, lebar, gramasi,
+                no_mesin, masalah, improve, loading, l_r, no_program, demand_erp,
+                prodorder_erp, rpm, cycle_time, tekanan, nozzle, blower, plaiter,
+                file_grafik, ket_proses, file_inspek, update_status, tgl_buat, tgl_update
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE()
+            )";
+        $paramsInsert = array(
+            $_POST['nokk'],
+            $no_test,
+            $_POST['langganan'],
+            $_POST['buyer'],
+            $_POST['no_order'],
+            $_POST['no_po'],
+            $_POST['no_hanger'],
+            $_POST['no_item'],
+            $_POST['jns_kain'],
+            $_POST['warna'],
+            $_POST['no_warna'],
+            $rollVal,
+            $brutoVal,
+            $_POST['lot'],
+            $lebarVal,
+            $gramasiVal,
+            $_POST['no_mesin'],
+            $masalah,
+            $improve,
+            $loadingVal,
+            $_POST['l_r'],
+            $_POST['no_program'],
+            $_POST['demand_erp'],
+            $_POST['prodorder_erp'],
+            $rpmVal,
+            $cycleTimeVal,
+            $tekananVal,
+            $nozzleVal,
+            $blowerVal,
+            $_POST['plaiter'],
+            $file_grafik,
+            $ket_proses,
+            $file_inspek,
+            $update_status
+        );
+  	  $sqlData=sqlsrv_query($con,$sqlInsert,$paramsInsert);
+      if($sqlData === false){
+          echo '<pre>';
+          print_r(sqlsrv_errors());
+          echo '</pre>';
+      }
 	  
 		if($sqlData){  
 			echo "<script>swal({
@@ -533,40 +545,51 @@ $nomorbaru = $kode.$nomor;
 			
 	}
     if($_POST['update']=="update"){
-	  $ket=str_replace("'","''",$_POST['ket']);	
-	  if(isset($_POST["ket"]))  
-        { 
-            // Retrieving each selected option 
-            foreach ($_POST['ket'] as $index => $subject1){
-				   if($index>0){
-					  $jk1=$jk1.",".$subject1; 
-				   }else{
-					   $jk1=$subject1;
-				   }	
-				    
-			}
-        }
-  	  $sqlData=mysqli_query($con,"UPDATE tbl_datatest SET 
-	        langganan='$_POST[langganan]',
-            buyer='$_POST[buyer]',
-            no_order='$_POST[no_order]',
-            po='$_POST[no_po]',
-            no_hanger='$_POST[no_hanger]',
-            no_item='$_POST[no_item]',
-            jenis_kain='$_POST[jns_kain]',
-            warna='$_POST[warna]',
-            no_warna='$_POST[no_warna]',
-            roll='$_POST[roll]',
-            bruto='$_POST[bruto]',
-            lot='$_POST[lot]',
-            lebar='$_POST[lebar]',
-            gramasi='$_POST[gramasi]',
-            shift='$_POST[shift]',
-            g_shift='$_POST[g_shift]',
-            ket='$jk1',
-            t_jawab='$_POST[t_jawab]',
-		    tgl_update=now()
-		    WHERE nokk='$_POST[nokk]'");	 	  
+      // normalisasi nilai numerik untuk update: kosong -> NULL
+      $lebarValUpd      = ($_POST['lebar']      === '' ? null : $_POST['lebar']);
+      $gramasiValUpd    = ($_POST['grms']       === '' ? null : $_POST['grms']);
+      $rollValUpd       = ($_POST['roll']       === '' ? null : $_POST['roll']);
+      $brutoValUpd      = ($_POST['bruto']      === '' ? null : $_POST['bruto']);
+        $sqlUpdate = "UPDATE db_dying.tbl_datatest SET
+                langganan = ?,
+                buyer = ?,
+                no_order = ?,
+                po = ?,
+                no_hanger = ?,
+                no_item = ?,
+                jenis_kain = ?,
+                warna = ?,
+                no_warna = ?,
+                roll = ?,
+                bruto = ?,
+                lot = ?,
+                lebar = ?,
+                gramasi = ?,
+                tgl_update = GETDATE()
+            WHERE nokk = ?";
+        $paramsUpdate = array(
+            $_POST['langganan'],
+            $_POST['buyer'],
+            $_POST['no_order'],
+            $_POST['no_po'],
+            $_POST['no_hanger'],
+            $_POST['no_item'],
+            $_POST['jns_kain'],
+            $_POST['warna'],
+            $_POST['no_warna'],
+            $rollValUpd,
+            $brutoValUpd,
+            $_POST['lot'],
+            $lebarValUpd,
+            $gramasiValUpd,
+            $_POST['nokk']
+        );
+  	  $sqlData=sqlsrv_query($con,$sqlUpdate,$paramsUpdate);
+      if($sqlData === false){
+          echo '<pre>';
+          print_r(sqlsrv_errors());
+          echo '</pre>';
+      }
 	  
 		if($sqlData){			
 			echo "<script>swal({
@@ -616,8 +639,7 @@ $nomorbaru = $kode.$nomor;
 <?php 
 if($_POST['simpan_tjawab']=="Simpan"){
 	$tjawab=strtoupper($_POST['t_jawab']);
-	$sqlData1=mysqli_query($con,"INSERT INTO tbl_tjawabdttest SET 
-		  nama='$tjawab'");
+	$sqlData1=sqlsrv_query($con,"INSERT INTO db_dying.tbl_tjawabdttest (nama) VALUES ('$tjawab')");
 	if($sqlData1){	
 	echo "<script>swal({
   title: 'Data Telah Tersimpan',   
@@ -665,8 +687,7 @@ if($_POST['simpan_tjawab']=="Simpan"){
 <?php 
 if($_POST['simpan_ket']=="Simpan"){
 	$ket=strtoupper($_POST['ket']);
-	$sqlData1=mysqli_query($con,"INSERT INTO tbl_ketdttest SET 
-		  ket='$ket'");
+	$sqlData1=sqlsrv_query($con,"INSERT INTO db_dying.tbl_ketdttest (ket) VALUES ('$ket')");
 	if($sqlData1){	
 	echo "<script>swal({
   title: 'Data Telah Tersimpan',   
