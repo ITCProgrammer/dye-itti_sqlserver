@@ -1,7 +1,7 @@
 <?PHP
 ini_set("error_reporting", 1);
 session_start();
-include"koneksi.php";
+include "koneksi.php";
 
 ?>
 
@@ -96,27 +96,44 @@ $Akhir	= isset($_POST['akhir']) ? $_POST['akhir'] : '';
           <?php
             $no=1;
             if($Awal!=""){
-            $qry1=mysqli_query($con,"SELECT a.*, a.id as id_a, d.* 
-            FROM tbl_salahresep a 
-            LEFT JOIN tbl_hasilcelup b ON a.id_celup=b.id
-            LEFT JOIN tbl_montemp c ON b.id_montemp=c.id 
-            LEFT JOIN tbl_schedule d ON c.id_schedule=d.id 
-            WHERE DATE_FORMAT( a.tgl_buat, '%Y-%m-%d' ) BETWEEN '$Awal' AND '$Akhir' ORDER BY a.id ASC");
+              $qry1=sqlsrv_query($con,
+              "SELECT
+                  a.*,
+                  a.id AS id_a,
+                  d.*
+                FROM
+                  db_dying.tbl_salahresep a
+                  LEFT JOIN db_dying.tbl_hasilcelup b ON a.id_celup = b.id
+                  LEFT JOIN db_dying.tbl_montemp c ON b.id_montemp = c.id
+                  LEFT JOIN db_dying.tbl_schedule d ON c.id_schedule = d.id
+                WHERE
+                  CAST(a.tgl_buat AS DATE) BETWEEN '$Awal' AND '$Akhir'
+                ORDER BY
+                  a.id ASC
+              ");
             }else{
-                $qry1=mysqli_query($con,"SELECT a.*, d.* 
-                FROM tbl_salahresep a 
-                LEFT JOIN tbl_hasilcelup b ON a.id_celup=b.id
-                LEFT JOIN tbl_montemp c ON b.id_montemp=c.id 
-                LEFT JOIN tbl_schedule d ON c.id_schedule=d.id 
-                WHERE DATE_FORMAT( a.tgl_buat, '%Y-%m-%d' ) BETWEEN '$Awal' AND '$Akhir' ORDER BY a.id ASC");
+                $qry1=sqlsrv_query($con,
+                "SELECT
+                    a.*,
+                    d.*
+                  FROM
+                    db_dying.tbl_salahresep a
+                    LEFT JOIN db_dying.tbl_hasilcelup b ON a.id_celup = b.id
+                    LEFT JOIN db_dying.tbl_montemp c ON b.id_montemp = c.id
+                    LEFT JOIN db_dying.tbl_schedule d ON c.id_schedule = d.id
+                  WHERE
+                    CAST(a.tgl_buat AS DATE) BETWEEN '$Awal' AND '$Akhir'
+                  ORDER BY
+                    a.id ASC
+                ");
             }
-			while($row1=mysqli_fetch_array($qry1)){
+			while($row1=sqlsrv_fetch_array($qry1, SQLSRV_FETCH_ASSOC)){
 		 ?>
           <tr bgcolor="<?php echo $bgcolor; ?>">
             <td align="center"><?php echo $no; ?></td>
             <td align="center"><div class="btn-group">
             <a href="#" class="btn btn-danger btn-xs <?php if($_SESSION['akses']=='biasa'){ echo "disabled"; } ?>" onclick="confirm_delete('index1.php?p=hapusdatasalahresep&id=<?php echo $row1['id_a']; ?>');"><i class="fa fa-trash"></i> </a></div></td>
-            <td align="center"><?php echo $row1['tgl_buat'];?></td>
+            <td align="center"><?php echo $row1['tgl_buat']-> format('Y-m-d H:i:s');?></td>
             <td><?php echo $row1['nokk'];?></td>
             <td><?php echo $row1['langganan'];?></td>
             <td><?php echo $row1['buyer'];?></td>
