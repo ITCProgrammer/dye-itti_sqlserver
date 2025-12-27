@@ -14,8 +14,11 @@ include "../../tgl_indo.php";
 $idkk=$_REQUEST['idkk'];
 $act=$_GET['g'];
 //-
-$qTgl=mysqli_query($con,"SELECT DATE_FORMAT(now(),'%Y-%m-%d') as tgl_skrg, DATE_FORMAT(now(),'%Y-%m-%d')+ INTERVAL 1 DAY as tgl_besok");
-$rTgl=mysqli_fetch_array($qTgl);
+$qTgl=sqlsrv_query($con,"SELECT
+  CONVERT(varchar(10), GETDATE(), 23) AS tgl_skrg,
+  CONVERT(varchar(10), DATEADD(DAY, 1, GETDATE()), 23) AS tgl_besok;
+");
+$rTgl=sqlsrv_fetch_array($qTgl, SQLSRV_FETCH_ASSOC);
 $Awal=$_GET['awal'];
 $Akhir=$_GET['akhir'];
 $GShift	=$_GET['shft'];
@@ -64,78 +67,124 @@ $GShift	=$_GET['shft'];
 	$Awal=$_GET['awal'];
 	$Akhir=$_GET['akhir'];	
 	if($GShift=="ALL"){$shft=" ";}else{$shft=" c.g_shift='$GShift' AND ";}
-		$sql=mysqli_query($con,"SELECT
-	a.kd_stop,
-	a.mulai_stop,
-	a.selesai_stop,
-	a.ket,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),a.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama_proses,
-	a.status as sts,
-	TIME_FORMAT(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),a.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))),'%H') as jam,
-	TIME_FORMAT(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),a.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))),'%i') as menit,
-	a.point,
-	DATE_FORMAT(a.mulai_stop,'%Y-%m-%d') as t_mulai,
-	DATE_FORMAT(a.selesai_stop,'%Y-%m-%d') as t_selesai,
-	TIME_FORMAT(a.mulai_stop,'%H:%i') as j_mulai,
-	TIME_FORMAT(a.selesai_stop,'%H:%i') as j_selesai,
-	TIMESTAMPDIFF(MINUTE,a.mulai_stop,a.selesai_stop) as lama_stop_menit,
-	a.acc_keluar,
-	b.proses,
-	b.buyer,
-	b.langganan,
-	b.no_order,
-	b.jenis_kain,
-	b.no_mesin,
-	b.warna,
-	b.lot,
-	b.energi,
-	b.dyestuff,	
-	b.ket_status,
-	b.kapasitas,
-	b.loading,
-	b.resep,
-	b.kategori_warna,
-	c.l_r,
-	c.rol,
-	c.bruto,
-	c.pakai_air,
-	DATE_FORMAT(c.tgl_buat,'%Y-%m-%d') as tgl_in,
-	DATE_FORMAT(a.tgl_buat,'%Y-%m-%d') as tgl_out,
-	DATE_FORMAT(c.tgl_buat,'%H:%i') as jam_in,
-	DATE_FORMAT(a.tgl_buat,'%H:%i') as jam_out,
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft,
-	a.operator_keluar,
-	b.nokk,
-	b.no_warna,
-	b.lebar,
-	b.gramasi,
-	c.carry_over,
-	c.operator,
-	c.no_program,
-	c.pjng_kain,
-	c.tekanan,
-	c.rpm,
-	c.cycle_time,
-	c.nozzle,
-	b.no_hanger,
-	b.no_item,
-	b.po,
-	b.tgl_delivery
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
+		$sql=sqlsrv_query($con,
+"SELECT
+    a.kd_stop,
+    a.mulai_stop,
+    a.selesai_stop,
+    a.ket,
+    CASE
+        WHEN c.tgl_mulai IS NULL
+          OR c.tgl_stop  IS NULL
+          OR calc.proc_min IS NULL
+        THEN calc.base_hhmm
+        ELSE CONCAT(
+                 RIGHT('00' + CAST((calc.proc_min - calc.diff_min) / 60 AS varchar(2)), 2),
+                 ':',
+                 RIGHT('00' + CAST(ABS((calc.proc_min - calc.diff_min) % 60) AS varchar(2)), 2)
+             )
+    END AS lama_proses,
+    a.status AS sts,
+    CASE
+        WHEN c.tgl_mulai IS NULL
+          OR c.tgl_stop  IS NULL
+          OR calc.proc_min IS NULL
+        THEN LEFT(calc.base_hhmm, 2)
+        ELSE RIGHT('00' + CAST((calc.proc_min - calc.diff_min) / 60 AS varchar(2)), 2)
+    END AS jam,
+    CASE
+        WHEN c.tgl_mulai IS NULL
+          OR c.tgl_stop  IS NULL
+          OR calc.proc_min IS NULL
+        THEN RIGHT(calc.base_hhmm, 2)
+        ELSE RIGHT('00' + CAST(ABS((calc.proc_min - calc.diff_min) % 60) AS varchar(2)), 2)
+    END AS menit,
+    a.point,
+    CONVERT(varchar(10), a.mulai_stop, 23)   AS t_mulai,
+    CONVERT(varchar(10), a.selesai_stop, 23) AS t_selesai,
+    LEFT(CONVERT(varchar(8), a.mulai_stop, 108), 5)   AS j_mulai,
+    LEFT(CONVERT(varchar(8), a.selesai_stop, 108), 5) AS j_selesai,
+    DATEDIFF(MINUTE, a.mulai_stop, a.selesai_stop) AS lama_stop_menit,
+    a.acc_keluar,
+    b.proses,
+    b.buyer,
+    b.langganan,
+    b.no_order,
+    b.jenis_kain,
+    b.no_mesin,
+    b.warna,
+    b.lot,
+    b.energi,
+    b.dyestuff,
+    b.ket_status,
+    b.kapasitas,
+    b.loading,
+    b.resep,
+    b.kategori_warna,
+    c.l_r,
+    c.rol,
+    c.bruto,
+    c.pakai_air,
+    CONVERT(varchar(10), c.tgl_buat, 23) AS tgl_in,
+    CONVERT(varchar(10), a.tgl_buat, 23) AS tgl_out,
+    LEFT(CONVERT(varchar(8), c.tgl_buat, 108), 5) AS jam_in,
+    LEFT(CONVERT(varchar(8), a.tgl_buat, 108), 5) AS jam_out,
+    COALESCE(a.g_shift, b.g_shift) AS shft,
+    a.operator_keluar,
+    b.nokk,
+    b.no_warna,
+    b.lebar,
+    b.gramasi,
+    c.carry_over,
+    c.operator,
+    c.no_program,
+    c.pjng_kain,
+    c.tekanan,
+    c.rpm,
+    c.cycle_time,
+    c.nozzle,
+    b.no_hanger,
+    b.no_item,
+    b.po,
+    b.tgl_delivery
+FROM db_dying.tbl_schedule AS b
+LEFT JOIN db_dying.tbl_montemp AS c
+    ON c.id_schedule = b.id
+LEFT JOIN db_dying.tbl_hasilcelup AS a
+    ON a.id_montemp = c.id
+CROSS APPLY (
+    SELECT
+        proc_min =
+            CASE
+                WHEN TRY_CONVERT(time(0), a.lama_proses) IS NOT NULL THEN
+                    DATEPART(HOUR,   TRY_CONVERT(time(0), a.lama_proses)) * 60
+                  + DATEPART(MINUTE, TRY_CONVERT(time(0), a.lama_proses))
+                ELSE NULL
+            END,
+        diff_min =
+            CASE
+                WHEN c.tgl_mulai IS NULL OR c.tgl_stop IS NULL THEN NULL
+                ELSE DATEDIFF(MINUTE, c.tgl_stop, c.tgl_mulai)
+            END,
+        base_hhmm =
+            CASE
+                WHEN TRY_CONVERT(time(0), a.lama_proses) IS NOT NULL THEN
+                    LEFT(CONVERT(varchar(8), TRY_CONVERT(time(0), a.lama_proses), 108), 5)
+                ELSE CAST(a.lama_proses AS varchar(10))
+            END
+) AS calc
 WHERE
-	$shft 
-	DATE_FORMAT( c.tgl_buat, '%Y-%m-%d' ) BETWEEN '$Awal' AND '$Akhir' 
-	ORDER BY
-	b.no_mesin ASC");
+    $shft
+    CONVERT(date, c.tgl_buat) BETWEEN '$Awal' AND '$Akhir'
+ORDER BY
+    b.no_mesin ASC;");
   
    $no=1;
    $totrol=0;
    $totberat=0;
    $c=0;
    
-    while($rowd=mysqli_fetch_array($sql)){
+    while($rowd=sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)){
 		   ?>
       <tr valign="top">
       <td><?php echo $no;?></td>

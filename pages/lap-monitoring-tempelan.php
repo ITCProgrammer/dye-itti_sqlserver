@@ -105,27 +105,35 @@ $Fs		= isset($_POST['fasilitas']) ? $_POST['fasilitas'] : '';
   $c=0;
   $no=0;
   if($GShift=="ALL"){$shft=" ";}else{$shft=" c.g_shift='$GShift' AND ";}
-  $sql=mysqli_query($con,"SELECT
-	c.*,
-	b.buyer,
-	b.no_order,
-	b.no_mesin,
-	b.no_resep,
-	b.warna,
-	b.proses,
-	b.target,
-	if(c.status='selesai',a.lama_proses,TIME_FORMAT(timediff(now(),c.tgl_buat),'%H:%i')) as lama,
-	a.operator_keluar,c.id as idm,b.id as ids
-FROM
-	tbl_montemp c
-	LEFT JOIN tbl_schedule b ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id
-WHERE
-	$shft 
-	DATE_FORMAT( c.tgl_buat, '%Y-%m-%d' ) BETWEEN '$Awal' AND '$Akhir'
-ORDER BY
-	b.no_mesin ASC");	
-  while($rowd=mysqli_fetch_array($sql)){
+  $sql = sqlsrv_query($con, "
+    SELECT
+      c.*,
+      b.buyer,
+      b.no_order,
+      b.no_mesin,
+      b.no_resep,
+      b.warna,
+      b.proses,
+      b.target,
+      CASE 
+        WHEN c.status = 'selesai' THEN a.lama_proses 
+        ELSE LEFT(CONVERT(varchar(8), DATEADD(MINUTE, DATEDIFF(MINUTE, c.tgl_buat, GETDATE()), 0), 108), 5)
+      END AS lama,
+      a.operator_keluar,
+      c.id AS idm,
+      b.id AS ids
+    FROM
+      db_dying.tbl_montemp c
+      LEFT JOIN db_dying.tbl_schedule b ON c.id_schedule = b.id
+      LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp = c.id
+    WHERE
+      $shft 
+      CAST(c.tgl_buat AS DATE) BETWEEN '$Awal' AND '$Akhir'
+    ORDER BY
+      b.no_mesin ASC
+  ");
+  if ($sql) {
+    while($rowd = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)){
 	 	$no++;
 		$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
 	?>
@@ -144,7 +152,7 @@ ORDER BY
 	   <?php if($rowd['status']=="selesai"){ ?><br><i class="label bg-green"><?php echo $rowd['operator_keluar'];?></i><?php } ?><br>
 	   <?php echo $rowd['ket'];?><br><div class="btn-group"><?php if($rowd['no_mesin']=="WS"){ ?> <a href="pages/cetak/cetak_monitoring.php?idkk=<?php echo $rowd['nokk'];?>&no=<?php echo $rowd['no_resep'];?>&idm=<?php echo $rowd['idm'];?>&ids=<?php echo $rowd['ids'];?>" target="_blank" class="btn btn-xs btn-warning">Monitoring</a> <a href="pages/cetak/cetak.php?idkk=<?php echo $rowd['nokk'];?>&no=<?php echo $rowd['no_resep'];?>&idm=<?php echo $rowd['idm'];?>&ids=<?php echo $rowd['ids'];?>" target="_blank" class="btn btn-xs btn-success">Tempelan</a> <a href="pages/cetak/cetak_depan.php?idkk=<?php echo $rowd['nokk'];?>&no=<?php echo $rowd['no_resep'];?>&idm=<?php echo $rowd['idm'];?>&ids=<?php echo $rowd['ids'];?>" target="_blank" class="btn btn-xs btn-warning">Relaxing</a> <?php }else if($rowd['no_mesin']=="CB"){ ?> <a href="pages/cetak/cetak_monitoring.php?idkk=<?php echo $rowd['nokk'];?>&no=<?php echo $rowd['no_resep'];?>&idm=<?php echo $rowd['idm'];?>&ids=<?php echo $rowd['ids'];?>" target="_blank" class="btn btn-xs btn-warning">Monitoring</a> <a href="pages/cetak/cetak.php?idkk=<?php echo $rowd['nokk'];?>&no=<?php echo $rowd['no_resep'];?>&idm=<?php echo $rowd['idm'];?>&ids=<?php echo $rowd['ids'];?>" target="_blank" class="btn btn-xs btn-success">Tempelan</a> <a href="pages/cetak/cetak_depan_cb.php?idkk=<?php echo $rowd['nokk'];?>&no=<?php echo $rowd['no_resep'];?>&idm=<?php echo $rowd['idm'];?>&ids=<?php echo $rowd['ids'];?>" target="_blank" class="btn btn-xs btn-primary">C-Bleaching</a><?php }else{ ?> <a href="pages/cetak/cetak_monitoring.php?idkk=<?php echo $rowd['nokk'];?>&no=<?php echo $rowd['no_resep'];?>&idm=<?php echo $rowd['idm'];?>&ids=<?php echo $rowd['ids'];?>" target="_blank" class="btn btn-xs btn-warning">Monitoring</a> <a href="pages/cetak/cetak.php?idkk=<?php echo $rowd['nokk'];?>&no=<?php echo $rowd['no_resep'];?>&idm=<?php echo $rowd['idm'];?>&ids=<?php echo $rowd['ids'];?>" target="_blank" class="btn btn-xs btn-success">Tempelan</a> <?php } ?> <a href="pages/cetak/simpan_cetak.php?idkk=<?php echo $rowd['nokk'];?>&no=<?php echo $rowd['no_resep'];?>&id=" target="_blank" class="btn btn-xs btn-info">Resep</a><a href="pages/cetak/iden_produk.php?idkk=<?php echo $rowd['nokk'];?>&no=<?php echo $rowd['no_resep'];?>&idm=<?php echo $rowd['idm'];?>&ids=<?php echo $rowd['ids'];?>" target="_blank" class="btn btn-xs btn-danger">Iden-Pro</a></div></td>
    </tr>
-   <?php }?>
+   <?php }}?>
    </tbody>
    
 </table>
