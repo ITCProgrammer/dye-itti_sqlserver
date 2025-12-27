@@ -11,11 +11,9 @@ include "../../koneksi.php";
 include "../../koneksiLAB.php";
 include "../../tgl_indo.php";
 //--
-$idkk = $_REQUEST['idkk'];
-$act = $_GET['g'];
-//-
-$qTgl = mysqli_query($con, "SELECT DATE_FORMAT(now(),'%Y-%m-%d') as tgl_skrg, DATE_FORMAT(now(),'%Y-%m-%d')+ INTERVAL 1 DAY as tgl_besok");
-$rTgl = mysqli_fetch_array($qTgl);
+$idkk = isset($_REQUEST['idkk']) ? $_REQUEST['idkk'] : null;
+$act  = isset($_GET['g']) ? $_GET['g'] : null;
+//- (tidak dipakai di bawah, jadi cukup inisialisasi saja)
 $Awal = $_GET['awal'];
 $Akhir = $_GET['akhir'];
 $shft1 = $_GET['shft'];
@@ -56,51 +54,111 @@ $shft1 = $_GET['shft'];
       <th bgcolor="#99FF99">TGL OUT</th>
     </tr>
     <?php
-    if ($_GET['shft'] == "ALL") {
-      $shft = " ";
+    // Filter shift (SQL Server)
+    if ($shft1 == "ALL") {
+      $shft = "";
     } else {
-      $shft = " if(ISNULL(a.g_shift),b.g_shift,a.g_shift)='$_GET[shft]' AND ";
+      $shft = " AND ISNULL(a.g_shift, b.g_shift) = '" . $shft1 . "'";
     }
-    $sql = mysqli_query($con, "SELECT
-                                a.no_mesin,
-                                a.kapasitas,
-                                b.g_shift,
-                                b.operator_keluar as operator,
-                                a.jenis_kain,
-                                a.langganan,a.buyer,a.no_order,a.warna,a.no_warna,a.lot,
-                                a.proses,
-                                a.kategori_warna,	
-                                if(
-                                  ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),b.lama_proses,
-                                  CONCAT(LPAD(FLOOR((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(b.lama_proses)*60)+MINUTE(b.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama,
-                                b.point,
-                                b.k_resep,
-                                if(a.target<(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),(HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2)),((HOUR(b.lama_proses)+round(MINUTE(b.lama_proses)/60,2))-(HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))+round(MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))/60,2))))),'Over','OK') as ket,
-                                a.target,
-                                c.tgl_buat AS tgl_in,
-                                b.tgl_buat AS tgl_out,
-                                c.bruto,
-                                c.rol,
-                                c.tgl_stop AS tgl_mulai_mesin,
-                                c.tgl_mulai AS tgl_stop_mesin,
-                                c.ket_stopmesin 
-                              FROM
-                                tbl_schedule a
-                                INNER JOIN tbl_montemp c ON a.id = c.id_schedule
-                                INNER JOIN tbl_hasilcelup b ON c.id = b.id_montemp 
-                              WHERE
-                                a.`status` = 'selesai' 
-                                AND DATE_FORMAT( b.tgl_buat, '%Y-%m-%d' ) BETWEEN '$Awal' AND '$Akhir'
-                                $shft
-                              ORDER BY
-                                a.kapasitas DESC, a.no_mesin ASC");
+
+    // Query versi SQL Server (mengikuti logika di pages/lap-waktu-proses.php)
+    $sql = sqlsrv_query(
+      $con,
+      "SELECT
+          a.no_mesin,
+          a.kapasitas,
+          b.g_shift,
+          b.operator_keluar AS operator,
+          a.jenis_kain,
+          a.langganan,
+          a.buyer,
+          a.no_order,
+          a.warna,
+          a.no_warna,
+          a.lot,
+          a.proses,
+          a.kategori_warna,
+          CASE
+              WHEN calc.proc_min IS NULL OR calc.stop_min IS NULL
+                  THEN calc.base_hhmm
+              ELSE
+                  CONCAT(
+                      RIGHT('00' + CAST((calc.proc_min - calc.stop_min) / 60 AS varchar(2)), 2),
+                      ':',
+                      RIGHT('00' + CAST(ABS((calc.proc_min - calc.stop_min) % 60) AS varchar(2)), 2)
+                  )
+          END AS lama,
+          b.point,
+          b.k_resep,
+          CASE
+              WHEN a.target < (
+                  CASE
+                      WHEN calc.proc_min IS NULL THEN NULL
+                      WHEN calc.stop_min IS NULL THEN ROUND(calc.proc_min / 60.0, 2)
+                      ELSE ROUND((calc.proc_min - calc.stop_min) / 60.0, 2)
+                  END
+                )
+              THEN 'Over'
+              ELSE 'OK'
+          END AS ket,
+          '' AS sts,
+          a.target,
+          CONVERT(varchar(19), c.tgl_buat, 120) AS tgl_in,
+          CONVERT(varchar(19), b.tgl_buat, 120) AS tgl_out,
+          c.bruto,
+          c.rol,
+          CONVERT(varchar(19), c.tgl_stop, 120)  AS tgl_mulai_mesin,
+          CONVERT(varchar(19), c.tgl_mulai, 120) AS tgl_stop_mesin,
+          c.ket_stopmesin
+        FROM db_dying.tbl_schedule AS a
+        INNER JOIN db_dying.tbl_montemp AS c
+          ON a.id = c.id_schedule
+        INNER JOIN db_dying.tbl_hasilcelup AS b
+          ON c.id = b.id_montemp
+        CROSS APPLY (
+          SELECT
+            -- total menit lama_proses (b.lama_proses)
+            proc_min = CASE
+              WHEN TRY_CONVERT(time(0), b.lama_proses) IS NOT NULL THEN
+                DATEDIFF(
+                  MINUTE,
+                  CAST('00:00:00' AS time(0)),
+                  TRY_CONVERT(time(0), b.lama_proses)
+                )
+              ELSE NULL
+            END,
+            -- total menit stop mesin (TIMEDIFF(c.tgl_mulai, c.tgl_stop))
+            stop_min = CASE
+              WHEN c.tgl_mulai IS NULL OR c.tgl_stop IS NULL THEN NULL
+              ELSE DATEDIFF(MINUTE, c.tgl_stop, c.tgl_mulai)
+            END,
+            -- HH:MM dasar dari lama_proses
+            base_hhmm = CASE
+              WHEN TRY_CONVERT(time(0), b.lama_proses) IS NOT NULL THEN
+                LEFT(CONVERT(varchar(8), TRY_CONVERT(time(0), b.lama_proses), 108), 5)
+              ELSE CAST(b.lama_proses AS varchar(10))
+            END
+        ) AS calc
+        WHERE
+          a.[status] = 'selesai'
+          AND TRY_CONVERT(date, b.tgl_buat) IS NOT NULL
+          AND TRY_CONVERT(date, b.tgl_buat) BETWEEN '$Awal' AND '$Akhir'
+          $shft
+        ORDER BY
+          a.kapasitas DESC,
+          a.no_mesin ASC"
+    );
+
+    if ($sql === false) {
+      die(print_r(sqlsrv_errors(), true));
+    }
 
     $no = 1;
     $totrol = 0;
     $totberat = 0;
-    $c = 0;
-
-    while ($rowd = mysqli_fetch_array($sql)) {
+	    $c = 0;
+	
+	    while ($rowd = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)) {
     ?>
       <tr valign="top">
         <td><?php echo $no; ?></td>
