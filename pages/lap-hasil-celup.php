@@ -134,47 +134,67 @@ include "koneksi.php";
               } else {
                 $shft = " a.g_shift='$GShift' AND ";
               }
-              $sql = mysqli_query($con, "SELECT
-                                          a.*,
-                                          b.buyer,
-                                          b.no_order,
-                                          b.no_mesin,
-                                          b.warna,
-                                          b.proses 
-                                        FROM
-                                          tbl_hasilcelup a
-                                          LEFT JOIN tbl_montemp c ON a.id_montemp=c.id
-                                          LEFT JOIN tbl_schedule b ON c.id_schedule = b.id
-                                        WHERE
-                                          $shft 
-                                          DATE_FORMAT( a.tgl_buat, '%Y-%m-%d' ) BETWEEN '$Awal' AND '$Akhir'
-                                          AND a.`status`='OK' AND (b.proses='Celup Greige' OR b.proses='Cuci Misty' OR b.proses='Cuci Yarn Dye (Y/D)') 
-                                        ORDER BY
-                                          b.no_mesin ASC");
-              while ($rowd = mysqli_fetch_array($sql)) {
-                $no++;
-                $bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
+              // Hanya jalankan query jika periode tanggal diisi
+              if ($Awal !== '' && $Akhir !== '') {
+                $query =
+                  "SELECT
+                    a.*,
+                    b.buyer,
+                    b.no_order,
+                    b.no_mesin,
+                    b.warna,
+                    b.proses
+                  FROM
+                    db_dying.tbl_hasilcelup a
+                    LEFT JOIN db_dying.tbl_montemp c ON a.id_montemp = c.id
+                    LEFT JOIN db_dying.tbl_schedule b ON c.id_schedule = b.id
+                  WHERE
+                    $shft
+                    CONVERT(date, a.tgl_buat) BETWEEN ? AND ?
+                    AND a.status = 'OK'
+                    AND (
+                      b.proses = 'Celup Greige'
+                      OR b.proses = 'Cuci Misty'
+                      OR b.proses = 'Cuci Yarn Dye (Y/D)'
+                    )
+                  ORDER BY
+                    b.no_mesin ASC
+                ";
+
+                $params = array($Awal, $Akhir);
+                $sql    = sqlsrv_query($con, $query, $params);
+
+                if ($sql === false) {
+                  echo '<tr><td colspan=\"9\">Query error: ' . htmlspecialchars(print_r(sqlsrv_errors(), true)) . '</td></tr>';
+                } else {
+                  while ($rowd = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)) {
+                    $no++;
+                    $bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
               ?>
-                <tr bgcolor="<?php echo $bgcolor; ?>" class="table table-bordered table-hover table-striped">
-                  <td align="center"><?php echo $rowd['g_shift']; ?></td>
-                  <td align="center"><?php echo $rowd['no_mesin']; ?></td>
-                  <td align="center"><?php echo $rowd['buyer']; ?></td>
-                  <td align="center"><?php echo $rowd['no_order']; ?></td>
-                  <td><?php echo $rowd['warna']; ?></td>
-                  <td align="left"><?php echo $rowd['proses']; ?><br />
-                    <i class="label bg-hijau"><?php echo $rowd['operator_keluar']; ?></i>
-                  </td>
-                  <td align="center"><?php echo $rowd['lama_proses']; ?></td>
-                  <td align="center"><?php echo $rowd['point']; ?></td>
-                  <td><i class="label bg-abu"><?php echo $rowd['nokk']; ?></i><br />
-                    <i class="label <?php if ($rowd['status'] == "OK") {
-                                      echo "bg-green";
-                                    } else {
-                                      echo "bg-red";
-                                    } ?>"><?php echo $rowd['status']; ?></i><br /><?php echo $rowd['ket']; ?>
-                  </td>
-                </tr>
-              <?php } ?>
+                    <tr bgcolor="<?php echo $bgcolor; ?>" class="table table-bordered table-hover table-striped">
+                      <td align="center"><?php echo $rowd['g_shift']; ?></td>
+                      <td align="center"><?php echo $rowd['no_mesin']; ?></td>
+                      <td align="center"><?php echo $rowd['buyer']; ?></td>
+                      <td align="center"><?php echo $rowd['no_order']; ?></td>
+                      <td><?php echo $rowd['warna']; ?></td>
+                      <td align="left"><?php echo $rowd['proses']; ?><br />
+                        <i class="label bg-hijau"><?php echo $rowd['operator_keluar']; ?></i>
+                      </td>
+                      <td align="center"><?php echo $rowd['lama_proses']; ?></td>
+                      <td align="center"><?php echo $rowd['point']; ?></td>
+                      <td><i class="label bg-abu"><?php echo $rowd['nokk']; ?></i><br />
+                        <i class="label <?php if ($rowd['status'] == "OK") {
+                                          echo "bg-green";
+                                        } else {
+                                          echo "bg-red";
+                                        } ?>"><?php echo $rowd['status']; ?></i><br /><?php echo $rowd['ket']; ?>
+                      </td>
+                    </tr>
+              <?php
+                  }
+                }
+              }
+              ?>
             </tbody>
 
           </table>
