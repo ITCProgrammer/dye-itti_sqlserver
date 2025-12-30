@@ -152,56 +152,86 @@ Hari/Tanggal : <?php echo tanggal_indo ($Awal, true);?>
 	<?php	
 		function tampil($mc,$no,$start,$stop){
 	    include "../../koneksi.php";
-			$qCek=sqlsrv_query($con,"SELECT
-	   	s.id,
-		STRING_AGG(s.lot, '/' ) AS lot,
-		CASE WHEN COUNT(s.lot)>1 THEN 'Gabung Kartu' ELSE '' END as ket_kartu,
-		s.no_mesin,
-		s.no_sch as no_urut,
-		s.buyer,
-		s.langganan,
-		STUFF((
-            SELECT DISTINCT '-' + s2.no_order
-            FROM db_dying.tbl_schedule s2
-            WHERE s2.no_sch = s.no_sch
-              AND s2.no_mesin = s.no_mesin
-              AND CONVERT(varchar, s2.tgl_update, 120) BETWEEN '$start' AND '$stop'
-            FOR XML PATH(''), TYPE
-        ).value('.', 'nvarchar(max)'), 1, 1, '') AS no_order,
-		s.no_resep,
-		s.nokk,
-		s.jenis_kain,
-		s.warna,
-		s.no_warna,
-		sum(s.rol) as rol,
-		sum(s.bruto) as bruto,
-		s.proses,
-		s.ket_status,
-		s.tgl_delivery,
-		s.ket_kain,
-		s.personil
-	FROM
-		db_dying.tbl_schedule s
-	WHERE
-	 s.no_sch='$no' AND s.no_mesin='$mc' AND CONVERT(varchar, s.tgl_update, 120) BETWEEN '$start' AND '$stop'
-	GROUP BY
-		s.no_mesin,
-		s.no_sch,
-		s.id,
-		s.buyer,
-		s.langganan,
-		s.no_resep,
-		s.nokk,
-		s.jenis_kain,
-		s.warna,
-		s.no_warna,
-		s.proses,
-		s.ket_status,
-		s.tgl_delivery,
-		s.ket_kain,
-		s.personil
-	ORDER BY
-		s.id ASC");
+			$qCek=sqlsrv_query($con,"WITH f AS (
+    SELECT
+        t.*,
+        CONVERT(datetime2(0), t.tgl_update) AS tgl_update_sec
+    FROM [db_dying].[tbl_schedule] t
+    WHERE t.no_sch = '$no'
+      AND t.no_mesin = '$mc'
+),
+r AS (
+    SELECT
+        f.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY f.no_mesin, f.no_sch
+            ORDER BY f.id
+        ) AS rn
+    FROM f
+    WHERE f.tgl_update_sec BETWEEN '$start' AND '$stop'
+),
+lot_agg AS (
+    SELECT
+        no_mesin,
+        no_sch,
+        MIN(id) AS id,
+        STRING_AGG(CAST(lot AS varchar(max)), '/') WITHIN GROUP (ORDER BY id) AS lot,
+        CASE WHEN COUNT(lot) > 1 THEN 'Gabung Kartu' ELSE '' END AS ket_kartu,
+        SUM(rol)   AS rol,
+        SUM(bruto) AS bruto
+    FROM r
+    GROUP BY no_mesin, no_sch
+),
+no_order_dist AS (
+    SELECT
+        no_mesin,
+        no_sch,
+        no_order,
+        MIN(id) AS first_id
+    FROM r
+    GROUP BY no_mesin, no_sch, no_order
+),
+no_order_agg AS (
+    SELECT
+        no_mesin,
+        no_sch,
+        STRING_AGG(CAST(no_order AS varchar(max)), '-') WITHIN GROUP (ORDER BY first_id) AS no_order
+    FROM no_order_dist
+    GROUP BY no_mesin, no_sch
+)
+SELECT
+    la.id,
+    la.lot,
+    la.ket_kartu,
+    la.no_mesin,
+    la.no_sch AS no_urut,
+    MAX(CASE WHEN r.rn = 1 THEN r.buyer END)        AS buyer,
+    MAX(CASE WHEN r.rn = 1 THEN r.langganan END)    AS langganan,
+    noa.no_order,
+    MAX(CASE WHEN r.rn = 1 THEN r.no_resep END)     AS no_resep,
+    MAX(CASE WHEN r.rn = 1 THEN r.nokk END)         AS nokk,
+    MAX(CASE WHEN r.rn = 1 THEN r.jenis_kain END)   AS jenis_kain,
+    MAX(CASE WHEN r.rn = 1 THEN r.warna END)        AS warna,
+    MAX(CASE WHEN r.rn = 1 THEN r.no_warna END)     AS no_warna,
+    la.rol,
+    la.bruto,
+    MAX(CASE WHEN r.rn = 1 THEN r.proses END)       AS proses,
+    MAX(CASE WHEN r.rn = 1 THEN r.ket_status END)   AS ket_status,
+    MAX(CASE WHEN r.rn = 1 THEN r.tgl_delivery END) AS tgl_delivery,
+    MAX(CASE WHEN r.rn = 1 THEN r.ket_kain END)     AS ket_kain,
+    MAX(CASE WHEN r.rn = 1 THEN r.personil END)     AS personil
+FROM lot_agg la
+JOIN r
+  ON r.no_mesin = la.no_mesin
+ AND r.no_sch   = la.no_sch
+JOIN no_order_agg noa
+  ON noa.no_mesin = la.no_mesin
+ AND noa.no_sch   = la.no_sch
+GROUP BY
+    la.id, la.lot, la.ket_kartu, la.no_mesin, la.no_sch, la.rol, la.bruto, noa.no_order
+ORDER BY
+    la.id ASC;
+");
 	  	$row=sqlsrv_fetch_array($qCek, SQLSRV_FETCH_ASSOC);
 		$dt[]=$row;
 		return $dt;
