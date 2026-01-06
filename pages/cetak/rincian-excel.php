@@ -15,8 +15,11 @@ include "../../tgl_indo.php";
 $idkk=$_REQUEST['idkk'];
 $act=$_GET['g'];
 //-
-$qTgl=mysqli_query($con,"SELECT DATE_FORMAT(now(),'%Y-%m-%d %H:%i') as tgl_skrg, DATE_FORMAT(now(),'%Y-%m-%d %H:%i')+ INTERVAL 1 DAY as tgl_besok");
-$rTgl=mysqli_fetch_array($qTgl);
+$qTgl=sqlsrv_query($con,"SELECT
+                          DATEADD(MINUTE, DATEDIFF(MINUTE, 0, GETDATE()), 0) AS tgl_skrg,
+                          DATEADD(DAY, 1, DATEADD(MINUTE, DATEDIFF(MINUTE, 0, GETDATE()), 0)) AS tgl_besok;
+                        ");
+$rTgl=sqlsrv_fetch_array($qTgl,SQLSRV_FETCH_ASSOC);
 ?>
 <body>
 <?php
@@ -71,64 +74,78 @@ $rTgl=mysqli_fetch_array($qTgl);
   </tr>
   <?php 
   
-  $sqlR=mysqli_query($con,"SELECT
-                            b.ket_status,
-                            b.proses,
-                            sum(IF(a.resep = 'Baru' and b.bruto > 200, 1, 0)) AS 'RB',
-                            sum(IF(a.resep = 'Baru' and b.bruto > 200, b.bruto, 0)) AS 'qtyRB',
-                            sum(IF(a.resep = 'Lama' and b.bruto > 200, 1, 0)) AS 'RL',
-                            sum(IF(a.resep = 'Lama' and b.bruto > 200, b.bruto, 0)) AS 'qtyRL',
-                            sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200, 1, 0)) AS 'RB1',
-                            sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200, b.bruto, 0)) AS 'qtyRB1',
-                            sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200, 1, 0)) AS 'RL1',
-                            sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200, b.bruto, 0)) AS 'qtyRL1',
-                            sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS', 1, 0)) AS 'RBadidas',
-                            sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS', b.bruto, 0)) AS 'qtyRBadidas',
-                            sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS', 1, 0)) AS 'RLadidas',
-                            sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS', b.bruto, 0)) AS 'qtyRLadidas',
-                            sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS', 1, 0)) AS 'RBadidas1',
-                            sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS', b.bruto, 0)) AS 'qtyRBadidas1',
-                            sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS', 1, 0)) AS 'RLadidas1',
-                            sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS', b.bruto, 0)) AS 'qtyRLadidas1',
-                            if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-                          FROM
-                            tbl_schedule b
-                            LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-                            LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-                          WHERE
-                            $shft 
-                            (DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir') OR
-                            ((b.ket_status='MC Stop' OR b.ket_status='Cuci Mesin' OR b.ket_status='MC Rusak') AND b.`status`='antri mesin')
-                          GROUP BY
-                            b.proses,b.ket_status ORDER BY b.proses ASC ");
+  $sqlR=sqlsrv_query($con,
+             "SELECT
+                b.ket_status,
+                b.proses,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 THEN 1 ELSE 0 END) AS RB,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 THEN b.bruto ELSE 0 END) AS qtyRB,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 THEN 1 ELSE 0 END) AS RL,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 THEN b.bruto ELSE 0 END) AS qtyRL,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 THEN 1 ELSE 0 END) AS RB1,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 THEN b.bruto ELSE 0 END) AS qtyRB1,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 THEN 1 ELSE 0 END) AS RL1,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 THEN b.bruto ELSE 0 END) AS qtyRL1,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND b.buyer = 'ADIDAS' THEN 1 ELSE 0 END) AS RBadidas,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND b.buyer = 'ADIDAS' THEN b.bruto ELSE 0 END) AS qtyRBadidas,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND b.buyer = 'ADIDAS' THEN 1 ELSE 0 END) AS RLadidas,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND b.buyer = 'ADIDAS' THEN b.bruto ELSE 0 END) AS qtyRLadidas,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' THEN 1 ELSE 0 END) AS RBadidas1,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' THEN b.bruto ELSE 0 END) AS qtyRBadidas1,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' THEN 1 ELSE 0 END) AS RLadidas1,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' THEN b.bruto ELSE 0 END) AS qtyRLadidas1,
+                MAX(COALESCE(a.g_shift, b.g_shift)) AS shft
+            FROM db_dying.tbl_schedule b
+            LEFT JOIN db_dying.tbl_montemp c
+                ON c.id_schedule = b.id
+            LEFT JOIN db_dying.tbl_hasilcelup a
+                ON a.id_montemp = c.id
+            WHERE
+                $shft
+            (
+                DATEADD(MINUTE, DATEDIFF(MINUTE, 0, a.tgl_buat), 0)
+                    BETWEEN CAST('$Awal' AS datetime)
+                        AND CAST('$Akhir' AS datetime)
+            )
+            OR
+            (
+                b.ket_status IN ('MC Stop', 'Cuci Mesin', 'MC Rusak')
+                AND b.[status] = 'antri mesin'
+            )
+            GROUP BY
+                b.proses,
+                b.ket_status
+            ORDER BY
+                b.proses ASC;
+            ");
 	$c=1;
 	$no=1;
-  while($rowR=mysqli_fetch_array($sqlR)){
+  while($rowR=sqlsrv_fetch_array($sqlR,SQLSRV_FETCH_ASSOC)){
 		 $bgcolor = ($c++ & 1) ? '#33CCFF' : '#FFCC99';
 	  		  ?>
     <tr style="border:1px solid;" bgcolor="<?php echo $bgcolor;?>">
-      <td style="border:1px solid;"><div align="center"><strong><?php echo $no;?></strong></div></td>
+    <td style="border:1px solid;"><div align="center"><strong><?php echo $no;?></strong></div></td>
     <td style="border:1px solid;"><?php echo $rowR['proses'];?></td>
     <td style="border:1px solid;"><?php echo $rowR['ket_status'];?></td>
     <td style="border:1px solid;"><div align="center"><?php echo $rowR['RB'];?></div></td>
-    <td style="border:1px solid;"><div align="right"><?php echo $rowR['qtyRB'];?></div></td>
+    <td style="border:1px solid;"><div align="right"><?php echo number_format($rowR['qtyRB'], 2);?></div></td>
     <td style="border:1px solid;"><div align="center"><?php echo $rowR['RL'];?></div></td>
-    <td style="border:1px solid;"><div align="right"><?php echo $rowR['qtyRL'];?></div></td>
+    <td style="border:1px solid;"><div align="right"><?php echo number_format($rowR['qtyRL'], 2);?></div></td>
     <td style="border:1px solid;"><div align="center"><?php echo $rowR['RB1'];?></div></td>
-    <td style="border:1px solid;"><div align="right"><?php echo $rowR['qtyRB1'];?></div></td>
+    <td style="border:1px solid;"><div align="right"><?php echo number_format($rowR['qtyRB1'], 2);?></div></td>
     <td style="border:1px solid;"><div align="center"><?php echo $rowR['RL1'];?></div></td>
-    <td style="border:1px solid;"><div align="right"><?php echo $rowR['qtyRL1'];?></div></td>
+    <td style="border:1px solid;"><div align="right"><?php echo number_format($rowR['qtyRL1'], 2);?></div></td>
     <td style="border:1px solid;"><div align="center"><strong><?php echo $trb=$rowR['RB']+$rowR['RB1'];?></strong></div></td>
     <td style="border:1px solid;"><div align="center"><strong><?php echo $trl=$rowR['RL']+$rowR['RL1'];?></strong></div></td>
     <td style="border:1px solid;"><div align="right"><strong><?php echo $tqt=$rowR['qtyRL']+$rowR['qtyRL1']+$rowR['qtyRB']+$rowR['qtyRB1'];?></strong></div></td>
     <td style="border:1px solid;"><div align="center"><?php echo $rowR['RBadidas'];?></div></td>
-    <td style="border:1px solid;"><div align="right"><?php echo $rowR['qtyRBadidas'];?></div></td>
+    <td style="border:1px solid;"><div align="right"><?php echo number_format($rowR['qtyRBadidas'], 2);?></div></td>
     <td style="border:1px solid;"><div align="center"><?php echo $rowR['RLadidas'];?></div></td>
-    <td style="border:1px solid;"><div align="right"><?php echo $rowR['qtyRLadidas'];?></div></td>
+    <td style="border:1px solid;"><div align="right"><?php echo number_format($rowR['qtyRLadidas'], 2);?></div></td>
     <td style="border:1px solid;"><div align="center"><?php echo $rowR['RBadidas1'];?></div></td>
-    <td style="border:1px solid;"><div align="right"><?php echo $rowR['qtyRBadidas1'];?></div></td>
+    <td style="border:1px solid;"><div align="right"><?php echo number_format($rowR['qtyRBadidas1'], 2);?></div></td>
     <td style="border:1px solid;"><div align="center"><?php echo $rowR['RLadidas1'];?></div></td>
-    <td style="border:1px solid;"><div align="right"><?php echo $rowR['qtyRLadidas1'];?></div></td>
+    <td style="border:1px solid;"><div align="right"><?php echo number_format($rowR['qtyRLadidas1'], 2);?></div></td>
     <td style="border:1px solid;"><div align="center"><strong><?php echo $trbadidas=$rowR['RBadidas']+$rowR['RBadidas1'];?></strong></div></td>
     <td style="border:1px solid;"><div align="center"><strong><?php echo $trladidas=$rowR['RLadidas']+$rowR['RLadidas1'];?></strong></div></td>
     <td style="border:1px solid;"><div align="right"><strong><?php echo $tqtadidas=$rowR['qtyRLadidas']+$rowR['qtyRLadidas1']+$rowR['qtyRBadidas']+$rowR['qtyRBadidas1'];?></strong></div></td>
@@ -230,246 +247,363 @@ $rTgl=mysqli_fetch_array($qTgl);
     <td bgcolor="#99FF99" style="border:1px solid;"><div align="center"><strong>Qty</strong></div></td>
   </tr>
   <?php 
-  $sqlx=mysqli_query($con,"SELECT
-	k_resep,
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RB',
-  sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RL',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RB1',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RL1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL1',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas',
-  sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas1',
-  sum(IF(a.resep = 'Baru'and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas1',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir') AND 
-	k_resep='' 
-GROUP BY
-	k_resep");
-	$rx=mysqli_fetch_array($sqlx);
-  $sql0x=mysqli_query($con,"SELECT
-	k_resep,
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RB',
-  sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RL',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RB1',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RL1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL1',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas',
-  sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas1',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas1',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir') AND 
-	k_resep='0x' 
-GROUP BY
-	k_resep");
-	$r0x=mysqli_fetch_array($sql0x);
-	$sql1x=mysqli_query($con,"SELECT
-	k_resep,
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RB',
-  sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RL',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RB1',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RL1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL1',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas',
-  sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas1',
-  sum(IF(a.resep = 'Baru'and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas1',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir') AND 
-	k_resep='1x' 
-GROUP BY
-	k_resep");
-	$r1x=mysqli_fetch_array($sql1x);
-	$sql2x=mysqli_query($con,"SELECT
-	k_resep,
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RB',
-  sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RL',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RB1',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RL1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL1',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas',
-  sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas1',
-  sum(IF(a.resep = 'Baru'and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas1',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir') AND 
-	k_resep='2x' 
-GROUP BY
-	k_resep");
-	$r2x=mysqli_fetch_array($sql2x);
-  $sql3x=mysqli_query($con,"SELECT
-	k_resep,
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RB',
-  sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RL',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RB1',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RL1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL1',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas',
-  sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas1',
-  sum(IF(a.resep = 'Baru'and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas1',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir') AND 
-	k_resep='3x' 
-GROUP BY
-	k_resep");
-	$r3x=mysqli_fetch_array($sql3x);
-	$sql4x=mysqli_query($con,"SELECT
-	k_resep,
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RB',
-  sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RL',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RB1',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RL1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL1',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas',
-  sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas1',
-  sum(IF(a.resep = 'Baru'and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas1',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir') AND 
-	k_resep='4x' 
-GROUP BY
-	k_resep");
-	$r4x=mysqli_fetch_array($sql4x);
-	$sql5x=mysqli_query($con,"SELECT
-	k_resep,
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RB',
-  sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RL',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RB1',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RL1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL1',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas',
-  sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas1',
-  sum(IF(a.resep = 'Baru'and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas1',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir') AND 
-	k_resep='5x' 
-GROUP BY
-	k_resep");
-	$r5x=mysqli_fetch_array($sql5x);
-	$sql6x=mysqli_query($con,"SELECT
-	k_resep,
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RB',
-  sum(IF(a.resep = 'Baru' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', 1, 0)) AS 'RL',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RB1',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRB1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', 1, 0)) AS 'RL1',
-	sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRL1',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas',
-	sum(IF(a.resep = 'Baru' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas',
-	sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas',
-  sum(IF(a.resep = 'Lama' and b.bruto > 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas',
-  sum(IF(a.resep = 'Baru' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RBadidas1',
-  sum(IF(a.resep = 'Baru'and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRBadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', 1, 0)) AS 'RLadidas1',
-  sum(IF(a.resep = 'Lama' and b.bruto > 0 and b.bruto < 200 and buyer='ADIDAS' and a.proses='Celup Greige', b.bruto, 0)) AS 'qtyRLadidas1',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir') AND 
-	(k_resep='6x' OR k_resep='7x' OR k_resep='8x' OR k_resep='9x') 
-GROUP BY
-	k_resep");
-	$r6x=mysqli_fetch_array($sql6x);
+  $sqlx=sqlsrv_query($con,
+              "SELECT
+                a.k_resep,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND a.proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RB,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRB,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND a.proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RL,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRL,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND a.proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RB1,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRB1,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND a.proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RL1,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRL1,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RBadidas,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRBadidas,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RLadidas,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRLadidas,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RBadidas1,
+                SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRBadidas1,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RLadidas1,
+                SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRLadidas1,
+                MAX(COALESCE(a.g_shift, b.g_shift)) AS shft
+              FROM
+                  db_dying.tbl_schedule AS b
+                  LEFT JOIN  db_dying.tbl_montemp  AS c ON c.id_schedule = b.id
+                  LEFT JOIN  db_dying.tbl_hasilcelup AS a ON a.id_montemp = c.id
+              WHERE
+                  $shft
+                  a.tgl_buat >= '$Awal'
+                  AND a.tgl_buat <  DATEADD(MINUTE, 1, '$Akhir')
+                  AND a.k_resep = ''
+              GROUP BY
+                  a.k_resep");
+	$rx=sqlsrv_fetch_array($sqlx,SQLSRV_FETCH_ASSOC);
+  $sql0x=sqlsrv_query($con,"WITH base AS (
+                            SELECT
+                                a.k_resep,
+                                b.bruto,
+                                b.buyer,
+                                b.g_shift AS b_g_shift,
+                                a.resep,
+                                a.proses,
+                                a.g_shift AS a_g_shift,
+                                a.tgl_buat,
+                                a.id      AS a_id
+                            FROM db_dying.tbl_schedule b
+                            LEFT JOIN db_dying.tbl_montemp c
+                                ON c.id_schedule = b.id
+                            LEFT JOIN db_dying.tbl_hasilcelup a
+                                ON a.id_montemp = c.id
+                            WHERE
+                                $shft
+                                a.tgl_buat >= '$Awal'
+                                AND a.tgl_buat <  DATEADD(MINUTE, 1, '$Akhir')
+                                AND a.k_resep = '0x'
+                        ),
+                        agg AS (
+                            SELECT
+                                k_resep,
+                                SUM(CASE WHEN resep = 'Baru' AND bruto > 200 AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RB,
+                                SUM(CASE WHEN resep = 'Baru' AND bruto > 200 AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRB,
+                                SUM(CASE WHEN resep = 'Lama' AND bruto > 200 AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RL,
+                                SUM(CASE WHEN resep = 'Lama' AND bruto > 200 AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRL,
+                                SUM(CASE WHEN resep = 'Baru' AND bruto > 0 AND bruto < 200 AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RB1,
+                                SUM(CASE WHEN resep = 'Baru' AND bruto > 0 AND bruto < 200 AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRB1,
+                                SUM(CASE WHEN resep = 'Lama' AND bruto > 0 AND bruto < 200 AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RL1,
+                                SUM(CASE WHEN resep = 'Lama' AND bruto > 0 AND bruto < 200 AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRL1,
+                                SUM(CASE WHEN resep = 'Baru' AND bruto > 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RBadidas,
+                                SUM(CASE WHEN resep = 'Baru' AND bruto > 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRBadidas,
+                                SUM(CASE WHEN resep = 'Lama' AND bruto > 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RLadidas,
+                                SUM(CASE WHEN resep = 'Lama' AND bruto > 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRLadidas,
+                                SUM(CASE WHEN resep = 'Baru' AND bruto > 0 AND bruto < 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RBadidas1,
+                                SUM(CASE WHEN resep = 'Baru' AND bruto > 0 AND bruto < 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRBadidas1,
+                                SUM(CASE WHEN resep = 'Lama' AND bruto > 0 AND bruto < 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RLadidas1,
+                                SUM(CASE WHEN resep = 'Lama' AND bruto > 0 AND bruto < 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRLadidas1
+                            FROM base
+                            GROUP BY k_resep
+                        ),
+                        shft_pick AS (
+                            SELECT
+                                k_resep,
+                                shft
+                            FROM (
+                                SELECT
+                                    k_resep,
+                                    COALESCE(a_g_shift, b_g_shift) AS shft,
+                                    ROW_NUMBER() OVER (
+                                        PARTITION BY k_resep
+                                        ORDER BY tgl_buat, a_id
+                                    ) AS rn
+                                FROM base
+                            ) x
+                            WHERE x.rn = 1
+                        )
+                        SELECT
+                            a.*,
+                            s.shft
+                        FROM agg a
+                        LEFT JOIN shft_pick s
+                            ON s.k_resep = a.k_resep;");
+	$r0x=sqlsrv_fetch_array($sql0x,SQLSRV_FETCH_ASSOC);
+	$sql1x=sqlsrv_query($con,"WITH base AS (
+    SELECT
+        a.k_resep,
+        b.bruto,
+        b.buyer,
+        b.g_shift AS b_g_shift,
+        a.resep,
+        a.proses,
+        a.g_shift AS a_g_shift,
+        a.tgl_buat,
+        a.id AS a_id
+    FROM db_dying.tbl_schedule b
+    LEFT JOIN db_dying.tbl_montemp c
+        ON c.id_schedule = b.id
+    LEFT JOIN db_dying.tbl_hasilcelup a
+        ON a.id_montemp = c.id
+    WHERE
+        $shft
+        a.tgl_buat >= '$Awal'
+        AND a.tgl_buat <  DATEADD(MINUTE, 1,'$Akhir')  
+        AND a.k_resep = '1x'
+    ),
+    agg AS (
+        SELECT
+            k_resep,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 200 AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RB,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 200 AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRB,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 200 AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RL,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 200 AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRL,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 0 AND bruto < 200 AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RB1,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 0 AND bruto < 200 AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRB1,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 0 AND bruto < 200 AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RL1,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 0 AND bruto < 200 AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRL1,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RBadidas,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRBadidas,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RLadidas,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRLadidas,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 0 AND bruto < 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RBadidas1,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 0 AND bruto < 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRBadidas1,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 0 AND bruto < 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RLadidas1,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 0 AND bruto < 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRLadidas1
+        FROM base
+        GROUP BY k_resep
+    ),
+    shft_pick AS (
+        SELECT
+            k_resep,
+            shft
+        FROM (
+            SELECT
+                k_resep,
+                COALESCE(a_g_shift, b_g_shift) AS shft,
+                ROW_NUMBER() OVER (
+                    PARTITION BY k_resep
+                    ORDER BY tgl_buat, a_id
+                ) AS rn
+            FROM base
+        ) x
+        WHERE x.rn = 1
+    )
+    SELECT
+        a.*,
+        s.shft
+    FROM agg a
+    LEFT JOIN shft_pick s
+        ON s.k_resep = a.k_resep");
+	$r1x=sqlsrv_fetch_array($sql1x, SQLSRV_FETCH_ASSOC);
+	$sql2x=sqlsrv_query($con,"WITH base AS (
+    SELECT
+        a.k_resep,
+        b.bruto,
+        b.buyer,
+        b.g_shift AS b_g_shift,
+        a.resep,
+        a.proses,
+        a.g_shift AS a_g_shift,
+        a.tgl_buat,
+        a.id AS a_id
+    FROM db_dying.tbl_schedule b
+    LEFT JOIN db_dying.tbl_montemp c
+        ON c.id_schedule = b.id
+    LEFT JOIN db_dying.tbl_hasilcelup a
+        ON a.id_montemp = c.id
+    WHERE
+        $shft 
+        a.tgl_buat >= '$Awal'
+        AND a.tgl_buat <  DATEADD(MINUTE, 1,'$Akhir')  
+        AND a.k_resep = '2x'
+    ),
+    agg AS (
+        SELECT
+            k_resep,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 200 AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RB,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 200 AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRB,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 200 AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RL,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 200 AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRL,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 0 AND bruto < 200 AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RB1,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 0 AND bruto < 200 AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRB1,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 0 AND bruto < 200 AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RL1,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 0 AND bruto < 200 AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRL1,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RBadidas,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRBadidas,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RLadidas,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRLadidas,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 0 AND bruto < 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RBadidas1,
+            SUM(CASE WHEN resep = 'Baru' AND bruto > 0 AND bruto < 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRBadidas1,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 0 AND bruto < 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RLadidas1,
+            SUM(CASE WHEN resep = 'Lama' AND bruto > 0 AND bruto < 200 AND buyer = 'ADIDAS' AND proses = 'Celup Greige' THEN bruto ELSE 0 END) AS qtyRLadidas1
+        FROM base
+        GROUP BY k_resep
+    ),
+    shft_pick AS (
+        SELECT
+            k_resep,
+            shft
+        FROM (
+            SELECT
+                k_resep,
+                COALESCE(a_g_shift, b_g_shift) AS shft,   -- if(ISNULL(a.g_shift), b.g_shift, a.g_shift)
+                ROW_NUMBER() OVER (
+                    PARTITION BY k_resep
+                    ORDER BY tgl_buat, a_id
+                ) AS rn
+            FROM base
+        ) x
+        WHERE x.rn = 1
+    )
+    SELECT
+        a.*,
+        s.shft
+    FROM agg a
+    LEFT JOIN shft_pick s
+        ON s.k_resep = a.k_resep;");
+	$r2x=sqlsrv_fetch_array($sql2x, SQLSRV_FETCH_ASSOC);
+  $sql3x=sqlsrv_query($con,"SELECT
+          k_resep,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND a.proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RB,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRB,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND a.proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RL,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRL,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND a.proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RB1,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRB1,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND a.proses = 'Celup Greige' THEN 1 ELSE 0 END) AS RL1,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRL1,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN 1       ELSE 0 END) AS RBadidas,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRBadidas,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN 1       ELSE 0 END) AS RLadidas,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRLadidas,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN 1       ELSE 0 END) AS RBadidas1,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRBadidas1,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN 1       ELSE 0 END) AS RLadidas1,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRLadidas1
+      FROM
+          db_dying.tbl_schedule b
+          LEFT JOIN db_dying.tbl_montemp   c ON c.id_schedule = b.id
+          LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp = c.id
+      WHERE
+          $shft 
+          CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir'
+          AND k_resep = '4x'
+      GROUP BY
+          k_resep
+      ");
+        $r3x=sqlsrv_fetch_array($sql3x, SQLSRV_FETCH_ASSOC);
+        $sql4x=sqlsrv_query($con,"SELECT
+          k_resep,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND a.proses = 'Celup Greige' THEN 1       ELSE 0 END) AS RB,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRB,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND a.proses = 'Celup Greige' THEN 1       ELSE 0 END) AS RL,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRL,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND a.proses = 'Celup Greige' THEN 1       ELSE 0 END) AS RB1,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRB1,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND a.proses = 'Celup Greige' THEN 1       ELSE 0 END) AS RL1,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRL1,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN 1       ELSE 0 END) AS RBadidas,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRBadidas,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN 1       ELSE 0 END) AS RLadidas,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRLadidas,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN 1       ELSE 0 END) AS RBadidas1,
+          SUM(CASE WHEN a.resep = 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRBadidas1,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN 1       ELSE 0 END) AS RLadidas1,
+          SUM(CASE WHEN a.resep = 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer = 'ADIDAS' AND a.proses = 'Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRLadidas1,
+          COALESCE(a.g_shift, b.g_shift) AS shft
+      FROM
+          db_dying.tbl_schedule b
+          LEFT JOIN db_dying.tbl_montemp   c ON c.id_schedule = b.id
+          LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp = c.id
+      WHERE
+          $shft 
+          CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir'
+          AND k_resep = '4x'
+      GROUP BY
+          k_resep,
+          COALESCE(a.g_shift, b.g_shift)
+      ");
+        $r4x=sqlsrv_fetch_array($sql4x);
+        $sql5x=sqlsrv_query($con,
+          "SELECT
+            k_resep,
+            SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 200 AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RB,
+            SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 200 AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRB,
+            SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 200 AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RL,
+            SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 200 AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRL,
+            SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RB1,
+            SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRB1,
+            SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RL1,
+            SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRL1,
+            SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RBadidas,
+            SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRBadidas,
+            SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RLadidas,
+            SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRLadidas,
+            SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RBadidas1,
+            SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRBadidas1,
+            SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RLadidas1,
+            SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRLadidas1
+          FROM
+            db_dying.tbl_schedule b
+            LEFT JOIN db_dying.tbl_montemp c ON c.id_schedule = b.id
+            LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp = c.id
+          WHERE
+            $shft 
+            CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir'
+            AND k_resep='5x'
+          GROUP BY
+            k_resep"
+        );
+	$r5x=sqlsrv_fetch_array($sql5x,SQLSRV_FETCH_ASSOC);
+	$sql6x=sqlsrv_query($con,
+    "SELECT
+       k_resep,
+       SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 200 AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RB,
+       SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 200 AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRB,
+       SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 200 AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RL,
+       SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 200 AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRL,
+       SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RB1,
+       SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRB1,
+       SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RL1,
+       SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRL1,
+       SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RBadidas,
+       SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRBadidas,
+       SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RLadidas,
+       SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRLadidas,
+       SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RBadidas1,
+       SUM(CASE WHEN a.resep= 'Baru' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRBadidas1,
+       SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN 1 ELSE 0 END) AS RLadidas1,
+       SUM(CASE WHEN a.resep= 'Lama' AND b.bruto > 0 AND b.bruto < 200 AND b.buyer='ADIDAS' AND a.proses='Celup Greige' THEN b.bruto ELSE 0 END) AS qtyRLadidas1
+     FROM
+       db_dying.tbl_schedule b
+       LEFT JOIN db_dying.tbl_montemp c ON c.id_schedule = b.id
+       LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp = c.id
+     WHERE
+       $shft 
+       CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir'
+       AND (k_resep='6x' OR k_resep='7x' OR k_resep='8x' OR k_resep='9x')
+     GROUP BY
+       k_resep"
+  );
+	$r6x=sqlsrv_fetch_array($sql6x,SQLSRV_FETCH_ASSOC);
   ?>
   <tr bgcolor="#FFCC99" style="border:1px solid;" >
     <td style="border:1px solid;"><div align="center"><strong>1</strong></div></td>
@@ -478,25 +612,25 @@ GROUP BY
       <?php if($rx>0){echo $rx['RB'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($rx>0){echo $rx['qtyRB'];}else{echo "0.00";} ?>
+      <?php if($rx>0){echo number_format($rx['qtyRB'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($rx>0){echo $rx['RL'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($rx>0){echo $rx['qtyRL'];}else{echo "0.00";} ?>
+      <?php if($rx>0){echo number_format($rx['qtyRL'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($rx>0){echo $rx['RB1'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($rx>0){echo $rx['qtyRB1'];}else{echo "0.00";} ?>
+      <?php if($rx>0){echo number_format($rx['qtyRB1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($rx>0){echo $rx['RL1'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($rx>0){echo $rx['qtyRL1'];}else{echo "0.00";} ?>
+      <?php if($rx>0){echo number_format($rx['qtyRL1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <strong>
@@ -552,15 +686,15 @@ GROUP BY
     <td style="border:1px solid;"><div align="right"><strong>0x</strong></div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r0x>0){echo $r0x['RB'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r0x>0){echo $r0x['qtyRB'];}else{echo "0.00";} ?>
+      <?php if($r0x>0){echo number_format($r0x['qtyRB'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r0x>0){echo $r0x['RL'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r0x>0){echo $r0x['qtyRL'];}else{echo "0.00";} ?>
+      <?php if($r0x>0){echo number_format($r0x['qtyRL'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r0x>0){echo $r0x['RB1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r0x>0){echo $r0x['qtyRB1'];}else{echo "0.00";} ?>
+      <?php if($r0x>0){echo number_format($r0x['qtyRB1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r0x>0){echo $r0x['RL1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
@@ -568,7 +702,7 @@ GROUP BY
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <strong>
-      <?php if($r0x>0){echo $tkrRB=$r0x['RB']+$r0x['RB1'];}else{echo "0";} ?>
+      <?php if($r0x>0){echo $tkrRB=$r0x['RB']+$r0x['RB1'];}else{echo "0.00";} ?>
     </strong></div></td>
     <td style="border:1px solid;"><div align="center">
       <strong>
@@ -580,19 +714,19 @@ GROUP BY
     </strong></div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r0x>0){echo $r0x['RBadidas'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r0x>0){echo $r0x['qtyRBadidas'];}else{echo "0.00";} ?>
+      <?php if($r0x>0){echo number_format($r0x['qtyRBadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r0x>0){echo $r0x['RLadidas'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r0x>0){echo $r0x['qtyRLadidas'];}else{echo "0.00";} ?>
+      <?php if($r0x>0){echo number_format($r0x['qtyRLadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r0x>0){echo $r0x['RBadidas1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r0x>0){echo $r0x['qtyRBadidas1'];}else{echo "0.00";} ?>
+      <?php if($r0x>0){echo number_format($r0x['qtyRBadidas1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r0x>0){echo $r0x['RLadidas1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r0x>0){echo $r0x['qtyRLadidas1'];}else{echo "0.00";} ?>
+      <?php if($r0x>0){echo number_format($r0x['qtyRLadidas1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <strong>
@@ -604,7 +738,7 @@ GROUP BY
     </strong></div></td>
     <td style="border:1px solid;"><div align="right">
       <strong>
-      <?php if($r0x>0){echo $tkrqtyadidas=$r0x['qtyRBadidas']+$r0x['qtyRBadidas1']+$r0x['qtyRLadidas']+$r0x['qtyRLadidas1'];}else{echo "0.00";} ?>
+      <?php if($r0x>0){echo number_format($tkrqtyadidas=$r0x['qtyRBadidas']+$r0x['qtyRBadidas1']+$r0x['qtyRLadidas']+$r0x['qtyRLadidas1'],2);}else{echo "0.00";} ?>
     </strong></div></td>
   </tr>
   <tr bgcolor="#FFCC99" style="border:1px solid;">
@@ -612,19 +746,19 @@ GROUP BY
     <td style="border:1px solid;"><div align="right"><strong>1x</strong></div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r1x>0){echo $r1x['RB'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r1x>0){echo $r1x['qtyRB'];}else{echo "0.00";} ?>
+      <?php if($r1x>0){echo number_format($r1x['qtyRB'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r1x>0){echo $r1x['RL'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r1x>0){echo $r1x['qtyRL'];}else{echo "0.00";} ?>
+      <?php if($r1x>0){echo number_format($r1x['qtyRL'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r1x>0){echo $r1x['RB1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r1x>0){echo $r1x['qtyRB1'];}else{echo "0.00";} ?>
+      <?php if($r1x>0){echo number_format($r1x['qtyRB1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r1x>0){echo $r1x['RL1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r1x>0){echo $r1x['qtyRL1'];}else{echo "0.00";} ?>
+      <?php if($r1x>0){echo  number_format($r1x['qtyRL1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <strong>
@@ -632,7 +766,7 @@ GROUP BY
     </strong></div></td>
     <td style="border:1px solid;"><div align="center">
       <strong>
-      <?php if($r1x>0){echo $tkrRL=$r1x['RL']+$r1x['RL1'];}else{echo "0";} ?>
+      <?php if($r1x>0){echo  $tkrRL=$r1x['RL']+$r1x['RL1'];}else{echo "0";} ?>
     </strong></div></td>
     <td style="border:1px solid;"><div align="right">
       <strong>
@@ -640,19 +774,19 @@ GROUP BY
     </strong></div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r1x>0){echo $r1x['RBadidas'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r1x>0){echo $r1x['qtyRBadidas'];}else{echo "0.00";} ?>
+      <?php if($r1x>0){echo  number_format($r1x['qtyRBadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r1x>0){echo $r1x['RLadidas'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r1x>0){echo $r1x['qtyRLadidas'];}else{echo "0.00";} ?>
+      <?php if($r1x>0){echo  number_format($r1x['qtyRLadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r1x>0){echo $r1x['RBadidas1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r1x>0){echo $r1x['qtyRBadidas1'];}else{echo "0.00";} ?>
+      <?php if($r1x>0){echo  number_format($r1x['qtyRBadidas1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r1x>0){echo $r1x['RLadidas1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r1x>0){echo $r1x['qtyRLadidas1'];}else{echo "0.00";} ?>
+      <?php if($r1x>0){echo number_format($r1x['qtyRLadidas1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <strong>
@@ -664,7 +798,7 @@ GROUP BY
     </strong></div></td>
     <td style="border:1px solid;"><div align="right">
       <strong>
-      <?php if($r1x>0){echo $tkrqtyadidas=$r1x['qtyRBadidas']+$r1x['qtyRBadidas1']+$r1x['qtyRLadidas']+$r1x['qtyRLadidas1'];}else{echo "0.00";} ?>
+      <?php if($r1x>0){echo number_format($tkrqtyadidas=$r1x['qtyRBadidas']+$r1x['qtyRBadadas1']+$r1x['qtyRLadidas']+$r1x['qtyRLadadas1'],2);}else{echo "0.00";} ?>
     </strong></div></td>
   </tr>
   <tr bgcolor="#33CCFF" style="border:1px solid;">
@@ -672,7 +806,7 @@ GROUP BY
     <td style="border:1px solid;"><div align="right"><strong>2x</strong></div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r2x>0){echo $r2x['RB'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r2x>0){echo $r2x['qtyRB'];}else{echo "0.00";} ?>
+      <?php if($r2x>0){echo number_format($r2x['qtyRB'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r2x>0){echo $r2x['RL'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
@@ -732,19 +866,19 @@ GROUP BY
     <td style="border:1px solid;"><div align="right"><strong>3x</strong></div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r3x>0){echo $r3x['RB'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r3x>0){echo $r3x['qtyRB'];}else{echo "0.00";} ?>
+      <?php if($r3x>0){echo number_format($r3x['qtyRB'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r3x>0){echo $r3x['RL'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r3x>0){echo $r3x['qtyRL'];}else{echo "0.00";} ?>
+      <?php if($r3x>0){echo number_format($r3x['qtyRL'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r3x>0){echo $r3x['RB1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r3x>0){echo $r3x['qtyRB1'];}else{echo "0.00";} ?>
+      <?php if($r3x>0){echo number_format($r3x['qtyRB1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r3x>0){echo $r3x['RL1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r3x>0){echo $r3x['qtyRL1'];}else{echo "0.00";} ?>
+      <?php if($r3x>0){echo number_format($r3x['qtyRL1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <strong>
@@ -756,23 +890,23 @@ GROUP BY
     </strong></div></td>
     <td style="border:1px solid;"><div align="right">
       <strong>
-      <?php if($r3x>0){echo $tkrqty=$r3x['qtyRB']+$r3x['qtyRB1']+$r3x['qtyRL']+$r3x['qtyRL1'];}else{echo "0.00";} ?>
+      <?php if($r3x>0){echo number_format($tkrqty=$r3x['qtyRB']+$r3x['qtyRB1']+$r3x['qtyRL']+$r3x['qtyRL1'],2);}else{echo "0.00";} ?>
     </strong></div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r3x>0){echo $r3x['RBadidas'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r3x>0){echo $r3x['qtyRBadidas'];}else{echo "0.00";} ?>
+      <?php if($r3x>0){echo number_format($r3x['qtyRBadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r3x>0){echo $r3x['RLadidas'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r3x>0){echo $r3x['qtyRLadidas'];}else{echo "0.00";} ?>
+      <?php if($r3x>0){echo number_format($r3x['qtyRLadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r3x>0){echo $r3x['RBadidas1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r3x>0){echo $r3x['qtyRBadidas1'];}else{echo "0.00";} ?>
+      <?php if($r3x>0){echo number_format($r3x['qtyRBadidas1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r3x>0){echo $r3x['RLadidas1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r3x>0){echo $r3x['qtyRLadidas1'];}else{echo "0.00";} ?>
+      <?php if($r3x>0){echo number_format($r3x['qtyRLadidas1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <strong>
@@ -784,7 +918,7 @@ GROUP BY
     </strong></div></td>
     <td style="border:1px solid;"><div align="right">
       <strong>
-      <?php if($r3x>0){echo $tkrqtyadidas=$r3x['qtyRBadidas']+$r3x['qtyRBadidas1']+$r3x['qtyRLadidas']+$r3x['qtyRLadidas1'];}else{echo "0.00";} ?>
+      <?php if($r3x>0){echo number_format($tkrqtyadidas=$r3x['qtyRBadidas']+$r3x['qtyRBadidas1']+$r3x['qtyRLadidas']+$r3x['qtyRLadidas1'],2);}else{echo "0.00";} ?>
     </strong></div></td>
   </tr>
   <tr bgcolor="#33CCFF" style="border:1px solid;">
@@ -792,19 +926,19 @@ GROUP BY
     <td style="border:1px solid;"><div align="right"><strong>4x</strong></div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r4x>0){echo $r4x['RB'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r4x>0){echo $r4x['qtyRB'];}else{echo "0.00";} ?>
+      <?php if($r4x>0){echo number_format($r4x['qtyRB'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r4x>0){echo $r4x['RL'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r4x>0){echo $r4x['qtyRL'];}else{echo "0.00";} ?>
+      <?php if($r4x>0){echo number_format($r4x['qtyRL'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r4x>0){echo $r4x['RB1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r4x>0){echo $r4x['qtyRB1'];}else{echo "0.00";} ?>
+      <?php if($r4x>0){echo number_format($r4x['qtyRB1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r4x>0){echo $r4x['RL1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r4x>0){echo $r4x['qtyRL1'];}else{echo "0.00";} ?>
+      <?php if($r4x>0){echo number_format($r4x['qtyRL1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <strong>
@@ -816,23 +950,23 @@ GROUP BY
     </strong></div></td>
     <td style="border:1px solid;"><div align="right">
       <strong>
-      <?php if($r4x>0){echo $tkrqty=$r4x['qtyRB']+$r4x['qtyRB1']+$r4x['qtyRL']+$r4x['qtyRL1'];}else{echo "0.00";} ?>
+      <?php if($r4x>0){echo number_format($tkrqty=$r4x['qtyRB']+$r4x['qtyRB1']+$r4x['qtyRL']+$r4x['qtyRL1'],2);}else{echo "0.00";} ?>
     </strong></div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r4x>0){echo $r4x['RBadidas'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r4x>0){echo $r4x['qtyRBadidas'];}else{echo "0.00";} ?>
+      <?php if($r4x>0){echo number_format($r4x['qtyRBadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r4x>0){echo $r4x['RLadidas'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r4x>0){echo $r4x['qtyRLadidas'];}else{echo "0.00";} ?>
+      <?php if($r4x>0){echo number_format($r4x['qtyRLadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r4x>0){echo $r4x['RBadidas1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r4x>0){echo $r4x['qtyRBadidas1'];}else{echo "0.00";} ?>
+      <?php if($r4x>0){echo number_format($r4x['qtyRBadidas1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r4x>0){echo $r4x['RLadidas1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r4x>0){echo $r4x['qtyRLadidas1'];}else{echo "0.00";} ?>
+      <?php if($r4x>0){echo number_format($r4x['qtyRLadidas1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <strong>
@@ -844,7 +978,7 @@ GROUP BY
     </strong></div></td>
     <td style="border:1px solid;"><div align="right">
       <strong>
-      <?php if($r4x>0){echo $tkrqtyadidas=$r4x['qtyRBadidas']+$r4x['qtyRBadidas1']+$r4x['qtyRLadidas']+$r4x['qtyRLadidas1'];}else{echo "0.00";} ?>
+      <?php if($r4x>0){echo number_format($tkrqtyadidas=$r4x['qtyRBadidas']+$r4x['qtyRBadidas1']+$r4x['qtyRLadidas']+$r4x['qtyRLadidas1'],2);}else{echo "0.00";} ?>
     </strong></div></td>
   </tr>
   <tr bgcolor="#FFCC99" style="border:1px solid;">
@@ -852,19 +986,19 @@ GROUP BY
     <td style="border:1px solid;"><div align="right"><strong>5x</strong></div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r5x>0){echo $r5x['RB'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r5x>0){echo $r5x['qtyRB'];}else{echo "0.00";} ?>
+      <?php if($r5x>0){echo number_format($r5x['qtyRB'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r5x>0){echo $r5x['RL'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r5x>0){echo $r5x['qtyRL'];}else{echo "0.00";} ?>
+      <?php if($r5x>0){echo number_format($r5x['qtyRL'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r5x>0){echo $r5x['RB1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r5x>0){echo $r5x['qtyRB1'];}else{echo "0.00";} ?>
+      <?php if($r5x>0){echo number_format($r5x['qtyRB1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r5x>0){echo $r5x['RL1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r5x>0){echo $r5x['qtyRL1'];}else{echo "0.00";} ?>
+      <?php if($r5x>0){echo number_format($r5x['qtyRL1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <strong>
@@ -876,23 +1010,23 @@ GROUP BY
     </strong></div></td>
     <td style="border:1px solid;"><div align="right">
       <strong>
-      <?php if($r5x>0){echo $tkrqty=$r5x['qtyRB']+$r5x['qtyRB1']+$r5x['qtyRL']+$r5x['qtyRL1'];}else{echo "0.00";} ?>
+      <?php if($r5x>0){echo number_format($tkrqty=$r5x['qtyRB']+$r5x['qtyRB1']+$r5x['qtyRL']+$r5x['qtyRL1'],2);}else{echo "0.00";} ?>
     </strong></div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r5x>0){echo $r5x['RBadidas'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r5x>0){echo $r5x['qtyRBadidas'];}else{echo "0.00";} ?>
+      <?php if($r5x>0){echo number_format($r5x['qtyRBadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r5x>0){echo $r5x['RLadidas'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r5x>0){echo $r5x['qtyRLadidas'];}else{echo "0.00";} ?>
+      <?php if($r5x>0){echo number_format($r5x['qtyRLadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r5x>0){echo $r5x['RBadidas1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r5x>0){echo $r5x['qtyRBadidas1'];}else{echo "0.00";} ?>
+      <?php if($r5x>0){echo number_format($r5x['qtyRBadidas1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center"><?php if($r5x>0){echo $r5x['RLadidas1'];}else{echo "0";} ?></div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r5x>0){echo $r5x['qtyRLadidas1'];}else{echo "0.00";} ?>
+      <?php if($r5x>0){echo number_format($r5x['qtyRLadidas1'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <strong>
@@ -904,7 +1038,7 @@ GROUP BY
     </strong></div></td>
     <td style="border:1px solid;"><div align="right">
       <strong>
-      <?php if($r5x>0){echo $tkrqtyadidas=$r5x['qtyRBadidas']+$r5x['qtyRBadidas1']+$r5x['qtyRLadidas']+$r5x['qtyRLadidas1'];}else{echo "0.00";} ?>
+      <?php if($r5x>0){echo number_format($tkrqtyadidas=$r5x['qtyRBadidas']+$r5x['qtyRBadidas1']+$r5x['qtyRLadidas']+$r5x['qtyRLadidas1'],2);}else{echo "0.00";} ?>
     </strong></div></td>
   </tr>
   <tr bgcolor="#33CCFF" style="border:1px solid;">
@@ -914,7 +1048,7 @@ GROUP BY
       <?php if($r6x>0){echo $r6x['RB'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r6x>0){echo $r6x['qtyRB'];}else{echo "0.00";} ?>
+      <?php if($r6x>0){echo number_format($r6x['qtyRB'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r6x>0){echo $r6x['RL'];}else{echo "0";} ?>
@@ -1039,192 +1173,184 @@ GROUP BY
     <td bgcolor="#99FF99" style="border:1px solid;"><div align="center"><strong>L:R</strong></div></td>
   </tr>
   <?php 
-  $sql0=mysqli_query($con,"SELECT
-	ROUND(AVG(c.pakai_air)) as 'air',
-	ROUND(AVG(b.bruto),2) AS 'qty',
-  ROUND(AVG((b.bruto/b.kapasitas)*100),2) as `loading`,
-  ROUND(AVG(c.pakai_air/b.bruto),2) as `l_r`,
-  ROUND(AVG(IF(a.resep = 'Baru', 1, 0))) AS 'RB',
-  ROUND(AVG(IF(a.resep = 'Lama', 1, 0))) AS 'RL',
-	ROUND(AVG(IF(buyer='ADIDAS', b.bruto, 0)),2) AS 'qtyadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air, 0))) AS 'airadidas',
-  ROUND(AVG(IF(a.resep = 'Baru' and buyer='ADIDAS', 1, 0))) AS 'RBadidas',
-  ROUND(AVG(IF(a.resep = 'Lama' and buyer='ADIDAS', 1, 0))) AS 'RLadidas',
-  ROUND(AVG(IF(buyer='ADIDAS', (b.bruto/b.kapasitas)*100, 0)),2) AS 'loadingadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air/b.bruto, 0)),2) AS 'l_rairadidas',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir')
-	AND b.kapasitas > '0' and b.kapasitas <= '50' AND b.bruto > 0
-");
-	$r0=mysqli_fetch_array($sql0);
-	$sql50=mysqli_query($con,"SELECT
-	ROUND(AVG(c.pakai_air)) as 'air',
-	ROUND(AVG(b.bruto),2) AS 'qty',
-  ROUND(AVG((b.bruto/b.kapasitas)*100),2) as `loading`,
-  ROUND(AVG(c.pakai_air/b.bruto),2) as `l_r`,
-  ROUND(AVG(IF(a.resep = 'Baru', 1, 0))) AS 'RB',
-  ROUND(AVG(IF(a.resep = 'Lama', 1, 0))) AS 'RL',
-	ROUND(AVG(IF(buyer='ADIDAS', b.bruto, 0)),2) AS 'qtyadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air, 0))) AS 'airadidas',
-  ROUND(AVG(IF(a.resep = 'Baru' and buyer='ADIDAS', 1, 0))) AS 'RBadidas',
-  ROUND(AVG(IF(a.resep = 'Lama' and buyer='ADIDAS', 1, 0))) AS 'RLadidas',
-  ROUND(AVG(IF(buyer='ADIDAS', (b.bruto/b.kapasitas)*100, 0)),2) AS 'loadingadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air/b.bruto, 0)),2) AS 'l_rairadidas',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir')
-	AND b.kapasitas > '50' and b.kapasitas <= '100' AND b.bruto > 0");
-	$r50=mysqli_fetch_array($sql50);
-	$sql100=mysqli_query($con,"SELECT
-	ROUND(AVG(c.pakai_air)) as 'air',
-	ROUND(AVG(b.bruto),2) AS 'qty',
-  ROUND(AVG((b.bruto/b.kapasitas)*100),2) as `loading`,
-  ROUND(AVG(c.pakai_air/b.bruto),2) as `l_r`,
-  ROUND(AVG(IF(a.resep = 'Baru', 1, 0))) AS 'RB',
-  ROUND(AVG(IF(a.resep = 'Lama', 1, 0))) AS 'RL',
-	ROUND(AVG(IF(buyer='ADIDAS', b.bruto, 0)),2) AS 'qtyadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air, 0))) AS 'airadidas',
-  ROUND(AVG(IF(a.resep = 'Baru' and buyer='ADIDAS', 1, 0))) AS 'RBadidas',
-  ROUND(AVG(IF(a.resep = 'Lama' and buyer='ADIDAS', 1, 0))) AS 'RLadidas',
-  ROUND(AVG(IF(buyer='ADIDAS', (b.bruto/b.kapasitas)*100, 0)),2) AS 'loadingadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air/b.bruto, 0)),2) AS 'l_rairadidas',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir')
-	AND b.kapasitas > '100' and b.kapasitas <= '200' AND b.bruto > 0");
-	$r100=mysqli_fetch_array($sql100);
-	$sql200=mysqli_query($con,"SELECT
-	ROUND(AVG(c.pakai_air)) as 'air',
-	ROUND(AVG(b.bruto),2) AS 'qty',
-  ROUND(AVG((b.bruto/b.kapasitas)*100),2) as `loading`,
-  ROUND(AVG(c.pakai_air/b.bruto),2) as `l_r`,
-  ROUND(AVG(IF(a.resep = 'Baru', 1, 0))) AS 'RB',
-  ROUND(AVG(IF(a.resep = 'Lama', 1, 0))) AS 'RL',
-	ROUND(AVG(IF(buyer='ADIDAS', b.bruto, 0)),2) AS 'qtyadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air, 0))) AS 'airadidas',
-  ROUND(AVG(IF(a.resep = 'Baru' and buyer='ADIDAS', 1, 0))) AS 'RBadidas',
-  ROUND(AVG(IF(a.resep = 'Lama' and buyer='ADIDAS', 1, 0))) AS 'RLadidas',
-  ROUND(AVG(IF(buyer='ADIDAS', (b.bruto/b.kapasitas)*100, 0)),2) AS 'loadingadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air/b.bruto, 0)),2) AS 'l_rairadidas',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir')
-	AND b.kapasitas > '200' and b.kapasitas <= '400' AND b.bruto > 0");
-	$r200=mysqli_fetch_array($sql200);
-	$sql400=mysqli_query($con,"SELECT
-	ROUND(AVG(c.pakai_air)) as 'air',
-	ROUND(AVG(b.bruto),2) AS 'qty',
-  ROUND(AVG((b.bruto/b.kapasitas)*100),2) as `loading`,
-  ROUND(AVG(c.pakai_air/b.bruto),2) as `l_r`,
-  ROUND(AVG(IF(a.resep = 'Baru', 1, 0))) AS 'RB',
-  ROUND(AVG(IF(a.resep = 'Lama', 1, 0))) AS 'RL',
-	ROUND(AVG(IF(buyer='ADIDAS', b.bruto, 0)),2) AS 'qtyadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air, 0))) AS 'airadidas',
-  ROUND(AVG(IF(a.resep = 'Baru' and buyer='ADIDAS', 1, 0))) AS 'RBadidas',
-  ROUND(AVG(IF(a.resep = 'Lama' and buyer='ADIDAS', 1, 0))) AS 'RLadidas',
-  ROUND(AVG(IF(buyer='ADIDAS', (b.bruto/b.kapasitas)*100, 0)),2) AS 'loadingadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air/b.bruto, 0)),2) AS 'l_rairadidas',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir')
-	AND b.kapasitas > '400' and b.kapasitas <= '600' AND b.bruto > 0");
-	$r400=mysqli_fetch_array($sql400);
-	$sql600=mysqli_query($con,"SELECT
-	ROUND(AVG(c.pakai_air)) as 'air',
-	ROUND(AVG(b.bruto),2) AS 'qty',
-  ROUND(AVG((b.bruto/b.kapasitas)*100),2) as `loading`,
-  ROUND(AVG(c.pakai_air/b.bruto),2) as `l_r`,
-  ROUND(AVG(IF(a.resep = 'Baru', 1, 0))) AS 'RB',
-  ROUND(AVG(IF(a.resep = 'Lama', 1, 0))) AS 'RL',
-	ROUND(AVG(IF(buyer='ADIDAS', b.bruto, 0)),2) AS 'qtyadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air, 0))) AS 'airadidas',
-  ROUND(AVG(IF(a.resep = 'Baru' and buyer='ADIDAS', 1, 0))) AS 'RBadidas',
-  ROUND(AVG(IF(a.resep = 'Lama' and buyer='ADIDAS', 1, 0))) AS 'RLadidas',
-  ROUND(AVG(IF(buyer='ADIDAS', (b.bruto/b.kapasitas)*100, 0)),2) AS 'loadingadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air/b.bruto, 0)),2) AS 'l_rairadidas',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir')
-	AND b.kapasitas > '600' and b.kapasitas <= '800' AND b.bruto > 0");
-	$r600=mysqli_fetch_array($sql600);
-	$sql800=mysqli_query($con,"SELECT
-	ROUND(AVG(c.pakai_air)) as 'air',
-	ROUND(AVG(b.bruto),2) AS 'qty',
-  ROUND(AVG((b.bruto/b.kapasitas)*100),2) as `loading`,
-  ROUND(AVG(c.pakai_air/b.bruto),2) as `l_r`,
-  ROUND(AVG(IF(a.resep = 'Baru', 1, 0))) AS 'RB',
-  ROUND(AVG(IF(a.resep = 'Lama', 1, 0))) AS 'RL',
-	ROUND(AVG(IF(buyer='ADIDAS', b.bruto, 0)),2) AS 'qtyadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air, 0))) AS 'airadidas',
-  ROUND(AVG(IF(a.resep = 'Baru' and buyer='ADIDAS', 1, 0))) AS 'RBadidas',
-  ROUND(AVG(IF(a.resep = 'Lama' and buyer='ADIDAS', 1, 0))) AS 'RLadidas',
-  ROUND(AVG(IF(buyer='ADIDAS', (b.bruto/b.kapasitas)*100, 0)),2) AS 'loadingadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air/b.bruto, 0)),2) AS 'l_rairadidas',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir')
-	AND b.kapasitas > '800' and b.kapasitas <= '1000' AND b.bruto > 0");
-	$r800=mysqli_fetch_array($sql800);
-	$sql1000=mysqli_query($con,"SELECT
-	ROUND(AVG(c.pakai_air)) as 'air',
-	ROUND(AVG(b.bruto),2) AS 'qty',
-  ROUND(AVG((b.bruto/b.kapasitas)*100),2) as `loading`,
-  ROUND(AVG(c.pakai_air/b.bruto),2) as `l_r`,
-  ROUND(AVG(IF(a.resep = 'Baru', 1, 0))) AS 'RB',
-  ROUND(AVG(IF(a.resep = 'Lama', 1, 0))) AS 'RL',
-	ROUND(AVG(IF(buyer='ADIDAS', b.bruto, 0)),2) AS 'qtyadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air, 0))) AS 'airadidas',
-  ROUND(AVG(IF(a.resep = 'Baru' and buyer='ADIDAS', 1, 0))) AS 'RBadidas',
-  ROUND(AVG(IF(a.resep = 'Lama' and buyer='ADIDAS', 1, 0))) AS 'RLadidas',
-  ROUND(AVG(IF(buyer='ADIDAS', (b.bruto/b.kapasitas)*100, 0)),2) AS 'loadingadidas',
-	ROUND(AVG(IF(buyer='ADIDAS', c.pakai_air/b.bruto, 0)),2) AS 'l_rairadidas',
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir')
-	AND b.kapasitas > '1000' and b.kapasitas <= '1200' AND b.bruto > 0 ");
-	$r1000=mysqli_fetch_array($sql1000);
-	$rw100=mysqli_num_rows($sql1000);
+        $sql0=sqlsrv_query($con,"SELECT
+            ROUND(AVG(c.pakai_air),0) AS air,
+            ROUND(AVG(b.bruto),2) AS qty,
+            ROUND(AVG((b.bruto/b.kapasitas)*100),2) AS loading,
+            ROUND(AVG(c.pakai_air/b.bruto),2) AS l_r,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' THEN 1 ELSE 0 END),0) AS RB,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' THEN 1.0 ELSE 0.0 END), 0) AS RL,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN b.bruto ELSE 0 END),2) AS qtyadidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air ELSE 0 END),2) AS airadidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS RBadidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS Rladidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN (b.bruto/b.kapasitas)*100 ELSE 0 END),2) AS loadingadidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air/b.bruto ELSE 0 END),2) AS l_rairadidas
+          FROM
+            db_dying.tbl_schedule b
+            LEFT JOIN db_dying.tbl_montemp c ON c.id_schedule = b.id
+            LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
+          WHERE
+            $shft 
+            (CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir')
+            AND b.kapasitas > 0 AND b.kapasitas <= 50 AND b.bruto > 0
+          ");
+      $r0=sqlsrv_fetch_array($sql0, SQLSRV_FETCH_ASSOC);
+      $sql50=sqlsrv_query($con,"SELECT
+            ROUND(AVG(c.pakai_air),0) AS air,
+            ROUND(AVG(b.bruto),2) AS qty,
+            ROUND(AVG((b.bruto/b.kapasitas)*100),2) AS loading,
+            ROUND(AVG(c.pakai_air/b.bruto),2) AS l_r,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' THEN 1 ELSE 0 END), 0) AS RB,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' THEN 1.0 ELSE 0.0 END), 0) AS RL,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN b.bruto ELSE 0 END),2) AS qtyadidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air ELSE 0 END),2) AS airadidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS RBadidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS Rladidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN (b.bruto/b.kapasitas)*100 ELSE 0 END),2) AS loadingadidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air/b.bruto ELSE 0 END),2) AS l_rairadidas
+            FROM
+              db_dying.tbl_schedule b
+              LEFT JOIN db_dying.tbl_montemp c ON c.id_schedule = b.id
+              LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
+            WHERE
+              $shft 
+              (CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir')
+              AND b.kapasitas > 50 and b.kapasitas <= 100 AND b.bruto > 0");
+      $r50=sqlsrv_fetch_array($sql50, SQLSRV_FETCH_ASSOC);
+      $sql100=sqlsrv_query($con,"SELECT
+            ROUND(AVG(c.pakai_air),0) AS air,
+            ROUND(AVG(b.bruto),2) AS qty,
+            ROUND(AVG((b.bruto/b.kapasitas)*100),2) AS loading,
+            ROUND(AVG(c.pakai_air/b.bruto),2) AS l_r,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' THEN 1 ELSE 0 END), 0) AS RB,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' THEN 1.0 ELSE 0.0 END), 0) AS RL,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN b.bruto ELSE 0 END),2) AS qtyadidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air ELSE 0 END),2) AS airadidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS RBadidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS Rladidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN (b.bruto/b.kapasitas)*100 ELSE 0 END),2) AS loadingadidas,
+            ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air/b.bruto ELSE 0 END),2) AS l_rairadidas
+            FROM
+              db_dying.tbl_schedule b
+              LEFT JOIN db_dying.tbl_montemp c ON c.id_schedule = b.id
+              LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
+            WHERE
+              $shft 
+              (CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir')
+              AND b.kapasitas > 100 and b.kapasitas <= 200 AND b.bruto > 0");
+      $r100=sqlsrv_fetch_array($sql100, SQLSRV_FETCH_ASSOC);
+      $sql200=sqlsrv_query($con,"SELECT
+          ROUND(AVG(c.pakai_air),0) AS air,
+          ROUND(AVG(b.bruto),2) AS qty,
+          ROUND(AVG((b.bruto/b.kapasitas)*100),2) AS loading,
+          ROUND(AVG(c.pakai_air/b.bruto),2) AS l_r,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' THEN 1 ELSE 0 END), 0) AS RB,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' THEN 1.0 ELSE 0.0 END), 0) AS RL,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN b.bruto ELSE 0 END),2) AS qtyadidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air ELSE 0 END),2) AS airadidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS RBadidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS Rladidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN (b.bruto/b.kapasitas)*100 ELSE 0 END),2) AS loadingadidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air/b.bruto ELSE 0 END),2) AS l_rairadidas
+        FROM
+          db_dying.tbl_schedule b
+          LEFT JOIN db_dying.tbl_montemp c ON c.id_schedule = b.id
+          LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
+        WHERE
+          $shft 
+          (CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir')
+          AND b.kapasitas > 200 and b.kapasitas <= 400 AND b.bruto > 0");
+      $r200=sqlsrv_fetch_array($sql200, SQLSRV_FETCH_ASSOC);
+      $sql400=sqlsrv_query($con,"SELECT
+          ROUND(AVG(c.pakai_air),0) AS air,
+          ROUND(AVG(b.bruto),2) AS qty,
+          ROUND(AVG((b.bruto/b.kapasitas)*100),2) AS loading,
+          ROUND(AVG(c.pakai_air/b.bruto),2) AS l_r,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' THEN 1 ELSE 0 END), 0) AS RB,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' THEN 1.0 ELSE 0.0 END), 0) AS RL,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN b.bruto ELSE 0 END),2) AS qtyadidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air ELSE 0 END),2) AS airadidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS RBadidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS Rladidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN (b.bruto/b.kapasitas)*100 ELSE 0 END),2) AS loadingadidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air/b.bruto ELSE 0 END),2) AS l_rairadidas
+        FROM
+          db_dying.tbl_schedule b
+          LEFT JOIN db_dying.tbl_montemp c ON c.id_schedule = b.id
+          LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
+        WHERE
+          $shft 
+          (CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir')
+          AND b.kapasitas > 400 and b.kapasitas <= 600 AND b.bruto > 0");
+      $r400=sqlsrv_fetch_array($sql400, SQLSRV_FETCH_ASSOC);
+      $sql600=sqlsrv_query($con,"SELECT
+          ROUND(AVG(c.pakai_air),0) AS air,
+          ROUND(AVG(b.bruto),2) AS qty,
+          ROUND(AVG((b.bruto/b.kapasitas)*100),2) AS loading,
+          ROUND(AVG(c.pakai_air/b.bruto),2) AS l_r,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' THEN 1 ELSE 0 END),0) AS RB,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' THEN 1.0 ELSE 0.0 END),0) AS RL,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN b.bruto ELSE 0 END),2) AS qtyadidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air ELSE 0 END),2) AS airadidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS RBadidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS Rladidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN (b.bruto/b.kapasitas)*100 ELSE 0 END),2) AS loadingadidas,
+          ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air/b.bruto ELSE 0 END),2) AS l_rairadidas
+        FROM
+          db_dying.tbl_schedule b
+          LEFT JOIN db_dying.tbl_montemp c ON c.id_schedule = b.id
+          LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
+        WHERE
+          $shft 
+          (CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir')
+          AND b.kapasitas > 600 and b.kapasitas <= 800 AND b.bruto > 0");
+      $r600=sqlsrv_fetch_array($sql600, SQLSRV_FETCH_ASSOC);
+      $sql800=sqlsrv_query($con,"SELECT
+        ROUND(AVG(c.pakai_air),0) AS air,
+        ROUND(AVG(b.bruto),2) AS qty,
+        ROUND(AVG((b.bruto/b.kapasitas)*100),2) AS loading,
+        ROUND(AVG(c.pakai_air/b.bruto),2) AS l_r,
+        ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' THEN 1 ELSE 0 END),0) AS RB,
+        ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' THEN 1.0 ELSE 0.0 END),0) AS RL,
+        ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN b.bruto ELSE 0 END),2) AS qtyadidas,
+        ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air ELSE 0 END),2) AS airadidas,
+        ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'BARU' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS RBadidas,
+        ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(a.resep))) = 'LAMA' AND UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN 1 ELSE 0 END),2) AS Rladidas,
+        ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN (b.bruto/b.kapasitas)*100 ELSE 0 END),2) AS loadingadidas,
+        ROUND(AVG(CASE WHEN UPPER(LTRIM(RTRIM(b.buyer))) = 'ADIDAS' THEN c.pakai_air/b.bruto ELSE 0 END),2) AS l_rairadidas
+        FROM
+          db_dying.tbl_schedule b
+          LEFT JOIN db_dying.tbl_montemp c ON c.id_schedule = b.id
+          LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
+        WHERE
+          $shft 
+          (CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir')
+          AND b.kapasitas > 800 and b.kapasitas <= 1000 AND b.bruto > 0");
+      $r800=sqlsrv_fetch_array($sql800, SQLSRV_FETCH_ASSOC);
+      $sql1000=sqlsrv_query($con,"SELECT
+          ROUND(AVG(CONVERT(float, c.pakai_air)), 0) AS air,
+          ROUND(AVG(b.bruto),2) AS qty,
+          ROUND(AVG((b.bruto/b.kapasitas)*100),2) AS loading,
+          ROUND(AVG(c.pakai_air/b.bruto),2) AS l_r,
+          ROUND(AVG(CASE WHEN a.resep = 'Baru' THEN 1 ELSE 0 END),0) AS RB,
+          ROUND(AVG(CASE WHEN a.resep = 'Lama' THEN 1.0 ELSE 0.0 END),0) AS RL,
+          ROUND(AVG(CASE WHEN b.buyer = 'ADIDAS' THEN b.bruto ELSE 0 END),2) AS qtyadidas,
+          ROUND(AVG(CASE WHEN b.buyer = 'ADIDAS' THEN c.pakai_air ELSE 0 END),2) AS airadidas,
+          ROUND(AVG(CASE WHEN a.resep = 'Baru' AND b.buyer = 'ADIDAS' THEN 1 ELSE 0 END),2) AS RBadidas,
+          ROUND(AVG(CASE WHEN a.resep = 'Lama' AND b.buyer = 'ADIDAS' THEN 1 ELSE 0 END),2) AS Rladidas,
+          ROUND(AVG(CASE WHEN b.buyer = 'ADIDAS' THEN (b.bruto/b.kapasitas)*100 ELSE 0 END),2) AS loadingadidas,
+            ROUND(AVG(CASE WHEN b.buyer = 'ADIDAS' THEN c.pakai_air/b.bruto ELSE 0 END),2) AS l_rairadidas
+        FROM
+          db_dying.tbl_schedule b
+          LEFT JOIN db_dying.tbl_montemp c ON c.id_schedule = b.id
+          LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
+        WHERE
+          $shft 
+          (CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir')
+          AND b.kapasitas > 1000 and b.kapasitas <= 1200 AND b.bruto > 0 ");
+      $r1000=sqlsrv_fetch_array($sql1000, SQLSRV_FETCH_ASSOC);
+      $rw100=sqlsrv_num_rows($sql1000);
 	
   ?>
   <tr bgcolor="#33CCFF" style="border:1px solid;" >
@@ -1234,16 +1360,16 @@ WHERE
       <?php if($r0>0){echo $r0['RB'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r0>0){echo $r0['RL'];}else{echo "0";} ?>
+      <?php if($r0>0){echo number_format($r0['RL'],0);}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
       <?php if($r0>0){echo $r0['air'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r0>0){echo $r0['qty'];}else{echo "0";} ?>
+      <?php if($r0>0){echo number_format($r0['qty'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r0>0){ echo $r0['loading'];}else{echo "0";} ?>
+      <?php if($r0>0){ echo number_format($r0['loading'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r0>0 and $r0['qty']>0){echo $l_r0=round($r0['air']/$r0['qty'],2);}else{echo "0";} ?>
@@ -1258,10 +1384,10 @@ WHERE
       <?php if($r0>0){echo $r0['airadidas'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r0>0){echo $r0['qtyadidas'];}else{echo "0";} ?>
+      <?php if($r0>0){echo number_format($r0['qtyadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r0>0){echo $r0['loadingadidas'];}else{echo "0";} ?>
+      <?php if($r0>0){echo number_format($r0['loadingadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r0>0 and $r0['qtyadidas']>0){echo $l_radidas0=round($r0['airadidas']/$r0['qtyadidas'],2);}else{echo "0";} ?>
@@ -1276,16 +1402,16 @@ WHERE
       <?php if($r50>0){echo $r50['RB'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r50>0){echo $r50['RL'];}else{echo "0";} ?>
+      <?php if($r50>0){echo number_format($r50['RL'],0);}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
       <?php if($r50>0){echo $r50['air'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r50>0){echo $r50['qty'];}else{echo "0";} ?>
+      <?php if($r50>0){echo number_format($r50['qty'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r50>0){echo $r50['loading'];}else{echo "0";} ?>
+      <?php if($r50>0){echo number_format($r50['loading'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r50>0 and $r50['qty']>0){echo $l_r50=round($r50['air']/$r50['qty'],2);}else{echo "0";} ?>
@@ -1300,10 +1426,10 @@ WHERE
       <?php if($r50>0){echo $r50['airadidas'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r50>0){echo $r50['qtyadidas'];}else{echo "0";} ?>
+      <?php if($r50>0){echo number_format($r50['qtyadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r50>0){echo $r50['loadingadidas'];}else{echo "0";} ?>
+      <?php if($r50>0){echo number_format($r50['loadingadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r50>0 and $r50['qtyadidas']>0){echo $l_radidas50=round($r50['airadidas']/$r50['qtyadidas'],2);}else{echo "0";} ?>
@@ -1318,16 +1444,16 @@ WHERE
       <?php if($r100>0){echo $r100['RB'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r100 > 0){echo $r100['RL'];}else{echo "0";} ?>
+      <?php if($r100 > 0){echo number_format($r100['RL'],0);}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
       <?php if($r100 > 0){echo $r100['air'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r100>0){echo $r100['qty'];}else{echo "0";} ?>
+      <?php if($r100>0){echo number_format($r100['qty'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r100>0){echo $r100['loading'];}else{echo "0";} ?>
+      <?php if($r100>0){echo number_format($r100['loading'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r100>0 and $r100['qty']>0){echo $l_r100=round($r100['air']/$r100['qty'],2);}else{echo "0";} ?>
@@ -1342,10 +1468,10 @@ WHERE
       <?php if($r100>0){echo $r100['airadidas'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r100>0){echo $r100['qtyadidas'];}else{echo "0";} ?>
+      <?php if($r100>0){echo number_format($r100['qtyadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r100>0){echo $r100['loadingadidas'];}else{echo "0";} ?>
+      <?php if($r100>0){echo number_format($r100['loadingadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r100>0 and $r100['qtyadidas']>0){echo $l_radidas100=round($r100['airadidas']/$r100['qtyadidas'],2);}else{echo "0";} ?>
@@ -1360,16 +1486,16 @@ WHERE
       <?php if($r200>0){echo $r200['RB'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r200>0){echo $r200['RL'];}else{echo "0";} ?>
+      <?php if($r200>0){echo number_format($r200['RL'],0);}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
       <?php if($r200>0){echo $r200['air'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r200>0){echo $r200['qty'];}else{echo "0";} ?>
+      <?php if($r200>0){echo number_format($r200['qty'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r200>0){echo $r200['loading'];}else{echo "0";} ?>
+      <?php if($r200>0){echo number_format($r200['loading'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r200>0 and $r200['qty']>0){echo $l_r200=round($r200['air']/$r200['qty'],2);}else{echo "0";} ?>
@@ -1384,10 +1510,10 @@ WHERE
       <?php if($r200>0){echo $r200['airadidas'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r200>0){echo $r200['qtyadidas'];}else{echo "0";} ?>
+      <?php if($r200>0){echo number_format($r200['qtyadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r200>0){echo $r200['loadingadidas'];}else{echo "0";} ?>
+      <?php if($r200>0){echo number_format($r200['loadingadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r200>0 and $r200['qtyadidas']>0 ){echo $l_radidas200=round($r200['airadidas']/$r200['qtyadidas'],2);}else{echo "0";} ?>
@@ -1402,16 +1528,16 @@ WHERE
       <?php if($r400>0){echo $r400['RB'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r400 > 0){echo $r400['RL'];}else{echo "0";} ?>
+      <?php if($r400 > 0){echo number_format($r400['RL'],0);}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
       <?php if($r400 > 0){echo $r400['air'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r400>0){echo $r400['qty'];}else{echo "0";} ?>
+      <?php if($r400>0){echo number_format($r400['qty'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r400>0){echo $r400['loading'];}else{echo "0";} ?>
+      <?php if($r400>0){echo number_format($r400['loading'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r400>0 and $r400['qty']>0){echo $l_r400=round($r400['air']/$r400['qty'],2);}else{echo "0";} ?>
@@ -1426,10 +1552,10 @@ WHERE
       <?php if($r400>0){echo $r400['airadidas'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r400>0){echo $r400['qtyadidas'];}else{echo "0";} ?>
+      <?php if($r400>0){echo number_format($r400['qtyadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r400>0){echo $r400['loadingadidas'];}else{echo "0";} ?>
+      <?php if($r400>0){echo number_format($r400['loadingadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r400>0 and $r400['qtyadidas']>0){echo $l_radidas400=round($r400['airadidas']/$r400['qtyadidas'],2);}else{echo "0";} ?>
@@ -1444,16 +1570,16 @@ WHERE
       <?php if($r600>0){echo $r600['RB'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r600>0){echo $r600['RL'];}else{echo "0";} ?>
+      <?php if($r600>0){echo number_format($r600['RL'],0);}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
       <?php if($r600>0){echo $r600['air'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r600>0){echo $r600['qty'];}else{echo "0";} ?>
+      <?php if($r600>0){echo number_format($r600['qty'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r600>0){echo $r600['loading'];}else{echo "0";} ?>
+      <?php if($r600>0){echo number_format($r600['loading'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r600>0 and $r600['qty']>0){echo $l_r600=round($r600['air']/$r600['qty'],2);}else{echo "0";} ?>
@@ -1468,10 +1594,10 @@ WHERE
       <?php if($r600>0){echo $r600['airadidas'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r600>0){echo $r600['qtyadidas'];}else{echo "0";} ?>
+      <?php if($r600>0){echo number_format($r600['qtyadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r600>0){echo $r600['loadingadidas'];}else{echo "0";} ?>
+      <?php if($r600>0){echo number_format($r600['loadingadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r600>0 and $r600['qtyadidas']>0){echo $l_radidas600=round($r600['airadidas']/$r600['qtyadidas'],2);}else{echo "0";} ?>
@@ -1486,16 +1612,16 @@ WHERE
       <?php if($r800>0){echo $r800['RB'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r800 > 0){echo $r800['RL'];}else{echo "0";} ?>
+      <?php if($r800 > 0){echo number_format($r800['RL'],0);}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
       <?php if($r800 > 0){echo $r800['air'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r800>0){echo $r800['qty'];}else{echo "0";} ?>
+      <?php if($r800>0){echo number_format($r800['qty'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r800>0){echo round($r800['loading'],2);}else{echo "0";} ?>
+      <?php if($r800>0){echo number_format($r800['loading'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r800>0 and $r800['qty']>0){echo $l_r800=round($r800['air']/$r800['qty'],2);}else{echo "0";} ?>
@@ -1510,10 +1636,10 @@ WHERE
       <?php if($r800>0){echo $r800['airadidas'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r800>0){echo $r800['qtyadidas'];}else{echo "0";} ?>
+      <?php if($r800>0){echo number_format($r800['qtyadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r800>0){echo $r800['loadingadidas'];}else{echo "0";} ?>
+      <?php if($r800>0){echo number_format($r800['loadingadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r800>0 and $r800['qtyadidas']>0){echo $l_radidas800=round($r800['airadidas']/$r800['qtyadidas'],2);}else{echo "0";} ?>
@@ -1528,16 +1654,16 @@ WHERE
       <?php if($rw100>0 and $r1000['RB']>0){echo $r1000['RB'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r1000>0 and $r1000['RL']>0){echo $r1000['RL'];}else{echo "0";} ?>
+      <?php if($r1000>0 and $r1000['RL']>0){echo number_format($r1000['RL'],0);}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
       <?php if($r1000>0 and $r1000['air']){echo $r1000['air'];}else{echo "0";} ?>
     </div></td>
     <td bgcolor="#FFCC99" style="border:1px solid;"><div align="right">
-      <?php if($r1000>0 and $r1000['qty']>0){echo $r1000['qty'];}else{echo "0.00";} ?>
+      <?php if($r1000>0 and $r1000['qty']>0){echo number_format($r1000['qty'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r1000>0 and $r1000['loading']>0){echo $r1000['loading'];}else{echo "0.00";} ?>
+      <?php if($r1000>0 and $r1000['loading']>0){echo number_format($r1000['loading'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r1000>0 and $r1000['qty']>0){echo $l_r1000=round($r1000['air']/$r1000['qty'],2);}else{echo "0";} ?>
@@ -1553,10 +1679,10 @@ WHERE
       <?php if($r1000>0 and $r1000['airadidas'] >0 ){echo $r1000['airadidas'];}else{echo "0";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="right">
-      <?php if($r1000>0 and $r1000['qtyadidas']>0){echo $r1000['qtyadidas'];}else{echo "0.00";} ?>
+      <?php if($r1000>0 and $r1000['qtyadidas']>0){echo number_format($r1000['qtyadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
-      <?php if($r1000>0 and $r1000['loadingadidas']>0){echo $r1000['loadingadidas'];}else{echo "0.00";} ?>
+      <?php if($r1000>0 and $r1000['loadingadidas']>0){echo number_format($r1000['loadingadidas'],2);}else{echo "0.00";} ?>
     </div></td>
     <td style="border:1px solid;"><div align="center">
       <?php if($r1000>0 and $r1000['qtyadidas']>0){echo $l_radidas1000=round($r1000['airadidas']/$r1000['qtyadidas'],2);}else{echo "0";} ?>
@@ -1619,23 +1745,36 @@ WHERE
         <td bgcolor="#99FF99" style="border:1px solid;"><div align="center"><strong>Menit</strong></div></td>
       </tr>
       <?php 
-  $sqlenergi=mysqli_query($con,"SELECT
-	energi,
-	AVG(DISTINCT TIMESTAMPDIFF(MINUTE,c.tgl_buat,a.tgl_buat)) as lama,
-	AVG(IF(b.buyer='ADIDAS',TIMESTAMPDIFF(MINUTE,c.tgl_buat,a.tgl_buat),0)) as lamaadidas,	
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
-FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
-WHERE 
-	$shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir')
-    AND not b.energi ='' AND not ISNULL(b.energi)
-GROUP BY energi ORDER BY energi ASC");
+  $sqlenergi = sqlsrv_query(
+    $con,
+    "SELECT
+        b.energi,
+        CAST(AVG(DISTINCT d.diff_min * 1.0) AS DECIMAL(10,4)) AS lama,
+        CAST(AVG(CASE WHEN b.buyer = 'ADIDAS'
+                      THEN d.diff_min * 1.0
+                      ELSE 0 END) AS DECIMAL(10,4)) AS lamaadidas
+    FROM db_dying.tbl_schedule b
+    LEFT JOIN db_dying.tbl_montemp c
+        ON c.id_schedule = b.id
+    LEFT JOIN db_dying.tbl_hasilcelup a
+        ON a.id_montemp = c.id
+    CROSS APPLY (
+        SELECT DATEDIFF(SECOND, c.tgl_buat, a.tgl_buat) / 60 AS diff_min
+    ) d
+    WHERE
+    $shft
+        CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir'
+        AND b.energi IS NOT NULL
+        AND b.energi <> ''
+    GROUP BY
+        b.energi
+    ORDER BY
+        b.energi ASC"
+      );
+      
 $c=1;
 $n=1;
-while($rng=mysqli_fetch_array($sqlenergi)){
+while($rng=sqlsrv_fetch_array($sqlenergi,SQLSRV_FETCH_ASSOC)){
   $bgcolor = ($c++ & 1) ? '#33CCFF' : '#FFCC99';
   ?>
       <tr style="border:1px solid;" bgcolor="<?php echo $bgcolor;?>" >
@@ -1700,79 +1839,73 @@ while($rng=mysqli_fetch_array($sqlenergi)){
         <td bgcolor="#99FF99" style="border:1px solid;"><div align="center"><strong>Menit</strong></div></td>
       </tr>
       <?php 
-  $sqlSM=mysqli_query($con,"SELECT
+  $sqlSM=sqlsrv_query($con,"SELECT
 	a.kd_stop,
-	AVG(DISTINCT TIMESTAMPDIFF(MINUTE,c.tgl_buat,a.tgl_buat)) as lama,
-	AVG(IF(b.buyer='ADIDAS',TIMESTAMPDIFF(MINUTE,c.tgl_buat,a.tgl_buat),0)) as lamaadidas,	
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
+	AVG(DISTINCT DATEDIFF(MINUTE,c.tgl_buat,a.tgl_buat)) as lama,
+	AVG(CASE WHEN b.buyer='ADIDAS' THEN DATEDIFF(MINUTE,c.tgl_buat,a.tgl_buat) ELSE 0 END) as lamaadidas
 FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
+	db_dying.tbl_schedule b
+	LEFT JOIN  db_dying.tbl_montemp c ON c.id_schedule = b.id
+	LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
 WHERE
 $shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir')
-	AND (a.kd_stop='PT' or a.kd_stop='PM')
+	CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir' AND (a.kd_stop='PT' or a.kd_stop='PM')
 GROUP BY a.kd_stop ORDER BY a.kd_stop ASC ");
-$rSM=mysqli_fetch_array($sqlSM);
+$rSM=sqlsrv_fetch_array($sqlSM);
 
-$sqlCO=mysqli_query($con,"SELECT
+$sqlCO=sqlsrv_query($con,"SELECT
 	a.kd_stop,
-	AVG(DISTINCT TIMESTAMPDIFF(MINUTE,c.tgl_buat,a.tgl_buat)) as lama,
-	AVG(IF(b.buyer='ADIDAS',TIMESTAMPDIFF(MINUTE,c.tgl_buat,a.tgl_buat),0)) as lamaadidas,	
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
+	AVG(DISTINCT DATEDIFF(MINUTE,c.tgl_buat,a.tgl_buat)) as lama,
+	AVG(CASE WHEN b.buyer='ADIDAS' THEN DATEDIFF(MINUTE,c.tgl_buat,a.tgl_buat) ELSE 0 END) as lamaadidas
 FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
+	db_dying.tbl_schedule b
+	LEFT JOIN  db_dying.tbl_montemp c ON c.id_schedule = b.id
+	LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
 WHERE
 $shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir') AND (a.kd_stop='PA')
+	CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir' AND (a.kd_stop='PA')
 GROUP BY a.kd_stop ORDER BY a.kd_stop ASC ");
-$rCO=mysqli_fetch_array($sqlCO);
-$sqlBD=mysqli_query($con,"SELECT
+$rCO=sqlsrv_fetch_array($sqlCO);
+$sqlBD=sqlsrv_query($con,"SELECT
 	a.kd_stop,
-	AVG(DISTINCT TIMESTAMPDIFF(MINUTE,c.tgl_buat,a.tgl_buat)) as lama,
-	AVG(IF(b.buyer='ADIDAS',TIMESTAMPDIFF(MINUTE,c.tgl_buat,a.tgl_buat),0)) as lamaadidas,	
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
+	AVG(DISTINCT DATEDIFF(MINUTE,c.tgl_buat,a.tgl_buat)) as lama,
+	AVG(CASE WHEN b.buyer='ADIDAS' THEN DATEDIFF(MINUTE,c.tgl_buat,a.tgl_buat) ELSE 0 END) as lamaadidas
 FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
+	db_dying.tbl_schedule b
+	LEFT JOIN  db_dying.tbl_montemp c ON c.id_schedule = b.id
+	LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
 WHERE
 $shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir') 
+	CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir' 
 	AND (a.kd_stop='LM' or a.kd_stop='KM' or a.kd_stop='GT')
 GROUP BY a.kd_stop ORDER BY a.kd_stop ASC ");
-$rBD=mysqli_fetch_array($sqlBD);
-$sqlQC=mysqli_query($con,"SELECT
+$rBD=sqlsrv_fetch_array($sqlBD);
+$sqlQC=sqlsrv_query($con,"SELECT
 	a.kd_stop,
-	AVG(DISTINCT TIMESTAMPDIFF(MINUTE,c.tgl_buat,a.tgl_buat)) as lama,
-	AVG(IF(b.buyer='ADIDAS',TIMESTAMPDIFF(MINUTE,c.tgl_buat,a.tgl_buat),0)) as lamaadidas,	
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
+	AVG(DISTINCT DATEDIFF(MINUTE,c.tgl_buat,a.tgl_buat)) as lama,
+	AVG(CASE WHEN b.buyer='ADIDAS' THEN DATEDIFF(MINUTE,c.tgl_buat,a.tgl_buat) ELSE 0 END) as lamaadidas
 FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
+	db_dying.tbl_schedule b
+	LEFT JOIN  db_dying.tbl_montemp c ON c.id_schedule = b.id
+	LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
 WHERE
 $shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir') AND (a.kd_stop='AP')
+	CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir' AND (a.kd_stop='AP')
 GROUP BY a.kd_stop ORDER BY a.kd_stop ASC ");
-$rQC=mysqli_fetch_array($sqlQC);
-$sqlPL=mysqli_query($con,"SELECT
+$rQC=sqlsrv_fetch_array($sqlQC);
+$sqlPL=sqlsrv_query($con,"SELECT
 	a.kd_stop,
-	AVG(DISTINCT TIMESTAMPDIFF(MINUTE,c.tgl_buat,a.tgl_buat)) as lama,
-	AVG(IF(b.buyer='ADIDAS',TIMESTAMPDIFF(MINUTE,c.tgl_buat,a.tgl_buat),0)) as lamaadidas,	
-	if(ISNULL(a.g_shift),b.g_shift,a.g_shift) as shft	
+	AVG(DISTINCT DATEDIFF(MINUTE,c.tgl_buat,a.tgl_buat)) as lama,
+	AVG(CASE WHEN b.buyer='ADIDAS' THEN DATEDIFF(MINUTE,c.tgl_buat,a.tgl_buat) ELSE 0 END) as lamaadidas
 FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id	
+	db_dying.tbl_schedule b
+	LEFT JOIN  db_dying.tbl_montemp c ON c.id_schedule = b.id
+	LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
 WHERE
 $shft 
-	(DATE_FORMAT(a.tgl_buat,'%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir') AND (a.kd_stop='KO' or a.kd_stop='TG')
+	CONVERT(char(16), a.tgl_buat, 120) BETWEEN '$Awal' AND '$Akhir' AND (a.kd_stop='KO' or a.kd_stop='TG')
 GROUP BY a.kd_stop ORDER BY a.kd_stop ASC ");
-$rPL=mysqli_fetch_array($sqlPL);
+$rPL=sqlsrv_fetch_array($sqlPL);
   ?>
       <tr bgcolor="#33CCFF" style="border:1px solid;"  >
         <td style="border:1px solid;"><div align="center"><strong>1</strong></div></td>

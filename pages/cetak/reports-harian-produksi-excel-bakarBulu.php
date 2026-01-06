@@ -14,8 +14,8 @@ include "../../tgl_indo.php";
 $idkk = $_REQUEST['idkk'];
 $act = $_GET['g'];
 //-
-$qTgl = mysqli_query($con, "SELECT DATE_FORMAT(now(),'%Y-%m-%d') as tgl_skrg, DATE_FORMAT(now(),'%Y-%m-%d')+ INTERVAL 1 DAY as tgl_besok");
-$rTgl = mysqli_fetch_array($qTgl);
+$qTgl = sqlsrv_query($con, "SELECT CONVERT(varchar(10), CAST(GETDATE() AS date), 23) AS tgl_skrg, CONVERT(varchar(10), DATEADD(day, 1, CAST(GETDATE() AS date)), 23) AS tgl_besok;");
+$rTgl = sqlsrv_fetch_array($qTgl, SQLSRV_FETCH_ASSOC);
 $Awal = $_GET['awal'];
 $Akhir = $_GET['akhir'];
 if ($Awal == $Akhir) {
@@ -71,93 +71,169 @@ $shft = $_GET['shft'];
       <th bgcolor="#99FF99">OUT</th>
     </tr>
     <?php
-      $Awal = $_GET['awal'];
-      $Akhir = $_GET['akhir'];
-      $Tgl = substr($Awal, 0, 10);
+      $Awal  = isset($_GET['awal']) ? $_GET['awal'] : '';
+      $Akhir = isset($_GET['akhir']) ? $_GET['akhir'] : '';
+      $Tgl   = substr($Awal, 0, 10);
+
       if ($Awal != $Akhir) {
-        $Where = " DATE_FORMAT(c.tgl_update, '%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir' ";
+        // Sama seperti MySQL: DATE_FORMAT(c.tgl_update, '%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir'
+        $Where = " AND CONVERT(char(16), c.tgl_update, 120) BETWEEN '$Awal' AND '$Akhir' ";
       } else {
-        $Where = " DATE_FORMAT(c.tgl_update, '%Y-%m-%d')='$Tgl' ";
+        // Sama seperti MySQL: DATE_FORMAT(c.tgl_update, '%Y-%m-%d')='$Tgl'
+        $Where = " AND CONVERT(date, c.tgl_update) = CONVERT(date, '$Tgl') ";
       }
-      if ($_GET['shft'] == "ALL") {
+
+      if (isset($_GET['shft']) && $_GET['shft'] != "ALL") {
+        // Sama seperti MySQL: if(ISNULL(a.g_shift),c.g_shift,a.g_shift)='$_GET[shft]'
+        $shft = " AND COALESCE(hc.g_shift, c.g_shift) = '" . $_GET['shft'] . "' ";
+      } else {
         $shft = " ";
-      } else {
-        $shft = " if(ISNULL(a.g_shift),c.g_shift,a.g_shift)='$_GET[shft]' AND ";
       }
-      $sql = mysqli_query($con, "SELECT x.*, a.no_mesin as mc 
-                                  FROM tbl_mesin a
-                                    LEFT JOIN
-                                      (SELECT
-                                        a.ket,	if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),a.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))) as lama_proses,
-                                        TIME_FORMAT(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),a.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))),'%H') as jam,
-                                        TIME_FORMAT(if(ISNULL(TIMEDIFF(c.tgl_mulai,c.tgl_stop)),a.lama_proses,CONCAT(LPAD(FLOOR((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))/60),2,0),':',LPAD(((((HOUR(a.lama_proses)*60)+MINUTE(a.lama_proses))-((HOUR(TIMEDIFF(c.tgl_mulai,c.tgl_stop))*60)+MINUTE(TIMEDIFF(c.tgl_mulai,c.tgl_stop))))%60),2,0))),'%i') as menit,
-                                        if(a.proses='' or ISNULL(a.proses),b.proses,a.proses) as proses,
-                                        b.buyer,
-                                        b.langganan,
-                                        b.no_order,
-                                        b.jenis_kain,
-                                        b.no_mesin,
-                                        b.warna,
-                                        b.lot,
-                                        b.kapasitas,
-                                        CASE
-                                          WHEN SUBSTR(b.kategori_warna, 1,1) = 'D' THEN 'Dark'
-                                          WHEN SUBSTR(b.kategori_warna, 1,1) = 'H' THEN 'Heater'
-                                          WHEN SUBSTR(b.kategori_warna, 1,1) = 'L' THEN 'Light'
-                                          WHEN SUBSTR(b.kategori_warna, 1,1) = 'M' THEN 'Medium'
-                                          WHEN SUBSTR(b.kategori_warna, 1,1) = 'S' THEN 'Dark'
-                                          WHEN SUBSTR(b.kategori_warna, 1,1) = 'W' THEN 'White'
-                                        END AS kategori_warna,
-                                        c.l_r,
-                                        c.rol,
-                                        c.bruto,
-                                        DATE_FORMAT(c.tgl_buat,'%Y-%m-%d') as tgl_in,
-                                        DATE_FORMAT(a.tgl_buat,'%Y-%m-%d') as tgl_out,
-                                        DATE_FORMAT(c.tgl_buat,'%H:%i') as jam_in,
-                                        DATE_FORMAT(a.tgl_buat,'%H:%i') as jam_out,
-                                        d.g_shift as shft,
-                                        a.status,
-                                        a.proses_point,
-                                        b.nokk,
-                                        b.no_warna,
-                                        b.lebar,
-                                        b.gramasi,
-                                        c.carry_over,
-                                        b.no_hanger,
-                                        b.no_item,
-                                        b.po,	
-                                        b.tgl_delivery,
-                                        b.kk_kestabilan,
-                                        b.kk_normal,
-                                        c.air_awal,
-                                        a.air_akhir,
-                                        c.nokk_legacy,
-                                        c.nodemand,
-                                        c.leader,
-                                        d.operator,
-                                        d.speed,
-                                        d.singeing1,
-                                        d.singeing2,
-                                        d.singeing_type
-                                      FROM
-                                        tbl_schedule b
-                                          LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-                                          LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id
-                                          INNER JOIN tbl_bakbul d ON b.nokk = d.no_kk
-                                      WHERE
-                                        $shft 
-                                        $Where
-                                      )x
-                                    ON (a.no_mesin=x.no_mesin or a.no_mc_lama=x.no_mesin)
-                                  WHERE x.speed != 0
-                                  ORDER BY a.no_mesin");
+
+      $sql = sqlsrv_query($con, "SELECT
+            x.*,
+            m.no_mesin AS mc
+        FROM db_dying.tbl_mesin AS m
+        LEFT JOIN
+        (
+            SELECT
+                hc.ket,
+                CASE
+                    WHEN c.tgl_mulai IS NULL OR c.tgl_stop IS NULL THEN hc.lama_proses
+                    ELSE
+                        (
+                            CASE
+                                WHEN FLOOR(calc.menit_final / 60.0) BETWEEN 0 AND 9
+                                    THEN '0' + CAST(CAST(FLOOR(calc.menit_final / 60.0) AS int) AS varchar(10))
+                                ELSE CAST(CAST(FLOOR(calc.menit_final / 60.0) AS int) AS varchar(10))
+                            END
+                            + ':'
+                            + CASE
+                                WHEN (calc.menit_final % 60) BETWEEN 0 AND 9
+                                    THEN '0' + CAST((calc.menit_final % 60) AS varchar(10))
+                                ELSE CAST((calc.menit_final % 60) AS varchar(10))
+                              END
+                        )
+                END AS lama_proses,
+                CASE
+                    WHEN calc.menit_final IS NULL THEN NULL
+                    ELSE
+                        CASE
+                            WHEN FLOOR(calc.menit_final / 60.0) BETWEEN 0 AND 9
+                                THEN '0' + CAST(CAST(FLOOR(calc.menit_final / 60.0) AS int) AS varchar(10))
+                            ELSE CAST(CAST(FLOOR(calc.menit_final / 60.0) AS int) AS varchar(10))
+                        END
+                END AS jam,
+                CASE
+                    WHEN calc.menit_final IS NULL THEN NULL
+                    ELSE
+                        CASE
+                            WHEN (calc.menit_final % 60) BETWEEN 0 AND 9
+                                THEN '0' + CAST((calc.menit_final % 60) AS varchar(10))
+                            ELSE CAST((calc.menit_final % 60) AS varchar(10))
+                        END
+                END AS menit,
+                CASE
+                    WHEN hc.proses IS NULL OR hc.proses = '' THEN b.proses
+                    ELSE hc.proses
+                END AS proses,
+                b.buyer,
+                b.langganan,
+                b.no_order,
+                b.jenis_kain,
+                b.no_mesin,
+                b.warna,
+                b.lot,
+                b.kapasitas,
+                CASE
+                    WHEN LEFT(b.kategori_warna, 1) = 'D' THEN 'Dark'
+                    WHEN LEFT(b.kategori_warna, 1) = 'H' THEN 'Heater'
+                    WHEN LEFT(b.kategori_warna, 1) = 'L' THEN 'Light'
+                    WHEN LEFT(b.kategori_warna, 1) = 'M' THEN 'Medium'
+                    WHEN LEFT(b.kategori_warna, 1) = 'S' THEN 'Dark'
+                    WHEN LEFT(b.kategori_warna, 1) = 'W' THEN 'White'
+                END AS kategori_warna,
+                c.l_r,
+                c.rol,
+                c.bruto,
+                CONVERT(char(10), c.tgl_buat, 23) AS tgl_in,
+                CONVERT(char(10), hc.tgl_buat, 23) AS tgl_out,
+                CONVERT(char(5), c.tgl_buat, 108) AS jam_in,
+                CONVERT(char(5), hc.tgl_buat, 108) AS jam_out,
+                d.g_shift AS shft,
+                hc.status,
+                hc.proses_point,
+                b.nokk,
+                b.no_warna,
+                b.lebar,
+                b.gramasi,
+                c.carry_over,
+                b.no_hanger,
+                b.no_item,
+                b.po,
+                b.tgl_delivery,
+                b.kk_kestabilan,
+                b.kk_normal,
+                c.air_awal,
+                hc.air_akhir,
+                c.nokk_legacy,
+                c.nodemand,
+                c.leader,
+                d.[operator],
+                d.speed,
+                d.singeing1,
+                d.singeing2,
+                d.singeing_type
+            FROM db_dying.tbl_schedule AS b
+            LEFT JOIN db_dying.tbl_montemp   AS c  ON c.id_schedule = b.id
+            LEFT JOIN db_dying.tbl_hasilcelup AS hc ON hc.id_montemp = c.id
+            INNER JOIN db_dying.tbl_bakbul   AS d  ON b.nokk = d.no_kk
+            OUTER APPLY
+            (
+                SELECT
+                    TRY_CONVERT(int, LEFT(LTRIM(RTRIM(hc.lama_proses)),
+                                          CHARINDEX(':', LTRIM(RTRIM(hc.lama_proses))) - 1)) AS lama_h,
+                    TRY_CONVERT(int, SUBSTRING(LTRIM(RTRIM(hc.lama_proses)),
+                                              CHARINDEX(':', LTRIM(RTRIM(hc.lama_proses))) + 1, 2)) AS lama_m
+            ) AS lp
+            OUTER APPLY
+            (
+                SELECT
+                    CASE
+                        WHEN c.tgl_mulai IS NULL OR c.tgl_stop IS NULL THEN NULL
+                        ELSE CAST(FLOOR( DATEDIFF_BIG(MILLISECOND, c.tgl_stop, c.tgl_mulai) / 60000.0 ) AS int)
+                    END AS diff_menit
+            ) AS td
+            OUTER APPLY
+            (
+                SELECT
+                    CASE
+                        WHEN c.tgl_mulai IS NULL OR c.tgl_stop IS NULL
+                            THEN (lp.lama_h * 60 + lp.lama_m)
+                        ELSE (lp.lama_h * 60 + lp.lama_m) - td.diff_menit
+                    END AS menit_final
+            ) AS calc
+            WHERE
+                1 = 1
+        $shft
+        $Where
+        ) AS x
+            ON (m.no_mesin = x.no_mesin OR m.no_mc_lama = x.no_mesin)
+        WHERE
+            x.speed <> 0
+        ORDER BY
+            m.no_mesin;
+        ");
 
       $no = 1;
       $c = 0;
       $totrol = 0;
       $totberat = 0;
 
-      while ($rowd = mysqli_fetch_array($sql)) {
+      if ($sql === false) {
+        echo '<tr><td colspan=\"31\">Query error: ' . htmlspecialchars(print_r(sqlsrv_errors(), true)) . '</td></tr>';
+      } else {
+        while ($rowd = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)) {
         $q_itxviewkk    = db2_exec($conn2, "SELECT 
                                           LISTAGG(DISTINCT TRIM(LOT), ', ') AS LOT,
                                           LISTAGG(DISTINCT TRIM(SUBCODE01), ', ') AS SUBCODE01 
@@ -209,13 +285,14 @@ $shft = $_GET['shft'];
         <td><?php echo $rowd['no_hanger']; ?></td>
         <td><?php echo $rowd['no_item']; ?></td>
         <td><?php echo $rowd['po']; ?></td>
-        <td><?php echo $rowd['tgl_delivery']; ?></td>
+        <td><?php echo $rowd['tgl_delivery']->format('Y-m-d'); ?></td>
         <td><?php echo $rowd['proses_point']; ?></td>
       </tr>
     <?php
       $totrol += $rol;
       $totberat += $brt;
       $no++;
+    }
     } ?>
     <tr>
       <td colspan="8" bgcolor="#99FF99">&nbsp;</td>

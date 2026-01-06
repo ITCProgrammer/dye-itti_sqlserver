@@ -9,8 +9,34 @@
   $idkk = $_REQUEST['idkk'];
   $act = $_GET['g'];
   //-
-  $qTgl = mysqli_query($con, "SELECT DATE_FORMAT(now(),'%Y-%m-%d') as tgl_skrg, DATE_FORMAT(now(),'%Y-%m-%d')+ INTERVAL 1 DAY as tgl_besok");
-  $rTgl = mysqli_fetch_array($qTgl);
+  $qTgl = sqlsrv_query(
+    $con,
+    "SELECT 
+       CONVERT(varchar(10), GETDATE(), 23) AS tgl_skrg,
+       CONVERT(varchar(10), DATEADD(DAY, 1, GETDATE()), 23) AS tgl_besok"
+  );
+  if ($qTgl !== false) {
+    $rTgl = sqlsrv_fetch_array($qTgl, SQLSRV_FETCH_ASSOC);
+  } else {
+    $rTgl = null;
+  }
+
+  if (!function_exists('format_time_sqlsrv')) {
+    function format_time_sqlsrv($value)
+    {
+      if ($value instanceof DateTimeInterface) {
+        return $value->format('H:i');
+      }
+      if ($value === null || $value === '') {
+        return '';
+      }
+      $ts = strtotime($value);
+      if ($ts === false) {
+        return '';
+      }
+      return date('H:i', $ts);
+    }
+  }
 ?>
 <html>
 
@@ -172,18 +198,22 @@
       $Akhir = $_GET['akhir'];
       $Tgl = substr($Awal, 0, 10);
       if ($Awal != $Akhir) {
-        $Where = " DATE_FORMAT(c.tgl_update, '%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir' ";
+        // MySQL: DATE_FORMAT(c.tgl_update, '%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir'
+        $Where = " CONVERT(char(16), c.tgl_update, 120) BETWEEN '$Awal' AND '$Akhir' ";
       } else {
-        $Where = " DATE_FORMAT(c.tgl_update, '%Y-%m-%d')='$Tgl' ";
+        // MySQL: DATE_FORMAT(c.tgl_update, '%Y-%m-%d')='$Tgl'
+        $Where = " CONVERT(date, c.tgl_update) = CONVERT(date, '$Tgl') ";
       }
       if ($_GET['shft'] == "ALL") {
         $shft = " ";
       } else {
-        $shft = " if(ISNULL(a.g_shift),c.g_shift,a.g_shift)='$_GET[shft]' AND ";
+        // MySQL: if(ISNULL(a.g_shift),c.g_shift,a.g_shift)='$_GET[shft]' AND
+        $shft = " COALESCE(a.g_shift, c.g_shift) = '$_GET[shft]' AND ";
       }
-      $sql = mysqli_query($con, "SELECT x.*,a.no_mesin as mc FROM tbl_mesin a
+      $sql = sqlsrv_query($con, "SELECT x.*, a.no_mesin AS mc FROM db_dying.tbl_mesin a
   LEFT JOIN
-  (SELECT
+  (
+    SELECT
   b.nokk,
 	b.buyer,
 	b.langganan,
@@ -194,42 +224,57 @@
 	b.lot,
 	c.rol,
 	c.bruto,
-  COALESCE(a.point, b.target) as point,
+      COALESCE(a.point, b.target) AS point,
 	b.ket_status,
 	b.resep,
-	c.tgl_buat as tgl_in,
-	a.tgl_buat as tgl_out,
+      c.tgl_buat AS tgl_in,
+      a.tgl_buat AS tgl_out,
 	a.kd_stop,
 	a.mulai_stop,
 	a.selesai_stop,
 	a.ket,
 	a.status,
 	a.k_resep,
-	if(a.proses='' or ISNULL(a.proses),b.proses,a.proses) as proses,
-	if(ISNULL(a.g_shift),c.g_shift,a.g_shift) as shft
+      CASE 
+        WHEN a.proses = '' OR a.proses IS NULL THEN b.proses
+        ELSE a.proses
+      END AS proses,
+      COALESCE(a.g_shift, c.g_shift) AS shft
 FROM
-	tbl_schedule b
-	LEFT JOIN  tbl_montemp c ON c.id_schedule = b.id
-	LEFT JOIN tbl_hasilcelup a ON a.id_montemp=c.id
+      db_dying.tbl_schedule b
+      LEFT JOIN db_dying.tbl_montemp c ON c.id_schedule = b.id
+      LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp = c.id
 WHERE
 	$shft 
 	$Where 
-)x ON (a.no_mesin=x.no_mesin or a.no_mc_lama=x.no_mesin) ORDER BY a.no_mesin");
+  ) x ON (a.no_mesin = x.no_mesin OR a.no_mc_lama = x.no_mesin)
+  ORDER BY a.no_mesin");
+  
       $no = 1;
 
       $c = 0;
       $totrol = 0;
       $totberat = 0;
 
-      while ($rowd = mysqli_fetch_array($sql)) {
+      if ($sql === false) {
+        $err = sqlsrv_errors();
+        $msg = $err ? $err[0]['message'] : 'Gagal mengambil data produksi.';
+        echo '<tr><td colspan=\"18\">Error SQL: ' . htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') . '</td></tr>';
+      } else {
+      while ($rowd = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)) {
         if ($_GET['shft'] == "ALL") {
           $shftSM = " ";
         } else {
           $shftSM = " g_shift='$_GET[shft]' AND ";
         }
-        $sqlSM = mysqli_query($con, "SELECT * FROM tbl_stopmesin
-      WHERE $shftSM tgl_update BETWEEN '$_GET[awal]' AND '$_GET[akhir]' AND no_mesin='$rowd[mc]' ORDER BY id DESC LIMIT 1");
-        $rowSM = mysqli_fetch_array($sqlSM);
+        $sqlSM = sqlsrv_query($con, "SELECT TOP 1 * FROM db_dying.tbl_stopmesin
+      WHERE $shftSM tgl_update BETWEEN '$_GET[awal]' AND '$_GET[akhir]' AND no_mesin = '" . $rowd['mc'] . "' ORDER BY id DESC");
+
+
+
+
+      
+        $rowSM = $sqlSM !== false ? sqlsrv_fetch_array($sqlSM, SQLSRV_FETCH_ASSOC) : null;
       ?>
         <tr valign="top">
           <td>
@@ -281,28 +326,26 @@ WHERE
                                 } ?></div>
           </td>
           <td>
-            <div align="right"><?php if ($rowd['tgl_in'] != "") {
-                                  echo  date('H:i', strtotime($rowd['tgl_in']));
-                                } ?> </div>
+            <div align="right"><?php echo format_time_sqlsrv($rowd['tgl_in']); ?> </div>
           </td>
           <td>
-            <div align="right"><?php if ($rowd['tgl_out'] != "") {
-                                  echo  date('H:i', strtotime($rowd['tgl_out']));
-                                } ?> </div>
+            <div align="right"><?php echo format_time_sqlsrv($rowd['tgl_out']); ?> </div>
           </td>
           <td>
-            <div align="center"><?php echo $rowd['point']; ?></div>
+            <div align="center"><?php echo ($rowd['point'] !== null && $rowd['point'] !== '') ? number_format($rowd['point'], 2, '.', '') : ''; ?></div>
           </td>
           <td>
-            <div align="right"><?php if ($rowd['nokk'] == "" and substr($rowd['proses'], 0, 10) != "Cuci Mesin" and $rowSM['proses'] == "Stop") {
-                                  echo date('H:i', strtotime($rowSM['mulai']));
+            <div align="right"><?php
+              if ($rowd['nokk'] == "" && substr($rowd['proses'], 0, 10) != "Cuci Mesin" && $rowSM && $rowSM['proses'] == "Stop") {
+                echo format_time_sqlsrv($rowSM['mulai']);
                                 } else {
                                   echo "";
                                 } ?></div>
           </td>
           <td>
-            <div align="right"><?php if ($rowd['nokk'] == "" and substr($rowd['proses'], 0, 10) != "Cuci Mesin" and $rowSM['proses'] == "Stop") {
-                                  echo date('H:i', strtotime($rowSM['selesai']));
+            <div align="right"><?php
+              if ($rowd['nokk'] == "" && substr($rowd['proses'], 0, 10) != "Cuci Mesin" && $rowSM && $rowSM['proses'] == "Stop") {
+                echo format_time_sqlsrv($rowSM['selesai']);
                                 } else {
                                   echo "";
                                 } ?></div>
@@ -319,6 +362,7 @@ WHERE
         $totrol += $rol;
         $totberat += $brt;
         $no++;
+      }
       } ?>
     </tbody>
     <tr>
