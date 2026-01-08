@@ -1263,7 +1263,7 @@
 			// 	VALUES
 			// 	($kartu, $_POST[demand], $_POST[langganan], $_POST[buyer], $_POST[no_order], $po, $_POST[no_hanger], $_POST[no_item], $jns, $paramTglDelivery, $_POST[lebar], $_POST[grms], $warna, $nowarna, $_POST[qty1], $_POST[qty2], $_POST[satuan1], $lot, $_POST[qty3], $_POST[qty4], $_POST[no_rajut], $_POST[shift], $_POST[g_shift], $_POST[kapasitas], $_POST[no_mc], $_POST[no_urut], $_POST[no_urut], $loading1, $_POST[resep], $_POST[no_resep], $_POST[no_resep2], $_POST[suffix], $_POST[suffix2], $_POST[energi], $_POST[dyestuff], $_POST[proses], $_POST[revisi], $_POST[kategori_warna], $ket_status_db, $ket_kain_db, GETDATE(), $kk_kestabilan, $kk_normal, GETDATE())";
 
-				 echo $kartu; // Debug: Tampilkan query insert
+				//  echo $kartu; // Debug: Tampilkan query insert
 
 			$paramsInsert = array(
 				$kartu,
@@ -1276,16 +1276,16 @@
 				$_POST['no_item'],
 				$jns,
 				$paramTglDelivery,
-				toDateOrNull($_POST['lebar']),
-				toDateOrNull($_POST['grms']),
+				(int)toDateOrNull($_POST['lebar']),
+				(int)toDateOrNull($_POST['grms']),
 				$warna,
 				$nowarna,
-				toDateOrNull($_POST['qty1']),
-				toDateOrNull($_POST['qty2']),
+				(int)toDateOrNull($_POST['qty1']),
+				(int)toDateOrNull($_POST['qty2']),
 				$_POST['satuan1'],
 				$lot,
-				$_POST['qty3'],
-				toDateOrNull($_POST['qty4']),
+				(int)toDateOrNull($_POST['qty3']),
+				(int)toDateOrNull($_POST['qty4']),
 				$_POST['no_rajut'],
 				$_POST['shift'],
 				$_POST['g_shift'],
