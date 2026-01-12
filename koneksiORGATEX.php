@@ -1,5 +1,5 @@
 <?php
-$host = "10.0.0.183,1433"; // Gunakan koma untuk SQL Server instance dan port default 1433
+$host = "10.0.0.210,1433"; // Gunakan koma untuk SQL Server instance dan port default 1433
 $username = "sa";
 $password = "F9TAvM@T44Zx";
 $db_name = "ORGATEX-INTEG";
