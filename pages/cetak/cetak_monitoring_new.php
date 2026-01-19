@@ -540,7 +540,7 @@
     $detik_awal = $waktu_awal;
 
     // Hitung jumlah detik yang akan ditambahkan berdasarkan waktu tambahan
-    $detik_tambahan = ($jam_tambahan * 3600) + ($menit_tambahan * 60);
+    $detik_tambahan = (intval($jam_tambahan) * 3600) + (intval($menit_tambahan) * 60);
 
     // Tambahkan detik tambahan ke waktu awal
     $waktu_hasil = $detik_awal + $detik_tambahan;
