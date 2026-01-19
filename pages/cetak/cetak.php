@@ -280,7 +280,6 @@ $rowbg = sqlsrv_fetch_array($sqlbg);
   // WHERE  JobOrders.documentno='$ssr[documentno]' and processcontrolJO.pcid='$r[pcid]'");
   // $r3 = sqlsrv_fetch_array($bng11);
   //
-  echo "SELECT * FROM db_dying.tbl_schedule WHERE id='$_GET[ids]'";
   $sqlsmp = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id='$_GET[ids]'");
   $rowsmp = sqlsrv_fetch_array($sqlsmp);
   $target = explode(".", $rowsmp['target']);
