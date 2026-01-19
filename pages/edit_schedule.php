@@ -3,6 +3,28 @@ ini_set("error_reporting", 1);
 session_start();
 include("../koneksi.php");
 function cekDesimal($angka){
+	if ($angka === null) {
+		return "";
+	}
+	if (is_string($angka)) {
+		$angka = trim($angka);
+		if ($angka === "") {
+			return "";
+		}
+		if (strpos($angka, ":") !== false) {
+			$parts = explode(":", $angka, 2);
+			if (count($parts) === 2 && is_numeric($parts[0]) && is_numeric($parts[1])) {
+				$jam = (int)$parts[0];
+				$menit = (int)$parts[1];
+				return $jam . ":" . str_pad((string)$menit, 2, "0", STR_PAD_LEFT);
+			}
+			return "";
+		}
+		if (!is_numeric($angka)) {
+			return "";
+		}
+	}
+	$angka = (float)$angka;
 	$bulat=round($angka);
 	if($bulat>$angka){
 		$jam=$bulat-1;

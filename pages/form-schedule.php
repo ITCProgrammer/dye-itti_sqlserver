@@ -804,16 +804,24 @@
 			<div class="col-md-6">
 				<div class="form-group">
 					<label for="kapasitas" class="col-sm-3 control-label">Kapasitas Mesin</label>
-				
+					<?php
+						$kapasitasGet = (isset($_GET['kap']) && $_GET['kap'] !== '') ? $_GET['kap'] : '0';
+					?>
 					<?php // if($_SERVER['REMOTE_ADDR'] == '10.0.5.132') : ?>
 						<div class="col-sm-3">
 							<select name="kapasitas" onchange="window.location='?p=Form-Schedule&nokk='+document.getElementById('nokk').value+'&kap='+this.value" class="form-control">
 								<option value="">Pilih</option>
+								<option value="0" <?php if ($kapasitasGet == "0") {
+															echo "SELECTED";
+														} ?>>0 KGs</option>
 								<?php
 								$sqlKap = sqlsrv_query($con, "SELECT DISTINCT kapasitas FROM db_dying.tbl_mesin ORDER BY kapasitas DESC");
 								while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
+									if ((string)$rK['kapasitas'] === "0") {
+										continue;
+									}
 								?>
-									<option value="<?php echo $rK['kapasitas']; ?>" <?php if ($_GET['kap'] == $rK['kapasitas']) {
+									<option value="<?php echo $rK['kapasitas']; ?>" <?php if ($kapasitasGet == $rK['kapasitas']) {
 																						echo "SELECTED";
 																					} ?>><?php echo $rK['kapasitas']; ?> KGs</option>
 								<?php } ?>
@@ -828,7 +836,7 @@
 							<select name="no_mc" class="form-control" required>
 								<option value="">Pilih</option>
 								<?php
-									$sqlKap = sqlsrv_query($con, "SELECT no_mesin FROM db_dying.tbl_mesin WHERE kapasitas = ? ORDER BY no_mesin ASC", array($_GET['kap']));
+									$sqlKap = sqlsrv_query($con, "SELECT no_mesin FROM db_dying.tbl_mesin WHERE kapasitas = ? ORDER BY no_mesin ASC", array($kapasitasGet));
 									while ($rK = sqlsrv_fetch_array($sqlKap, SQLSRV_FETCH_ASSOC)) {
 									?>
 									<option value="<?php echo $rK['no_mesin']; ?>"><?php echo $rK['no_mesin']; ?></option>
