@@ -280,6 +280,7 @@ $rowbg = sqlsrv_fetch_array($sqlbg);
   // WHERE  JobOrders.documentno='$ssr[documentno]' and processcontrolJO.pcid='$r[pcid]'");
   // $r3 = sqlsrv_fetch_array($bng11);
   //
+  echo "SELECT * FROM db_dying.tbl_schedule WHERE id='$_GET[ids]'";
   $sqlsmp = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id='$_GET[ids]'");
   $rowsmp = sqlsrv_fetch_array($sqlsmp);
   $target = explode(".", $rowsmp['target']);
@@ -883,17 +884,17 @@ $rowbg = sqlsrv_fetch_array($sqlbg);
           <?php
 
           $waktu_awal = formatDateTime($rowsmp1['jammasukkain'], 'Y-m-d H:i:s');
-          $target = formatDateTime($rowsmp['target'], 'Y-m-d H:i:s');
+          $target = $rowsmp['target'];
 
           $date = new DateTime($waktu_awal);
-
+          
           list($jam, $menit) = explode('.', $target);
-
+          
           $date->modify("+{$jam} hours");
           $date->modify("+{$menit} minutes");
-
+          
           $tanggal_baru = $date->format('Y-m-d H:i:s');
-
+          
           echo $tanggal_baru;
 
           ?>
