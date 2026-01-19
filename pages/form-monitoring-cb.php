@@ -214,6 +214,11 @@ $TglMasuk	= isset($_POST['tglmsk']) ? $_POST['tglmsk'] : '';
 $Item		= isset($_POST['item']) ? $_POST['item'] : '';
 $Warna		= isset($_POST['warna']) ? $_POST['warna'] : '';
 $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
+
+function sanitizeNumber($value) {
+	$clean = preg_replace('/[^0-9\\.\\-]/', '', (string)$value);
+	return is_numeric($clean) ? $clean : null;
+}
 ?>
 <form class="form-horizontal" action="" method="post" enctype="multipart/form-data" name="form1">
  <div class="box box-info">
@@ -594,7 +599,28 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 	if($_POST['save']=="save"){
 	$benang=str_replace("'","''",$_POST['benang']);
 	$tglbuat = ($_POST['tgl_buat'] != '' && $_POST['waktu_buat'] != '') ? $_POST['tgl_buat'] . " " . $_POST['waktu_buat'] : null;
-	$target_menit = is_numeric($_POST['target']) ? $_POST['target'] : 0;  
+	$target_menit = sanitizeNumber($_POST['target']) ?? 0;
+	$pakai_air    = sanitizeNumber($_POST['pakai_air']);
+	$carry_over   = sanitizeNumber($_POST['carry_over']);
+	$gramasi_a    = sanitizeNumber($_POST['grms_a']);
+	$lebar_a      = sanitizeNumber($_POST['lebar_a']);
+	$gramasi_s    = sanitizeNumber($_POST['grms1_a']);
+	$lebar_s      = sanitizeNumber($_POST['lebar1_a']);
+	$pjng_kain    = sanitizeNumber($_POST['pjng_kain']);
+	$rol          = sanitizeNumber($_POST['qty3']);
+	$bruto        = sanitizeNumber($_POST['qty4']);
+	$speed        = sanitizeNumber($_POST['speed']);
+	$susut_lebar  = sanitizeNumber($_POST['susut_lebar']);
+	$susut_panjang = sanitizeNumber($_POST['susut_panjang']);
+	$sc1 = sanitizeNumber($_POST['sc1']);
+	$sc2 = sanitizeNumber($_POST['sc2']);
+	$sc3 = sanitizeNumber($_POST['sc3']);
+	$sc4 = sanitizeNumber($_POST['sc4']);
+	$sk  = sanitizeNumber($_POST['sk']);
+	$stm = sanitizeNumber($_POST['stm']);
+	$ws_abc = sanitizeNumber($_POST['ws_abc']);
+	$ws = sanitizeNumber($_POST['ws']);
+	$id_schedule = is_numeric($_POST['id']) ? (int)$_POST['id'] : null;
 	$query_insert = "INSERT INTO db_dying.tbl_montemp (id_schedule,nokk,operator,colorist,leader,pakai_air,
 					carry_over,shift,gramasi_a,lebar_a,gramasi_s,lebar_s,
 					pjng_kain,rol,bruto,g_shift,no_program,benang,
@@ -606,12 +632,12 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 						?,?,?,?,?,?,?,?,?,?,?,?,?,
 						?,?,?,?,?,GETDATE(), DATEADD(MINUTE, CAST(? AS INT), GETDATE()), GETDATE()
 						)";
-					$params= [$_POST['id'],$_POST['nokk'],$_POST['operator'],$_POST['colorist'],$_POST['leader'],
-								$_POST['pakai_air'],$_POST['carry_over'],$_POST['shift'],$_POST['grms_a'],$_POST['lebar_a'],
-								$_POST['grms1_a'],$_POST['lebar1_a'],$_POST['pjng_kain'],$_POST['qty3'],$_POST['qty4'],
-								$_POST['g_shift'],$_POST['no_program'],$benang,$_POST['std_cok_wrn'],$_POST['speed'],
-								$_POST['susut_lebar'],$_POST['susut_panjang'],$_POST['sc1'],$_POST['sc2'],$_POST['sc3'],
-								$_POST['sc4'],$_POST['sk'],$_POST['stm'],$_POST['ws_abc'],$_POST['ws'],$_POST['ket'],
+					$params= [$id_schedule,$_POST['nokk'],$_POST['operator'],$_POST['colorist'],$_POST['leader'],
+								$pakai_air,$carry_over,$_POST['shift'],$gramasi_a,$lebar_a,
+								$gramasi_s,$lebar_s,$pjng_kain,$rol,$bruto,
+								$_POST['g_shift'],$_POST['no_program'],$benang,$_POST['std_cok_wrn'],$speed,
+								$susut_lebar,$susut_panjang,$sc1,$sc2,$sc3,
+								$sc4,$sk,$stm,$ws_abc,$ws,$_POST['ket'],
 								$target_menit
 							];
 	$sqlData	= sqlsrv_query($con,$query_insert, $params);
