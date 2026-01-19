@@ -2,6 +2,36 @@
 ini_set("error_reporting", 1);
 session_start();
 include("../koneksi.php");
+// Tampilkan peringatan jika ada query SQL Server yang gagal
+function warnOnError($context){
+	$errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
+	if ($errors === null) {
+		return;
+	}
+	$messages = array();
+	foreach ($errors as $error) {
+		$messages[] = isset($error["message"]) ? $error["message"] : "Unknown error";
+	}
+	$alert = addslashes($context . " error: " . implode(" | ", $messages));
+	echo "<script>alert('".$alert."'); window.history.back();</script>";
+	exit;
+}
+// Pastikan nilai numeric dikirim sebagai angka atau NULL agar tidak memicu konversi varchar->numeric
+function toNumericOrNull($value){
+	if ($value === null) {
+		return null;
+	}
+	if (is_string($value)) {
+		$value = trim($value);
+		if ($value === "") {
+			return null;
+		}
+	}
+	if (is_numeric($value)) {
+		return $value + 0; // cast ke int/float
+	}
+	return null;
+}
 function cekDesimal($angka){
 	if ($angka === null) {
 		return "";
@@ -58,17 +88,28 @@ if($_POST){
 	$user_id   = $_SESSION['nama10']; 
 	$getdate   = date('Y-m-d H:i:s'); 
 	$remote_add= $_SERVER['REMOTE_ADDR'];
+
+	// Paksa numeric jika kolom database bertipe angka
+	$target    = toNumericOrNull($target);
+	$urut      = toNumericOrNull($urut);
+	$mcfrom    = toNumericOrNull($mcfrom);
 	
 	$query_old = "SELECT * FROM db_dying.tbl_schedule WHERE id = '$id'";
 	$q_old 		 = sqlsrv_query($con, $query_old);
+	if ($q_old === false) {
+		warnOnError("Load schedule");
+	}
   $d_old 		 = sqlsrv_fetch_array($q_old,SQLSRV_FETCH_ASSOC);
 
 	// Ambil kapasitas mesin dari db_dying.tbl_mesin
 	$sqlMesin   = "SELECT TOP 1 kapasitas FROM db_dying.tbl_mesin WHERE no_mesin = ?";
 	$paramsMesin = array($mesin);
 	$Qrycek     = sqlsrv_query($con, $sqlMesin, $paramsMesin);
+	if ($Qrycek === false) {
+		warnOnError("Load kapasitas mesin");
+	}
 	$rCek       = sqlsrv_fetch_array($Qrycek, SQLSRV_FETCH_ASSOC);
-	$kapasitas  = $rCek ? $rCek['kapasitas'] : null;
+	$kapasitas  = toNumericOrNull($rCek ? $rCek['kapasitas'] : null);
 
 	// Bangun query update tbl_schedule (db_dying) dengan parameter
 	$sqlUpdate = "UPDATE db_dying.tbl_schedule SET 
@@ -113,6 +154,9 @@ if($_POST){
 	$paramsUpdate[] = $id;
 
 	$sqlupdate = sqlsrv_query($con, $sqlUpdate, $paramsUpdate);
+	if ($sqlupdate === false) {
+		warnOnError("Update schedule");
+	}
 
 	// Hitung menit dari target1 (format H:MM) untuk DATEADD
 	$minutesToAdd = 0;
@@ -131,6 +175,9 @@ if($_POST){
 					 WHERE id_schedule = ?";
 	$paramsMon    = array($minutesToAdd, $id);
 	$sqlupdate1   = sqlsrv_query($con, $sqlUpdateMon, $paramsMon);
+	if ($sqlupdate1 === false) {
+		warnOnError("Update montemp");
+	}
 
 	$query_log 		= "INSERT INTO db_dying.tbl_log_mc_schedule (
 											id_schedule,
@@ -146,6 +193,9 @@ if($_POST){
 	$params_log = [$id, $d_old['nodemand'], $d_old['nokk'], $mesin, 
 									$urut, $urut, $user_id, $getdate, $remote_add];
 	$sqlLog 	  	= sqlsrv_query($con, $query_log, $params_log);
+	if ($sqlLog === false) {
+		warnOnError("Log schedule");
+	}
 
 	echo " <script>window.location='?p=Schedule';</script>";
 				
