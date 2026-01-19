@@ -586,6 +586,11 @@ function cekDesimal($angka){
 	  $tglbuat = ($_POST['tgl_buat'] != '' && $_POST['waktu_buat'] != '') ? $_POST['tgl_buat'] . " " . $_POST['waktu_buat'] : null;
 	  $pakai_air=is_numeric($_POST['pakai_air']) ? ceil($_POST['pakai_air']) : null;
 	  $target_menit = is_numeric($_POST['target']) ? $_POST['target'] : 0;
+	  $pjng_kain = is_numeric($_POST['pjng_kain']) ? $_POST['pjng_kain'] : null;
+	  $susut_lebar = is_numeric($_POST['susut_lebar']) ? $_POST['susut_lebar'] : null;
+	  $susut_panjang = is_numeric($_POST['susut_panjang']) ? $_POST['susut_panjang'] : null;
+	  $vacum = is_numeric($_POST['vacum']) ? $_POST['vacum'] : null;
+	  $speed = is_numeric($_POST['speed']) ? $_POST['speed'] : null;
 	  $query = "INSERT INTO db_dying.tbl_montemp 
 				(   id_schedule, nokk, operator, colorist, leader,
 					pakai_air, carry_over, shift, gramasi_a, lebar_a, gramasi_s,
@@ -616,17 +621,17 @@ function cekDesimal($angka){
 					$_POST['lebar_a'],
 					$_POST['grms1_a'],
 					$_POST['lebar1_a'],
-					$_POST['pjng_kain'],
+					$pjng_kain,
 					$_POST['qty3'],
 					$_POST['qty4'],
 					$_POST['g_shift'],
 					$_POST['no_program'],
 					$benang,
 					$_POST['std_cok_wrn'],
-					$_POST['speed'],
-					$_POST['susut_lebar'],
-					$_POST['susut_panjang'],
-					$_POST['vacum'],
+					$speed,
+					$susut_lebar,
+					$susut_panjang,
+					$vacum,
 					$_POST['ch1'], $_POST['ch2'], $_POST['ch3'], $_POST['ch4'], $_POST['ch5'], $_POST['ch6'],
 					$_POST['vr1'], $_POST['vr2'], $_POST['vr3'], $_POST['vr4'], $_POST['vr5'], $_POST['vr6'],
 					$_POST['vr7'], $_POST['vr8'], $_POST['vr9'], $_POST['vr10'], $_POST['vr11'], $_POST['vr12'],
