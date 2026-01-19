@@ -1341,10 +1341,26 @@ if ($_POST['save'] == "save") {
 	// $rpm 		= toNumericOrNull($_POST['rpm']);
 	// $tekanan	= toNumericOrNull($_POST['tekanan']);
 	// $tekanan	= ($_POST['tekanan']?''?NULL);
-	$tekanan 	= is_numeric($_POST['tekanan']) ? $_POST['tekanan'] : null;
-	$rpm     	= is_numeric($_POST['rpm'] ) ? $_POST['rpm'] : null;
+	$tekanan 	= is_numeric(getNumericVal($_POST['tekanan'])) ? getNumericVal($_POST['tekanan']) : null;
+	$rpm     	= is_numeric(getNumericVal($_POST['rpm'])) ? getNumericVal($_POST['rpm']) : null;
 	$tgl_masuk 	=  $_POST['jammasukkain']. " " . $_POST['tglmasukkain'];
-	$pakai_air 	= is_numeric($_POST['pakai_air']) ? ceil($_POST['pakai_air']) : null;
+	$pakai_air 	= is_numeric(getNumericVal($_POST['pakai_air'])) ? ceil(getNumericVal($_POST['pakai_air'])) : null;
+	$grms_a     = is_numeric(getNumericVal($_POST['grms_a'])) ? getNumericVal($_POST['grms_a']) : null;
+    $lebar_a    = is_numeric(getNumericVal($_POST['lebar_a'])) ? getNumericVal($_POST['lebar_a']) : null;
+    $pjng_kain  = is_numeric(getNumericVal($_POST['pjng_kain'])) ? getNumericVal($_POST['pjng_kain']) : null;
+    $pjng_kain_lub = is_numeric(getNumericVal($_POST['pjng_kain_perlubang'])) ? getNumericVal($_POST['pjng_kain_perlubang']) : null;
+    $bruto      = is_numeric(getNumericVal($_POST['qty3'])) ? getNumericVal($_POST['qty3']) : null; // Asumsi qty3 adalah bruto
+    $lr         = is_numeric(getNumericVal($_POST['l_r'])) ? getNumericVal($_POST['l_r'] ): null;
+    $lr2        = is_numeric(getNumericVal($_POST['l_r2'])) ? getNumericVal($_POST['l_r2']) : null;
+	$lb1 		= is_numeric(getNumericVal($_POST['lb1'])) ? getNumericVal($_POST['lb1'] ): null;
+    $lb2 		= is_numeric(getNumericVal($_POST['lb2'])) ? getNumericVal($_POST['lb2'] ): null;
+    $lb3 		= is_numeric(getNumericVal($_POST['lb3'])) ? getNumericVal($_POST['lb3'] ): null;
+    $lb4 		= is_numeric(getNumericVal($_POST['lb4'])) ? getNumericVal($_POST['lb4'] ): null;
+    $lb5 		= is_numeric(getNumericVal($_POST['lb5'])) ? getNumericVal($_POST['lb5'] ): null;
+    $lb6 		= is_numeric(getNumericVal($_POST['lb6'])) ? getNumericVal($_POST['lb6'] ): null;
+    $lb7 		= is_numeric(getNumericVal($_POST['lb7'])) ? getNumericVal($_POST['lb7'] ): null;
+    $lb8 		= is_numeric(getNumericVal($_POST['lb8'])) ? getNumericVal($_POST['lb8'] ): null;
+    $lb8 		= is_numeric(getNumericVal($_POST['lb8'])) ? getNumericVal($_POST['lb8'] ): null;
 
 	$sql = "INSERT INTO db_dying.tbl_montemp (
             id_schedule, nodemand, nokk, operator, colorist, leader, pakai_air,
@@ -1361,18 +1377,83 @@ if ($_POST['save'] == "save") {
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE()
         )";
 	$params = [
-				$_POST['id'], $_POST['demand'], $_POST['nokk'], $_POST['operator'], $_POST['colorist'], $_POST['leader'], $pakai_air,
-				$_POST['carry_over'], $_POST['shift'], $_POST['grms_a'], $_POST['lebar_a'], $_POST['pjng_kain'], $_POST['pjng_kain_perlubang'],
-				$_POST['qty3'], $_POST['qty4'], $_POST['nokk_legacy'], $_POST['g_shift'], $_POST['no_program'], $_POST['l_r'], $_POST['l_r2'],
-				$_POST['gabung'], $_POST['cycle_time'], $_POST['lb1'], $_POST['lb2'], $_POST['lb3'], $_POST['lb4'], $_POST['lb5'], $_POST['lb6'], $_POST['lb7'], $_POST['lb8'],
-				$rpm, 
-				$tekanan,
-				$_POST['nozzle'], $benang, $_POST['std_cok_wrn'], $_POST['ket'], $tgl_masuk,
-				$tgl_trgt, $_POST['blower'], $_POST['plaiter'], $_POST['air_awal'], $tjamP1, $jk1,
-				$_POST['oper_shift'], $_POST['lebar_fin'], $_POST['grm_fin'], $_POST['masukkain'], $_POST['kategori_resep'],
-				$_POST['kasih_resep'], $_POST['acc_resep'], $tgl_masuk
-			];
+        $_POST['id'], 
+        $_POST['demand'], 
+        $_POST['nokk'], 
+        $_POST['operator'], 
+        $_POST['colorist'], 
+        $_POST['leader'], 
+        $pakai_air, // Sudah aman
+        $_POST['carry_over'], 
+        $_POST['shift'], 
+        $grms_a,     // DIPERBAIKI
+        $lebar_a,    // DIPERBAIKI
+        $pjng_kain,  // DIPERBAIKI
+        $pjng_kain_lub, // DIPERBAIKI
+        $bruto,      // DIPERBAIKI (qty3)
+        $_POST['qty4'], 
+        $_POST['nokk_legacy'], 
+        $_POST['g_shift'], 
+        $_POST['no_program'], 
+        $lr,         // DIPERBAIKI
+        $lr2,        // DIPERBAIKI
+        $_POST['gabung'], 
+        $_POST['cycle_time'], 
+        $lb1, $lb2, $lb3, $lb4, $lb5, $lb6, $lb7, $lb8, // DIPERBAIKI SEMUA
+        $rpm,       // Sudah aman
+        $tekanan,   // Sudah aman
+        $_POST['nozzle'], 
+        $benang, 
+        $_POST['std_cok_wrn'], 
+        $_POST['ket'], 
+        $tgl_masuk,
+        $tgl_trgt, 
+        $_POST['blower'], 
+        $_POST['plaiter'], 
+        $_POST['air_awal'], 
+        $tjamP1, 
+        $jk1,
+        $_POST['oper_shift'], 
+        $_POST['lebar_fin'], 
+        $_POST['grm_fin'], 
+        $_POST['masukkain'], 
+        $_POST['kategori_resep'],
+        $_POST['kasih_resep'], 
+        $_POST['acc_resep'], 
+        $tgl_masuk
+    ];
+	// 	echo $sql;
 	// print_r($params);
+	// echo "<pre>";
+	// 	print_r($params);
+	// echo "</pre>";
+	function getDebugQuery($sql, $params) {
+		foreach ($params as $param) {
+			// Cek tipe data untuk format di SQL
+			if ($param === null) {
+				$value = "NULL";
+			} elseif (is_string($param)) {
+				// Escape single quote jika ada, dan bungkus dengan kutip
+				$value = "'" . str_replace("'", "''", $param) . "'";
+			} elseif (is_numeric($param)) {
+				$value = $param;
+			} elseif ($param instanceof DateTime) {
+				$value = "'" . $param->format('Y-m-d H:i:s') . "'";
+			} else {
+				$value = "'" . $param . "'";
+			}
+
+			// Ganti tanda tanya (?) pertama yang ditemukan dengan value
+			// Limit 1 agar mengganti satu per satu sesuai urutan array
+			$sql = preg_replace('/\?/', $value, $sql, 1);
+		}
+		return $sql;
+	}
+	$queryLengkap = getDebugQuery($sql, $params);
+	// echo "<h3>Copy query di bawah ini ke DBeaver:</h3>";
+    // echo "<textarea rows='20' style='width: 100%; font-family: monospace; padding: 10px;'>";
+    // echo $queryLengkap;
+    // echo "</textarea>";
     $sqlData = sqlsrv_query($con, $sql, $params);
 	if ($sqlData) {
 		$sqlD = sqlsrv_query($con, "UPDATE db_dying.tbl_schedule SET 

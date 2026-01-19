@@ -54,3 +54,13 @@ function toNumericOrNull($value) {
     // jika valid numeric → kembalikan dalam bentuk numeric
     return $value; // convert otomatis ke int/float
 }
+
+function getNumericVal($val) {
+    $val = isset($val) ? trim($val) : '';
+
+    if ($val === '' || !is_numeric($val)) {
+        return null; 
+    }
+
+    return $val;
+}
