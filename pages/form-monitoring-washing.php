@@ -84,6 +84,11 @@ function cekDesimal($angka){
 // $Item		= isset($_POST['item']) ? $_POST['item'] : '';
 // $Warna		= isset($_POST['warna']) ? $_POST['warna'] : '';
 // $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
+
+function sanitizeNumber($value) {
+	$clean = preg_replace('/[^0-9\\.\\-]/', '', (string)$value);
+	return is_numeric($clean) ? $clean : null;
+}
 ?>
 <form class="form-horizontal" action="" method="post" enctype="multipart/form-data" name="form1">
  <div class="box box-info">
@@ -584,13 +589,32 @@ function cekDesimal($angka){
 	if($_POST['save']=="save"){
 	  $benang=str_replace("'","''",$_POST['benang']);
 	  $tglbuat = ($_POST['tgl_buat'] != '' && $_POST['waktu_buat'] != '') ? $_POST['tgl_buat'] . " " . $_POST['waktu_buat'] : null;
-	  $pakai_air=is_numeric($_POST['pakai_air']) ? ceil($_POST['pakai_air']) : null;
-	  $target_menit = is_numeric($_POST['target']) ? $_POST['target'] : 0;
-	  $pjng_kain = is_numeric($_POST['pjng_kain']) ? $_POST['pjng_kain'] : null;
-	  $susut_lebar = is_numeric($_POST['susut_lebar']) ? $_POST['susut_lebar'] : null;
-	  $susut_panjang = is_numeric($_POST['susut_panjang']) ? $_POST['susut_panjang'] : null;
-	  $vacum = is_numeric($_POST['vacum']) ? $_POST['vacum'] : null;
-	  $speed = is_numeric($_POST['speed']) ? $_POST['speed'] : null;
+	  $pakai_air = sanitizeNumber($_POST['pakai_air']);
+	  if ($pakai_air !== null) {
+		  $pakai_air = ceil($pakai_air);
+	  }
+	  $target_menit  = sanitizeNumber($_POST['target']) ?? 0;
+	  $pjng_kain     = sanitizeNumber($_POST['pjng_kain']);
+	  $susut_lebar   = sanitizeNumber($_POST['susut_lebar']);
+	  $susut_panjang = sanitizeNumber($_POST['susut_panjang']);
+	  $vacum         = sanitizeNumber($_POST['vacum']);
+	  $speed         = sanitizeNumber($_POST['speed']);
+	  $rol           = sanitizeNumber($_POST['qty3']);
+	  $bruto         = sanitizeNumber($_POST['qty4']);
+	  $id_schedule   = is_numeric($_POST['id']) ? (int)$_POST['id'] : null;
+	  $lebar_a       = sanitizeNumber($_POST['lebar_a']);
+	  $gramasi_a     = sanitizeNumber($_POST['grms_a']);
+	  $gramasi_s     = sanitizeNumber($_POST['grms1_a']);
+	  $lebar_s       = sanitizeNumber($_POST['lebar1_a']);
+	  $carry_over    = sanitizeNumber($_POST['carry_over'] ?? null);
+	  $ch = [];
+	  for ($i = 1; $i <= 6; $i++) {
+		  $ch[$i] = sanitizeNumber($_POST["ch{$i}"]);
+	  }
+	  $vr = [];
+	  for ($i = 1; $i <= 15; $i++) {
+		  $vr[$i] = sanitizeNumber($_POST["vr{$i}"]);
+	  }
 	  $query = "INSERT INTO db_dying.tbl_montemp 
 				(   id_schedule, nokk, operator, colorist, leader,
 					pakai_air, carry_over, shift, gramasi_a, lebar_a, gramasi_s,
@@ -609,21 +633,21 @@ function cekDesimal($angka){
 					GETDATE(), DATEADD(MINUTE, CAST(? AS INT), GETDATE()), GETDATE()
 				)";
 		$params = [ 
-					$_POST['id'],
+					$id_schedule,
 					$_POST['nokk'],
 					$_POST['operator'],
 					$_POST['colorist'],
 					$_POST['leader'],
 					$pakai_air,
-					$_POST['carry_over'],
+					$carry_over,
 					$_POST['shift'],
-					$_POST['grms_a'],
-					$_POST['lebar_a'],
-					$_POST['grms1_a'],
-					$_POST['lebar1_a'],
+					$gramasi_a,
+					$lebar_a,
+					$gramasi_s,
+					$lebar_s,
 					$pjng_kain,
-					$_POST['qty3'],
-					$_POST['qty4'],
+					$rol,
+					$bruto,
 					$_POST['g_shift'],
 					$_POST['no_program'],
 					$benang,
@@ -632,10 +656,10 @@ function cekDesimal($angka){
 					$susut_lebar,
 					$susut_panjang,
 					$vacum,
-					$_POST['ch1'], $_POST['ch2'], $_POST['ch3'], $_POST['ch4'], $_POST['ch5'], $_POST['ch6'],
-					$_POST['vr1'], $_POST['vr2'], $_POST['vr3'], $_POST['vr4'], $_POST['vr5'], $_POST['vr6'],
-					$_POST['vr7'], $_POST['vr8'], $_POST['vr9'], $_POST['vr10'], $_POST['vr11'], $_POST['vr12'],
-					$_POST['vr13'], $_POST['vr14'], $_POST['vr15'],
+					$ch[1], $ch[2], $ch[3], $ch[4], $ch[5], $ch[6],
+					$vr[1], $vr[2], $vr[3], $vr[4], $vr[5], $vr[6],
+					$vr[7], $vr[8], $vr[9], $vr[10], $vr[11], $vr[12],
+					$vr[13], $vr[14], $vr[15],
 					$_POST['ket'],
 					$target_menit
 				];

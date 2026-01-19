@@ -622,15 +622,21 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 																															} ?>" placeholder="0.00" style="text-align: right;" readonly>
 					</div>
 				</div>
-				<?php if ($cek > 0 and $_GET['kap'] != "") {
-					$loading = round($rcek2['bruto'] / $_GET['kap'], 4) * 100;
-				} else {
-					if ($r['Weight'] != "" and $_GET['kap'] != "") {
-						$loading = round($r['Weight'] / $_GET['kap'], 4) * 100;
-					} else if ($nokk != "" and $_GET['kap'] != "") {
-						$loading = round($cekM['bruto'] / $_GET['kap'], 4) * 100;
+				<?php
+				$loading = 0;
+				$kapInput = (isset($_GET['kap']) && is_numeric($_GET['kap'])) ? (float) $_GET['kap'] : 0;
+				if ($kapInput > 0) {
+					if ($cek > 0) {
+						$loading = round($rcek2['bruto'] / $kapInput, 4) * 100;
+					} else {
+						if ($r['Weight'] != "") {
+							$loading = round($r['Weight'] / $kapInput, 4) * 100;
+						} else if ($nokk != "") {
+							$loading = round($cekM['bruto'] / $kapInput, 4) * 100;
+						}
 					}
-				} ?>
+				}
+				?>
 				<div class="form-group">
 					<label for="kapasitas" class="col-sm-3 control-label">Kapasitas Mesin</label>
 					<div class="col-sm-3">
@@ -648,18 +654,22 @@ $Langganan	= isset($_POST['langganan']) ? $_POST['langganan'] : '';
 					</div>
 
 				</div>
-				<?php if ($cek > 0 and $rcek['kapasitas'] != "" and $rcek['kapasitas'] != "0") {
-					if ($rcek['kapasitas'] == 0) {
+					<?php
+					$kapasitasMesin = (isset($rcek['kapasitas']) && is_numeric($rcek['kapasitas'])) ? (float) $rcek['kapasitas'] : 0;
+					if ($kapasitasMesin > 0) {
+						if ($cek > 0) {
+							$loading = round($rcek2['bruto'] / $kapasitasMesin, 4) * 100;
+						} else {
+							if ($r['Weight'] != "") {
+								$loading = round($r['Weight'] / $kapasitasMesin, 4) * 100;
+							} else if ($nokk != "") {
+								$loading = round($cekM['bruto'] / $kapasitasMesin, 4) * 100;
+							}
+						}
+					} else {
 						$loading = 0;
 					}
-					$loading = round($rcek2['bruto'] / $rcek['kapasitas'], 4) * 100;
-				} else {
-					if ($r['Weight'] != "" and $rcek['kapasitas'] != "") {
-						$loading = round($r['Weight'] / $rcek['kapasitas'], 4) * 100;
-					} else if ($nokk != "" and $rcek['kapasitas'] != "") {
-						$loading = round($cekM['bruto'] / $rcek['kapasitas'], 4) * 100;
-					}
-				} ?>
+					?>
 				<div class="form-group">
 					<label for="no_mc" class="col-sm-3 control-label">No MC</label>
 					<div cltbl_jenis_prosesass="col-sm-2"></div>
