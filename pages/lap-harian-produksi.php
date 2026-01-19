@@ -310,7 +310,7 @@
               <!-- <a href="pages/cetak/reports-harian-produksi-opt-excel.php?&awal=<?php //echo $start_date; ?>&akhir=<?php //echo $stop_date; ?>&shft=<?php //echo $GShift; ?>" class="btn btn-primary " target="_blank" data-toggle="tooltip" data-html="true" title="Harian Produksi Waktu Tunggu Excel"><i class="fa fa-file-excel-o"></i> </a> -->
               <a href="pages/cetak/rincian-cetak.php?&awal=<?php echo $start_date; ?>&akhir=<?php echo $stop_date; ?>&shft=<?php echo $GShift; ?>" class="btn btn-warning " target="_blank" data-toggle="tooltip" data-html="true" title="Rincian Produksi"><i class="fa fa-print"></i> </a>
               <a href="pages/cetak/rincian-excel.php?&awal=<?php echo $start_date; ?>&akhir=<?php echo $stop_date; ?>&shft=<?php echo $GShift; ?>" class="btn btn-info " target="_blank" data-toggle="tooltip" data-html="true" title="Rincian Produksi Excel"><i class="fa fa-file-excel-o"></i> </a>
-              <!-- <a href="pages/cetak/schedule-excel.php?&awal=<?php //echo $start_date; ?>&akhir=<?php //echo $stop_date; ?>&shft=<?php //echo $GShift; ?>" class="btn bg-maroon " target="_blank" data-toggle="tooltip" data-html="true" title="Schedule Produksi Excel"><i class="fa fa-file-excel-o"></i> </a> -->
+              <a href="pages/cetak/schedule-excel.php?&awal=<?php echo $start_date; ?>&akhir=<?php echo $stop_date; ?>&shft=<?php echo $GShift; ?>" class="btn bg-maroon " target="_blank" data-toggle="tooltip" data-html="true" title="Schedule Produksi Excel"><i class="fa fa-file-excel-o"></i> </a>
             </div>
           <?php }elseif($Rcode != ""){ ?>
             <div class="btn-group pull-right">              

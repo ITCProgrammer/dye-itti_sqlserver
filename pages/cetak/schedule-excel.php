@@ -13,8 +13,13 @@ include "../../tgl_indo.php";
 $idkk = $_REQUEST['idkk'];
 $act = $_GET['g'];
 
-$qTgl = mysqli_query($con, "SELECT DATE_FORMAT(now(),'%Y-%m-%d %H:%i') as tgl_skrg, DATE_FORMAT(now(),'%Y-%m-%d %H:%i')+ INTERVAL 1 DAY as tgl_besok");
-$rTgl = mysqli_fetch_array($qTgl);
+$qTgl = sqlsrv_query(
+  $con,
+  "SELECT
+     CONVERT(varchar(16), GETDATE(), 120) AS tgl_skrg,
+     CONVERT(varchar(16), DATEADD(DAY, 1, GETDATE()), 120) AS tgl_besok"
+);
+$rTgl = sqlsrv_fetch_array($qTgl, SQLSRV_FETCH_ASSOC);
 
 $Awal   = $_GET['awal'];
 $Akhir  = $_GET['akhir'];
@@ -69,6 +74,24 @@ function calculateTimeDifference($time1, $time2) {
 
   return "{$sign}{$hours}:{$minutes}";
 }
+
+function normalizeIsoDateTime($value) {
+  $value = trim((string)$value);
+  if ($value === '') {
+    return '';
+  }
+  $value = str_replace(' ', 'T', $value);
+  if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+    return $value . 'T00:00:00';
+  }
+  if (preg_match('/^(\d{4}-\d{2}-\d{2})T(\d{1,2})$/', $value, $m)) {
+    return $m[1] . 'T' . str_pad($m[2], 2, '0', STR_PAD_LEFT) . ':00:00';
+  }
+  if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{1,2}:\d{2}$/', $value)) {
+    return $value . ':00';
+  }
+  return $value;
+}
 ?>
 
 <body>
@@ -116,162 +139,172 @@ function calculateTimeDifference($time1, $time2) {
       $Awal = $_GET['awal'];
       $Akhir = $_GET['akhir'];
       $Tgl = substr($Awal, 0, 10);
+      $AwalIso = normalizeIsoDateTime($Awal);
+      $AkhirIso = normalizeIsoDateTime($Akhir);
 
       if ($Awal != $Akhir) {
-        $Where = " DATE_FORMAT(c.tgl_update, '%Y-%m-%d %H:%i') BETWEEN '$Awal' AND '$Akhir' ";
+        $Where = " ca_dt.dt_update BETWEEN TRY_CONVERT(datetime, '$AwalIso') AND TRY_CONVERT(datetime, '$AkhirIso') ";
       } else {
-        $Where = " DATE_FORMAT(c.tgl_update, '%Y-%m-%d')='$Tgl' ";
+        $Where = " CONVERT(date, ca_dt.dt_update) = CONVERT(date, '$Tgl') ";
       }
 
       if ($_GET['shft'] == "ALL") {
         $shft = " ";
       } else {
-        $shft = " if(ISNULL(a.g_shift),b.g_shift,a.g_shift)='$_GET[shft]' AND ";
+        $shft = " ISNULL(hc.g_shift, sch.g_shift)='$_GET[shft]' AND ";
       }
-      $sql = mysqli_query($con, "SELECT
-                                    x.*,
-                                    a.no_mesin AS mc 
-                                  FROM
-                                    tbl_mesin a
-                                    LEFT JOIN (
-                                    SELECT
-                                      a.kd_stop,
-                                      a.mulai_stop,
-                                      a.selesai_stop,
-                                      a.ket,
-                                      CASE
-                                        WHEN ket_stopmesin = 'LIBUR' THEN 
-                                          IF(ISNULL(TIMEDIFF( c.tgl_mulai, c.tgl_stop )),a.lama_proses,
-                                            CONCAT(LPAD(FLOOR((((HOUR ( a.lama_proses )* 60 )+ MINUTE ( a.lama_proses ))-((HOUR (TIMEDIFF( c.tgl_mulai, c.tgl_stop ))* 60 )+ MINUTE (TIMEDIFF( c.tgl_mulai, c.tgl_stop ))))/ 60 ),2,0 ),
-                                              ':',
-                                              LPAD(((((HOUR ( a.lama_proses )* 60 )+ MINUTE ( a.lama_proses ))-((HOUR (TIMEDIFF( c.tgl_mulai, c.tgl_stop ))* 60 )+ MINUTE (TIMEDIFF( c.tgl_mulai, c.tgl_stop ))))% 60 ),2,0 )))
-                                        ELSE
-                                          a.lama_proses
-                                      END AS lama_proses,
-                                      a.STATUS AS sts_hasil,
-                                      TIME_FORMAT(IF(ISNULL(TIMEDIFF( c.tgl_mulai, c.tgl_stop )),a.lama_proses,
-                                          CONCAT(LPAD(FLOOR((((HOUR ( a.lama_proses )* 60)+ MINUTE ( a.lama_proses ))-((HOUR (TIMEDIFF( c.tgl_mulai, c.tgl_stop ))* 60 )+ MINUTE (TIMEDIFF( c.tgl_mulai, c.tgl_stop ))))/ 60 ),2,0 ),
-                                            ':',
-                                            LPAD(((((HOUR ( a.lama_proses )* 60 )+ MINUTE ( a.lama_proses ))-((HOUR (TIMEDIFF( c.tgl_mulai, c.tgl_stop ))* 60 )+ MINUTE (TIMEDIFF( c.tgl_mulai, c.tgl_stop ))))% 60 ),2,0 ))),'%H' ) AS jam,
-                                      TIME_FORMAT(IF(ISNULL(TIMEDIFF( c.tgl_mulai, c.tgl_stop )),a.lama_proses,
-                                          CONCAT(LPAD(FLOOR((((HOUR ( a.lama_proses )* 60 )+ MINUTE ( a.lama_proses ))-((HOUR (TIMEDIFF( c.tgl_mulai, c.tgl_stop ))* 60 )+ MINUTE (TIMEDIFF( c.tgl_mulai, c.tgl_stop ))))/ 60 ),2,0 ),
-                                            ':',
-                                            LPAD(((((HOUR ( a.lama_proses )* 60 )+ MINUTE ( a.lama_proses ))-((HOUR (TIMEDIFF( c.tgl_mulai, c.tgl_stop ))* 60 )+ MINUTE (TIMEDIFF( c.tgl_mulai, c.tgl_stop ))))% 60 ),2,0 ))),'%i' ) AS menit,
-                                      a.POINT,
-                                      DATE_FORMAT( a.mulai_stop, '%Y-%m-%d' ) AS t_mulai,
-                                      DATE_FORMAT( a.selesai_stop, '%Y-%m-%d' ) AS t_selesai,
-                                      TIME_FORMAT( a.mulai_stop, '%H:%i' ) AS j_mulai,
-                                      TIME_FORMAT( a.selesai_stop, '%H:%i' ) AS j_selesai,
-                                      TIMESTAMPDIFF( MINUTE, a.mulai_stop, a.selesai_stop ) AS lama_stop_menit,
-                                      a.acc_keluar,
-                                      a.analisa,
-                                      a.k_resep,
-                                      b.proses,
-                                      b.buyer,
-                                      b.langganan,
-                                      b.no_order,
-                                      b.jenis_kain,
-                                      b.no_mesin,
-                                      b.warna,
-                                      b.lot,
-                                      b.energi,
-                                      b.dyestuff,
-                                      b.ket_status,
-                                      b.kapasitas,
-                                      b.loading,
-                                      b.resep,
-                                      b.kategori_warna,
-                                      c.l_r,
-                                      c.rol,
-                                      c.bruto,
-                                      c.pakai_air,
-                                      DATE_FORMAT( c.tgl_buat, '%Y-%m-%d' ) AS tgl_in,
-                                      DATE_FORMAT( a.tgl_buat, '%Y-%m-%d' ) AS tgl_out,
-                                      DATE_FORMAT( c.tgl_buat, '%H:%i' ) AS jam_in,
-                                      DATE_FORMAT( a.tgl_buat, '%H:%i' ) AS jam_out,
-                                      IF( ISNULL( a.g_shift ), b.g_shift, a.g_shift ) AS shft,
-                                      a.operator_keluar,
-                                      b.nokk,
-                                      b.no_warna,
-                                      b.lebar,
-                                      b.gramasi,
-                                      c.carry_over,
-                                      b.no_hanger,
-                                      b.no_item,
-                                      b.po,
-                                      b.tgl_delivery,
-                                      b.target,
-                                      CAST(TIMEDIFF(a.lama_proses, CONCAT(SUBSTRING_INDEX(b.target, '.', 1), ':', RIGHT('0' + SUBSTRING_INDEX(b.target, '.', -1), 2))) AS TIME) AS overtime,
-                                      IF((TIME_FORMAT( a.lama_proses, '%H' )+ round( TIME_FORMAT( a.lama_proses, '%i' )/ 60, 2 ))> b.target,'lebih','kurang' ) AS jjm,
-                                      c.ket_stopmesin,
-                                      c.ket_stopmesin2,
-                                      c.ket_stopmesin3,
-                                      c.ket_stopmesin4,
-                                      c.tgl_stop,
-                                      c.tgl_stop2,
-                                      c.tgl_stop3,
-                                      c.tgl_stop4,
-                                      c.tgl_mulai,
-                                      c.tgl_mulai2,
-                                      c.tgl_mulai3,
-                                      c.tgl_mulai4,
-                                      CASE
-                                        WHEN c.tgl_stop IS NULL THEN 0
-                                        WHEN c.tgl_stop = '0000-00-00 00:00:00' THEN 0
-                                        ELSE 1
-                                      END AS tgl_stop_value,
-                                      CASE
-                                        WHEN c.tgl_stop2 IS NULL THEN 0
-                                        WHEN c.tgl_stop2 = '0000-00-00 00:00:00' THEN 0
-                                        ELSE 1
-                                      END AS tgl_stop2_value,
-                                      CASE
-                                        WHEN c.tgl_stop3 IS NULL THEN 0
-                                        WHEN c.tgl_stop3 = '0000-00-00 00:00:00' THEN 0
-                                        ELSE 1
-                                      END AS tgl_stop3_value,
-                                      CASE
-                                        WHEN c.tgl_stop4 IS NULL THEN 0
-                                        WHEN c.tgl_stop4 = '0000-00-00 00:00:00' THEN 0
-                                        ELSE 1
-                                      END AS tgl_stop4_value,
-                                      CONCAT(
-                                          LPAD(FLOOR((
-                                              COALESCE(TIMESTAMPDIFF(HOUR, c.tgl_stop, c.tgl_mulai), 0) * 3600 +
-                                              COALESCE(TIMESTAMPDIFF(MINUTE, c.tgl_stop, c.tgl_mulai), 0) % 60 * 60 +
-                                              COALESCE(TIMESTAMPDIFF(HOUR, c.tgl_stop2, c.tgl_mulai2), 0) * 3600 +
-                                              COALESCE(TIMESTAMPDIFF(MINUTE, c.tgl_stop2, c.tgl_mulai2), 0) % 60 * 60 +
-                                              COALESCE(TIMESTAMPDIFF(HOUR, c.tgl_stop3, c.tgl_mulai3), 0) * 3600 +
-                                              COALESCE(TIMESTAMPDIFF(MINUTE, c.tgl_stop3, c.tgl_mulai3), 0) % 60 * 60 +
-                                              COALESCE(TIMESTAMPDIFF(HOUR, c.tgl_stop4, c.tgl_mulai4), 0) * 3600 +
-                                              COALESCE(TIMESTAMPDIFF(MINUTE, c.tgl_stop4, c.tgl_mulai4), 0) % 60 * 60
-                                          ) / 3600), 2, '0'), ':',
-                                          LPAD(FLOOR((
-                                              COALESCE(TIMESTAMPDIFF(HOUR, c.tgl_stop, c.tgl_mulai), 0) * 3600 +
-                                              COALESCE(TIMESTAMPDIFF(MINUTE, c.tgl_stop, c.tgl_mulai), 0) % 60 * 60 +
-                                              COALESCE(TIMESTAMPDIFF(HOUR, c.tgl_stop2, c.tgl_mulai2), 0) * 3600 +
-                                              COALESCE(TIMESTAMPDIFF(MINUTE, c.tgl_stop2, c.tgl_mulai2), 0) % 60 * 60 +
-                                              COALESCE(TIMESTAMPDIFF(HOUR, c.tgl_stop3, c.tgl_mulai3), 0) * 3600 +
-                                              COALESCE(TIMESTAMPDIFF(MINUTE, c.tgl_stop3, c.tgl_mulai3), 0) % 60 * 60 +
-                                              COALESCE(TIMESTAMPDIFF(HOUR, c.tgl_stop4, c.tgl_mulai4), 0) * 3600 +
-                                              COALESCE(TIMESTAMPDIFF(MINUTE, c.tgl_stop4, c.tgl_mulai4), 0) % 60 * 60
-                                          ) % 3600 / 60), 2, '0')
-                                      ) AS total_stop_mesin
-                                    FROM
-                                      tbl_schedule b
-                                      LEFT JOIN tbl_montemp c ON c.id_schedule = b.id
-                                      LEFT JOIN tbl_hasilcelup a ON a.id_montemp = c.id 
-                                    WHERE
-                                      $shft $Where) x ON ( a.no_mesin = x.no_mesin OR a.no_mc_lama = x.no_mesin ) 
-                                  ORDER BY
-                                    a.no_mesin");
-
+      $sql = sqlsrv_query($con, "SELECT
+                x.*,
+                m.no_mesin AS mc
+              FROM
+                db_dying.tbl_mesin m
+              LEFT JOIN(
+              SELECT
+              hc.kd_stop, hc.mulai_stop, hc.selesai_stop, hc.ket,
+              ca_proses_lib.proses_hhmm AS lama_proses,
+              hc.[STATUS] AS sts_hasil,
+              ca_proses_any.jam AS jam, ca_proses_any.menit AS menit,
+              hc.POINT,
+              CONVERT(char(10), ca_dt.dt_mulai_stop, 23) AS t_mulai,
+              CONVERT(char(10), ca_dt.dt_selesai_stop, 23) AS t_selesai,
+              CONVERT(char(5), ca_dt.dt_mulai_stop, 108) AS j_mulai,
+              CONVERT(char(5), ca_dt.dt_selesai_stop, 108) AS j_selesai,
+              DATEDIFF(MINUTE, ca_dt.dt_mulai_stop, ca_dt.dt_selesai_stop) AS lama_stop_menit,
+              hc.acc_keluar, hc.analisa, hc.k_resep,
+              sch.proses, sch.buyer, sch.langganan, sch.no_order, sch.jenis_kain, sch.no_mesin, sch.warna, sch.lot, sch.energi, sch.dyestuff, sch.ket_status, sch.kapasitas, sch.loading, sch.resep, sch.kategori_warna,
+              mt.l_r, mt.rol, mt.bruto, mt.pakai_air,
+              CONVERT(char(10), ca_dt.dt_mt_buat, 23) AS tgl_in,
+              CONVERT(char(10), ca_dt.dt_hc_buat, 23) AS tgl_out,
+              CONVERT(char(5), ca_dt.dt_mt_buat, 108) AS jam_in,
+              CONVERT(char(5), ca_dt.dt_hc_buat, 108) AS jam_out,
+              CASE WHEN hc.g_shift IS NULL THEN sch.g_shift ELSE hc.g_shift END AS shft,
+              hc.operator_keluar,
+              sch.nokk, sch.no_warna, sch.lebar, sch.gramasi,
+              mt.carry_over,
+              sch.no_hanger, sch.no_item, sch.po, sch.tgl_delivery, sch.target,
+              ca_overtime.overtime_hhmm AS overtime,
+              CASE WHEN ca_base.base_jam_dec>TRY_CONVERT(decimal(18, 2), sch.target) THEN 'lebih' ELSE 'kurang' END AS jjm,
+              mt.ket_stopmesin, mt.ket_stopmesin2, mt.ket_stopmesin3, mt.ket_stopmesin4,
+              mt.tgl_stop, mt.tgl_stop2, mt.tgl_stop3, mt.tgl_stop4,
+              mt.tgl_mulai, mt.tgl_mulai2, mt.tgl_mulai3, mt.tgl_mulai4,
+              CASE WHEN ca_dt.dt_tgl_stop1 IS NULL THEN 0 ELSE 1 END AS tgl_stop_value,
+              CASE WHEN ca_dt.dt_tgl_stop2 IS NULL THEN 0 ELSE 1 END AS tgl_stop2_value,
+              CASE WHEN ca_dt.dt_tgl_stop3 IS NULL THEN 0 ELSE 1 END AS tgl_stop3_value,
+              CASE WHEN ca_dt.dt_tgl_stop4 IS NULL THEN 0 ELSE 1 END AS tgl_stop4_value,
+              ca_totalstop.total_stop_mesin
+              FROM db_dying.tbl_schedule sch
+              LEFT JOIN db_dying.tbl_montemp mt ON mt.id_schedule = sch.id
+              LEFT JOIN db_dying.tbl_hasilcelup hc ON hc.id_montemp = mt.id
+              CROSS APPLY(
+              SELECT
+              dt_update = TRY_CONVERT(datetime, NULLIF(CAST(mt.tgl_update AS varchar(30)), '')),
+              dt_mt_buat = TRY_CONVERT(datetime, NULLIF(CAST(mt.tgl_buat AS varchar(30)), '')),
+              dt_hc_buat = TRY_CONVERT(datetime, NULLIF(CAST(hc.tgl_buat AS varchar(30)), '')),
+              dt_mulai_stop = TRY_CONVERT(datetime, NULLIF(CAST(hc.mulai_stop AS varchar(30)), '')),
+              dt_selesai_stop = TRY_CONVERT(datetime, NULLIF(CAST(hc.selesai_stop AS varchar(30)), '')),
+              dt_tgl_stop1 = TRY_CONVERT(datetime, NULLIF(CAST(mt.tgl_stop AS varchar(30)), '')),
+              dt_tgl_mulai1 = TRY_CONVERT(datetime, NULLIF(CAST(mt.tgl_mulai AS varchar(30)), '')),
+              dt_tgl_stop2 = TRY_CONVERT(datetime, NULLIF(CAST(mt.tgl_stop2 AS varchar(30)), '')),
+              dt_tgl_mulai2 = TRY_CONVERT(datetime, NULLIF(CAST(mt.tgl_mulai2 AS varchar(30)), '')),
+              dt_tgl_stop3 = TRY_CONVERT(datetime, NULLIF(CAST(mt.tgl_stop3 AS varchar(30)), '')),
+              dt_tgl_mulai3 = TRY_CONVERT(datetime, NULLIF(CAST(mt.tgl_mulai3 AS varchar(30)), '')),
+              dt_tgl_stop4 = TRY_CONVERT(datetime, NULLIF(CAST(mt.tgl_stop4 AS varchar(30)), '')),
+              dt_tgl_mulai4 = TRY_CONVERT(datetime, NULLIF(CAST(mt.tgl_mulai4 AS varchar(30)), '')),
+              lama_raw = NULLIF(LTRIM(RTRIM(CAST(hc.lama_proses AS varchar(20)))), '')) ca_dt
+              CROSS APPLY(
+              SELECT
+              lama_h = CASE
+                WHEN ca_dt.lama_raw IS NULL THEN NULL
+                WHEN CHARINDEX(':', ca_dt.lama_raw) > 0 THEN TRY_CONVERT(int, LEFT(ca_dt.lama_raw, CHARINDEX(':', ca_dt.lama_raw) - 1))
+                ELSE TRY_CONVERT(int, ca_dt.lama_raw)
+              END,
+              lama_m = CASE
+                WHEN ca_dt.lama_raw IS NULL THEN NULL
+                WHEN CHARINDEX(':', ca_dt.lama_raw) > 0 THEN TRY_CONVERT(int, RIGHT(ca_dt.lama_raw, 2))
+                ELSE 0
+              END) ca_lama
+              CROSS APPLY(
+              SELECT
+              base_minutes = CASE
+                WHEN ca_lama.lama_h IS NULL OR ca_lama.lama_m IS NULL THEN NULL
+                ELSE ca_lama.lama_h * 60 + ca_lama.lama_m
+              END,
+              stop_minutes = CASE WHEN ca_dt.dt_tgl_mulai1 IS NULL OR ca_dt.dt_tgl_stop1 IS NULL THEN NULL ELSE DATEDIFF(MINUTE, ca_dt.dt_tgl_stop1, ca_dt.dt_tgl_mulai1) END) ca0
+              CROSS APPLY(
+              SELECT proses_minutes = CASE
+                WHEN ca0.base_minutes IS NULL THEN NULL
+                WHEN ca0.stop_minutes IS NOT NULL THEN ca0.base_minutes-ca0.stop_minutes
+                ELSE ca0.base_minutes END) ca1_any
+              CROSS APPLY(
+              SELECT proses_h =(ca1_any.proses_minutes / 60), proses_m =(ABS(ca1_any.proses_minutes)%60)) ca2_any
+              CROSS APPLY(
+              SELECT
+              hh = REPLICATE('0', CASE WHEN LEN(CAST(ABS(ca2_any.proses_h) AS varchar(20)))>= 2 THEN 0 ELSE 2-LEN(CAST(ABS(ca2_any.proses_h) AS varchar(20))) END)+ CAST(ABS(ca2_any.proses_h) AS varchar(20)),
+              mm = REPLICATE('0', CASE WHEN LEN(CAST(ca2_any.proses_m AS varchar(20)))>= 2 THEN 0 ELSE 2-LEN(CAST(ca2_any.proses_m AS varchar(20))) END)+ CAST(ca2_any.proses_m AS varchar(20))) ca3_any
+              CROSS APPLY(
+              SELECT proses_hhmm = ca3_any.hh + ':' + ca3_any.mm, jam = ca3_any.hh, menit = ca3_any.mm) ca_proses_any
+              CROSS APPLY(
+              SELECT proses_minutes = CASE
+                WHEN ca0.base_minutes IS NULL THEN NULL
+                WHEN mt.ket_stopmesin = 'LIBUR' AND ca0.stop_minutes IS NOT NULL THEN ca0.base_minutes-ca0.stop_minutes
+                ELSE ca0.base_minutes END) ca1_lib
+              CROSS APPLY(
+              SELECT proses_h =(ca1_lib.proses_minutes / 60), proses_m =(ABS(ca1_lib.proses_minutes)%60)) ca2_lib
+              CROSS APPLY(
+              SELECT
+              hh = REPLICATE('0', CASE WHEN LEN(CAST(ABS(ca2_lib.proses_h) AS varchar(20)))>= 2 THEN 0 ELSE 2-LEN(CAST(ABS(ca2_lib.proses_h) AS varchar(20))) END)+ CAST(ABS(ca2_lib.proses_h) AS varchar(20)),
+              mm = REPLICATE('0', CASE WHEN LEN(CAST(ca2_lib.proses_m AS varchar(20)))>= 2 THEN 0 ELSE 2-LEN(CAST(ca2_lib.proses_m AS varchar(20))) END)+ CAST(ca2_lib.proses_m AS varchar(20))) ca3_lib
+              CROSS APPLY(
+              SELECT proses_hhmm = ca3_lib.hh + ':' + ca3_lib.mm,
+              proses_jam_dec = CASE
+                WHEN ca1_lib.proses_minutes IS NULL THEN NULL
+                ELSE (ABS(ca2_lib.proses_h)+ ROUND(CAST(ca2_lib.proses_m AS decimal(18, 2))/ 60.0, 2))
+              END) ca_proses_lib
+              CROSS APPLY(
+              SELECT base_jam_dec = CASE
+                WHEN ca0.base_minutes IS NULL THEN NULL
+                ELSE (ABS(ca_lama.lama_h)+ ROUND(CAST(ca_lama.lama_m AS decimal(18, 2))/ 60.0, 2))
+              END) ca_base
+              CROSS APPLY(
+              SELECT target_h = TRY_CONVERT(int, PARSENAME(sch.target, 2)), target_m = TRY_CONVERT(int, PARSENAME(sch.target, 1))) cat0
+              CROSS APPLY(
+              SELECT target_minutes =(COALESCE(cat0.target_h, 0)* 60)+ COALESCE(cat0.target_m, 0),
+              lama_minutes = ca0.base_minutes) cat1
+              CROSS APPLY(
+              SELECT diff_minutes =(cat1.lama_minutes-cat1.target_minutes)) cat2
+              CROSS APPLY(
+              SELECT ov_h =(ABS(cat2.diff_minutes)/ 60), ov_m =(ABS(cat2.diff_minutes)%60), ov_sign = CASE WHEN cat2.diff_minutes<0 THEN '-' ELSE '' END) cat3
+              CROSS APPLY(
+              SELECT overtime_hhmm = cat3.ov_sign
+              + REPLICATE('0', CASE WHEN LEN(CAST(cat3.ov_h AS varchar(20)))>= 2 THEN 0 ELSE 2-LEN(CAST(cat3.ov_h AS varchar(20))) END)+ CAST(cat3.ov_h AS varchar(20))
+              + ':'
+              + REPLICATE('0', CASE WHEN LEN(CAST(cat3.ov_m AS varchar(20)))>= 2 THEN 0 ELSE 2-LEN(CAST(cat3.ov_m AS varchar(20))) END)+ CAST(cat3.ov_m AS varchar(20))) ca_overtime
+              CROSS APPLY(
+              SELECT total_stop_seconds =
+              COALESCE(CASE WHEN ca_dt.dt_tgl_stop1 IS NULL OR ca_dt.dt_tgl_mulai1 IS NULL THEN 0 ELSE DATEDIFF(SECOND, ca_dt.dt_tgl_stop1, ca_dt.dt_tgl_mulai1) END, 0)
+              + COALESCE(CASE WHEN ca_dt.dt_tgl_stop2 IS NULL OR ca_dt.dt_tgl_mulai2 IS NULL THEN 0 ELSE DATEDIFF(SECOND, ca_dt.dt_tgl_stop2, ca_dt.dt_tgl_mulai2) END, 0)
+              + COALESCE(CASE WHEN ca_dt.dt_tgl_stop3 IS NULL OR ca_dt.dt_tgl_mulai3 IS NULL THEN 0 ELSE DATEDIFF(SECOND, ca_dt.dt_tgl_stop3, ca_dt.dt_tgl_mulai3) END, 0)
+              + COALESCE(CASE WHEN ca_dt.dt_tgl_stop4 IS NULL OR ca_dt.dt_tgl_mulai4 IS NULL THEN 0 ELSE DATEDIFF(SECOND, ca_dt.dt_tgl_stop4, ca_dt.dt_tgl_mulai4) END, 0)) ts0
+              CROSS APPLY(
+              SELECT th =(ts0.total_stop_seconds / 3600), tm =((ts0.total_stop_seconds%3600)/ 60)) ts1
+              CROSS APPLY(
+              SELECT
+              thh = REPLICATE('0', CASE WHEN LEN(CAST(ts1.th AS varchar(20)))>= 2 THEN 0 ELSE 2-LEN(CAST(ts1.th AS varchar(20))) END)+ CAST(ts1.th AS varchar(20)),
+              tmm = REPLICATE('0', CASE WHEN LEN(CAST(ts1.tm AS varchar(20)))>= 2 THEN 0 ELSE 2-LEN(CAST(ts1.tm AS varchar(20))) END)+ CAST(ts1.tm AS varchar(20))) ts2
+              CROSS APPLY(
+              SELECT total_stop_mesin = ts2.thh + ':' + ts2.tmm) ca_totalstop
+              WHERE $shft $Where
+              ) x ON
+                (m.no_mesin = x.no_mesin OR m.no_mc_lama = x.no_mesin)
+              ORDER BY
+                m.no_mesin
+              ");
         $no = 1;
         $totrol = 0;
         $totberat = 0;
         $c = 0;
 
-      while ($rowd = mysqli_fetch_array($sql)) {
+      while ($rowd = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)) {
         $target = explode(".", $rowd['target']);
         $jamtarget = (int)$target[0] * 60;
         if ($target[1] == '5') {
