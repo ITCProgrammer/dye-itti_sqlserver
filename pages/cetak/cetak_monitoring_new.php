@@ -5,9 +5,11 @@
     include "../../helpers.php";
     include "../../koneksiLAB.php";
     //--
-    $idkk  = $_REQUEST['idkk'];
-    $act   = $_GET['g'];
-    $sqlbg = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id='$_GET[ids]'");
+    $idkk        = $_REQUEST['idkk'];
+    $act         = $_GET['g'];
+    $idSchedule  = isset($_GET['ids']) ? (int) $_GET['ids'] : 0;
+    $idMontemp   = isset($_GET['idm']) ? (int) $_GET['idm'] : 0;
+    $sqlbg       = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id=$idSchedule");
     $rowbg = sqlsrv_fetch_array($sqlbg);
     //-
 ?>
@@ -296,7 +298,7 @@
       }
 
       //
-      $sqlsmp1     = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule where id='$_GET[ids]'");
+      $sqlsmp1     = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule where id=$idSchedule");
       $rowmt       = sqlsrv_fetch_array($sqlsmp1);
       $target      = explode(".", $rowmt['target']);
       $jamtarget   = $target[0];
@@ -306,7 +308,7 @@
       } else {
           $mintarget = 0;
       }
-      $sqlsmp2 = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_montemp where id='$_GET[idm]'");
+      $sqlsmp2 = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_montemp where id=$idMontemp");
       $rowmt2  = sqlsrv_fetch_array($sqlsmp2);
       if ($rowmt['kapasitas'] > 0) {
           $loading = round($rowmt2['bruto'] / $rowmt['kapasitas'], 4) * 100;

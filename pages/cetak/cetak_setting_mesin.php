@@ -7,7 +7,8 @@ include "../../helpers.php";
 //--
 $idkk=$_REQUEST['idkk'];
 $act=$_GET['g'];
-$sqlbg=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_setting_mesin where id='$_GET[idstm]'");
+$idSetting = isset($_GET['idstm']) ? (int) $_GET['idstm'] : 0;
+$sqlbg=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_setting_mesin where id=$idSetting");
 $rowbg=sqlsrv_fetch_array($sqlbg);
 //-
 ?>
@@ -172,7 +173,7 @@ body {
 date_default_timezone_set('Asia/Jakarta');
  
  //
-$sqlstm=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_setting_mesin where id='$_GET[idstm]'");
+$sqlstm=sqlsrv_query($con,"SELECT * FROM db_dying.tbl_setting_mesin where id=$idSetting");
 $rowstm=sqlsrv_fetch_array($sqlstm); 
 
 $sqlm=sqlsrv_query($con,"SELECT kode FROM db_dying.tbl_mesin where no_mesin='$rowstm[no_mc]'");

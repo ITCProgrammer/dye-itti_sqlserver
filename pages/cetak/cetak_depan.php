@@ -6,6 +6,8 @@ include "../../koneksiLAB.php";
 //--
 $idkk=$_REQUEST['idkk'];
 $act=$_GET['g'];
+$idSchedule = isset($_GET['ids']) ? (int) $_GET['ids'] : 0;
+$idMontemp  = isset($_GET['idm']) ? (int) $_GET['idm'] : 0;
 //-
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -182,10 +184,10 @@ $jb3='';
 }
  
  //
-$sqlsmp=mysqli_query($con,"select * from tbl_schedule where id='$_GET[ids]'");
-$rowsmp=mysqli_fetch_array($sqlsmp);
-$sqlsmp1=mysqli_query($con,"select * from tbl_montemp where id='$_GET[idm]'");
-$rowsmp1=mysqli_fetch_array($sqlsmp1);	
+$sqlsmp=sqlsrv_query($con,"select * from db_dying.tbl_schedule where id=$idSchedule");
+$rowsmp=sqlsrv_fetch_array($sqlsmp);
+$sqlsmp1=sqlsrv_query($con,"select * from db_dying.tbl_montemp where id=$idMontemp");
+$rowsmp1=sqlsrv_fetch_array($sqlsmp1);	
  ?>
 <table width="100%" border="1" class="table-list1">
   <tr>

@@ -11,7 +11,7 @@ function q(string $key, string $default = ''): string
     return trim($_REQUEST[$key] ?? $default);
 }
 
-$no_mesin = q('ids');
+$no_mesin = (int) q('ids');
 $no_demand = q('nodemand');
 $no_prod = q('idkk');
 ?>
@@ -202,7 +202,7 @@ $no_prod = q('idkk');
                                         WHERE
                                             ( a.status = 'antri mesin' OR a.status = 'sedang jalan' ) 
                                             AND ( b.status = 'antri mesin' OR b.status = 'sedang jalan' ) 
-                                            and a.nokk = '$no_prod' and a.nodemand ='$no_demand' and b.id = '$no_mesin'
+                                            and a.nokk = '$no_prod' and a.nodemand ='$no_demand' and b.id = $no_mesin
                                         ORDER BY
                                             a.id ASC ");
     //   $rowmt       = sqlsrv_fetch_array($sqlsmp1);

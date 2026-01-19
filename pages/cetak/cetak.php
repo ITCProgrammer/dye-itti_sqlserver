@@ -7,7 +7,9 @@ include "../../helpers.php";
 //--
 $idkk = $_REQUEST['idkk'];
 $act = $_GET['g'];
-$sqlbg = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule where id='$_GET[ids]'");
+$idSchedule = isset($_GET['ids']) ? (int) $_GET['ids'] : 0;
+$idMontemp  = isset($_GET['idm']) ? (int) $_GET['idm'] : 0;
+$sqlbg = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule where id=$idSchedule");
 $rowbg = sqlsrv_fetch_array($sqlbg);
 //-
 ?>
@@ -280,7 +282,7 @@ $rowbg = sqlsrv_fetch_array($sqlbg);
   // WHERE  JobOrders.documentno='$ssr[documentno]' and processcontrolJO.pcid='$r[pcid]'");
   // $r3 = sqlsrv_fetch_array($bng11);
   //
-  $sqlsmp = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id='$_GET[ids]'");
+  $sqlsmp = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id=$idSchedule");
   $rowsmp = sqlsrv_fetch_array($sqlsmp);
   $target = explode(".", $rowsmp['target']);
   $jamtarget = $target[0];
@@ -290,7 +292,7 @@ $rowbg = sqlsrv_fetch_array($sqlbg);
   } else {
     $mintarget = 0;
   }
-  $sqlsmp1 = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_montemp WHERE id='$_GET[idm]'");
+  $sqlsmp1 = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_montemp WHERE id=$idMontemp");
   $rowsmp1 = sqlsrv_fetch_array($sqlsmp1);
 
   if ($rowsmp['kapasitas'] > 0) {
@@ -402,7 +404,7 @@ $rowbg = sqlsrv_fetch_array($sqlbg);
                         } ?> %</td>
       <td colspan="3">
         <?php
-        $db_benang  = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_montemp WHERE id = '$_GET[idm]'");
+        $db_benang  = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_montemp WHERE id = $idMontemp");
         $rowsmp3    = sqlsrv_fetch_array($db_benang,SQLSRV_FETCH_ASSOC);
         ?>
         <pre>Benang			: <font size="-7"><?php echo strtoupper(substr(htmlentities($rowsmp3['benang'], ENT_QUOTES), 0, 30)); ?></font></pre>
