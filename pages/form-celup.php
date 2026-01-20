@@ -43,12 +43,12 @@
 	}
 
 	function aktif2() {
-		if ((document.forms['form1']['sts'].value == "1" || document.forms['form1']['sts'].value == "5") && document.forms['form1']['sts_analisa'].value == "melebihi target") {
+		if ((document.forms['form1']['sts'].value == "OK" || document.forms['form1']['sts'].value == "Celup Poly Dulu-Matching") && document.forms['form1']['sts_analisa'].value == "melebihi target") {
 			document.form1.analisa.removeAttribute("disabled");
 			document.form1.analisa.setAttribute("required", true);
 			document.form1.jml_topping.setAttribute("disabled", true);
 			document.form1.jml_topping.removeAttribute("required");
-		} else if (document.forms['form1']['sts'].value == "1" || document.forms['form1']['sts'].value == "5") {
+		} else if (document.forms['form1']['sts'].value == "OK" || document.forms['form1']['sts'].value == "Celup Poly Dulu-Matching") {
 			/*document.form1.k_resep.removeAttribute("disabled");
 			document.form1.k_resep.setAttribute("required",true);*/
 			document.form1.ket.removeAttribute("required");
@@ -56,7 +56,7 @@
 			document.form1.jml_topping.removeAttribute("required");
 			document.form1.analisa.setAttribute("disabled", true);
 			document.form1.analisa.removeAttribute("required");
-		} else if (document.forms['form1']['sts'].value == "2") {
+		} else if (document.forms['form1']['sts'].value == "Gagal Proses") {
 			document.form1.jml_topping.removeAttribute("disabled");
 			document.form1.jml_topping.setAttribute("required", true);
 			document.form1.analisa.removeAttribute("disabled");
@@ -852,15 +852,15 @@ function format_tanggal_sqlsrv($value) {
 					<div class="col-sm-5">
 						<select name="sts" class="form-control" id="sts" onChange="aktif2();" required  <?php if(!empty($_GET['id'])){ echo "readonly"; } ?>>
 							<option value="">Pilih</option>
-							<option value="1" <?php if($row_hasilcelup['sts_celup'] == "OK") { echo "Selected"; } ?>>OK</option>
-							<option value="5" <?php if($row_hasilcelup['sts_celup'] == "Celup Poly Dulu-Matching") { echo "Selected"; } ?>>Celup Poly Dulu-Matching</option>
-							<option value="2" <?php if($row_hasilcelup['sts_celup'] == "Gagal Proses") { echo "Selected"; } ?>>Gagal Proses</option>
-							<option value="3" <?php if($row_hasilcelup['sts_celup'] == "Levelling-Matching") { echo "Selected"; } ?>>Levelling-Matching</option>
-							<option value="4" <?php if($row_hasilcelup['sts_celup'] == "Pelunturan-Matching") { echo "Selected"; } ?>>Pelunturan-Matching</option>
-							<option value="6" <?php if($row_hasilcelup['sts_celup'] == "Scouring Turun") { echo "Selected"; } ?>>Scouring Turun</option>
-							<option value="7" <?php if($row_hasilcelup['sts_celup'] == "Continuous - Bleaching") { echo "Selected"; } ?>>Continuous - Bleaching</option>
-							<option value="8" <?php if($row_hasilcelup['sts_celup'] == "Relaxing - Priset") { echo "Selected"; } ?>>Relaxing - Priset</option>
-							<option value="9" <?php if($row_hasilcelup['sts_celup'] == "Tunggu Review") { echo "Selected"; } ?>>Tunggu Review</option>
+							<option value="OK" <?php if($row_hasilcelup['sts_celup'] == "OK") { echo "Selected"; } ?>>OK</option>
+							<option value="Celup Poly Dulu-Matching" <?php if($row_hasilcelup['sts_celup'] == "Celup Poly Dulu-Matching") { echo "Selected"; } ?>>Celup Poly Dulu-Matching</option>
+							<option value="Gagal Proses" <?php if($row_hasilcelup['sts_celup'] == "Gagal Proses") { echo "Selected"; } ?>>Gagal Proses</option>
+							<option value="Levelling-Matching" <?php if($row_hasilcelup['sts_celup'] == "Levelling-Matching") { echo "Selected"; } ?>>Levelling-Matching</option>
+							<option value="Pelunturan-Matching" <?php if($row_hasilcelup['sts_celup'] == "Pelunturan-Matching") { echo "Selected"; } ?>>Pelunturan-Matching</option>
+							<option value="Scouring Turun" <?php if($row_hasilcelup['sts_celup'] == "Scouring Turun") { echo "Selected"; } ?>>Scouring Turun</option>
+							<option value="Continuous - Bleaching" <?php if($row_hasilcelup['sts_celup'] == "Continuous - Bleaching") { echo "Selected"; } ?>>Continuous - Bleaching</option>
+							<option value="Relaxing - Priset" <?php if($row_hasilcelup['sts_celup'] == "Relaxing - Priset") { echo "Selected"; } ?>>Relaxing - Priset</option>
+							<option value="Tunggu Review" <?php if($row_hasilcelup['sts_celup'] == "Tunggu Review") { echo "Selected"; } ?>>Tunggu Review</option>
 						</select>
 					</div>
 					<div class="col-sm-3">
