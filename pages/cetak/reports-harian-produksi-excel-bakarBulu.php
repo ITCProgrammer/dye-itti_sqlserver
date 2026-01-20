@@ -191,10 +191,22 @@ $shft = $_GET['shft'];
             OUTER APPLY
             (
                 SELECT
-                    TRY_CONVERT(int, LEFT(LTRIM(RTRIM(hc.lama_proses)),
-                                          CHARINDEX(':', LTRIM(RTRIM(hc.lama_proses))) - 1)) AS lama_h,
-                    TRY_CONVERT(int, SUBSTRING(LTRIM(RTRIM(hc.lama_proses)),
-                                              CHARINDEX(':', LTRIM(RTRIM(hc.lama_proses))) + 1, 2)) AS lama_m
+                    TRY_CONVERT(int,
+                        CASE
+                            WHEN CHARINDEX(':', LTRIM(RTRIM(hc.lama_proses))) > 0
+                                THEN LEFT(LTRIM(RTRIM(hc.lama_proses)),
+                                          CHARINDEX(':', LTRIM(RTRIM(hc.lama_proses))) - 1)
+                            ELSE NULL
+                        END
+                    ) AS lama_h,
+                    TRY_CONVERT(int,
+                        CASE
+                            WHEN CHARINDEX(':', LTRIM(RTRIM(hc.lama_proses))) > 0
+                                THEN SUBSTRING(LTRIM(RTRIM(hc.lama_proses)),
+                                               CHARINDEX(':', LTRIM(RTRIM(hc.lama_proses))) + 1, 2)
+                            ELSE NULL
+                        END
+                    ) AS lama_m
             ) AS lp
             OUTER APPLY
             (
