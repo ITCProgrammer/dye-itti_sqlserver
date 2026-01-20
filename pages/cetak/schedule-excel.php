@@ -92,6 +92,16 @@ function normalizeIsoDateTime($value) {
   }
   return $value;
 }
+
+function formatSqlsrvDateTime($value, $format = 'Y-m-d H:i:s') {
+  if ($value instanceof DateTimeInterface) {
+    return $value->format($format);
+  }
+  if ($value === null) {
+    return '';
+  }
+  return (string)$value;
+}
 ?>
 
 <body>
@@ -304,6 +314,11 @@ function normalizeIsoDateTime($value) {
         $totberat = 0;
         $c = 0;
 
+      if ($sql === false) {
+        $err = sqlsrv_errors();
+        $msg = $err ? $err[0]['message'] : 'Gagal mengambil data schedule.';
+        echo '<tr><td colspan="34">Error SQL: ' . htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') . '</td></tr>';
+      } else {
       while ($rowd = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)) {
         $target = explode(".", $rowd['target']);
         $jamtarget = (int)$target[0] * 60;
@@ -404,58 +419,68 @@ function normalizeIsoDateTime($value) {
         <td><?= $rowd['total_stop_mesin']; ?></td><!-- Total Jam Stop Proses -->
         <?php
           $labelTglMulai = '';
-          if($rowd['tgl_stop'] == '0000-00-00 00:00:00'){
+          $tglStop1 = formatSqlsrvDateTime($rowd['tgl_stop']);
+          $tglStop2 = formatSqlsrvDateTime($rowd['tgl_stop2']);
+          $tglStop3 = formatSqlsrvDateTime($rowd['tgl_stop3']);
+          $tglStop4 = formatSqlsrvDateTime($rowd['tgl_stop4']);
+          $tglMulai1 = formatSqlsrvDateTime($rowd['tgl_mulai']);
+          $tglMulai2 = formatSqlsrvDateTime($rowd['tgl_mulai2']);
+          $tglMulai3 = formatSqlsrvDateTime($rowd['tgl_mulai3']);
+          $tglMulai4 = formatSqlsrvDateTime($rowd['tgl_mulai4']);
+
+          if ($tglStop1 === '0000-00-00 00:00:00' || $tglStop1 === '') {
             $tglstop = null;
           }else{
-            $tglstop = $rowd['tgl_stop'];
+            $tglstop = $tglStop1;
           }
-          if($rowd['tgl_stop2'] == '0000-00-00 00:00:00'){
+          if ($tglStop2 === '0000-00-00 00:00:00' || $tglStop2 === '') {
             $tglstop2 = null;
           }else{
-            $tglstop2 = $rowd['tgl_stop2'];
+            $tglstop2 = $tglStop2;
           }
-          if($rowd['tgl_stop3'] == '0000-00-00 00:00:00'){
+          if ($tglStop3 === '0000-00-00 00:00:00' || $tglStop3 === '') {
             $tglstop3 = null;
           }else{
-            $tglstop3 = $rowd['tgl_stop3'];
+            $tglstop3 = $tglStop3;
           }
-          if($rowd['tgl_stop4'] == '0000-00-00 00:00:00'){
+          if ($tglStop4 === '0000-00-00 00:00:00' || $tglStop4 === '') {
             $tglstop4 = null;
           }else{
-            $tglstop4 = $rowd['tgl_stop4'];
+            $tglstop4 = $tglStop4;
           }
           
-          if($tglstop && empty($rowd['tgl_mulai'])){
+          if($tglstop && $tglMulai1 === ''){
             $labelTglMulai = "Red";
           }
-          if($tglstop2 && empty($rowd['tgl_mulai2'])){
+          if($tglstop2 && $tglMulai2 === ''){
             $labelTglMulai = "Red";
           }
-          if($tglstop3 && empty($rowd['tgl_mulai3'])){
+          if($tglstop3 && $tglMulai3 === ''){
             $labelTglMulai = "Red";
           }
-          if($tglstop4 && empty($rowd['tgl_mulai4'])){
+          if($tglstop4 && $tglMulai4 === ''){
             $labelTglMulai = "Red";
           }
         ?>
         <td bgcolor="<?= $labelTglMulai; ?>"><?= $rowd['ket_stopmesin'].' - '.$rowd['ket_stopmesin2'].' - '.$rowd['ket_stopmesin3'].' - '.$rowd['ket_stopmesin4']; ?></td><!-- Alasan Stop Proses -->
-        <td><?= $rowd['tgl_stop']; ?></td> <!-- Tgl Stop 1 -->
-        <td><?= $rowd['tgl_mulai']; ?></td> <!-- Tgl Mulai 1 -->
+        <td><?= $tglStop1; ?></td> <!-- Tgl Stop 1 -->
+        <td><?= $tglMulai1; ?></td> <!-- Tgl Mulai 1 -->
 
-        <td><?= $rowd['tgl_stop2']; ?></td> <!-- Tgl Stop 2 -->
-        <td><?= $rowd['tgl_mulai2']; ?></td> <!-- Tgl Mulai 2 -->
+        <td><?= $tglStop2; ?></td> <!-- Tgl Stop 2 -->
+        <td><?= $tglMulai2; ?></td> <!-- Tgl Mulai 2 -->
 
-        <td><?= $rowd['tgl_stop3']; ?></td> <!-- Tgl Stop 3 -->
-        <td><?= $rowd['tgl_mulai3']; ?></td> <!-- Tgl Mulai 3 -->
+        <td><?= $tglStop3; ?></td> <!-- Tgl Stop 3 -->
+        <td><?= $tglMulai3; ?></td> <!-- Tgl Mulai 3 -->
 
-        <td><?= $rowd['tgl_stop4']; ?></td> <!-- Tgl Stop 4 -->
-        <td><?= $rowd['tgl_mulai4']; ?></td> <!-- Tgl Mulai 4 -->
+        <td><?= $tglStop4; ?></td> <!-- Tgl Stop 4 -->
+        <td><?= $tglMulai4; ?></td> <!-- Tgl Mulai 4 -->
         </th>
       </tr>
     <?php
         $totrol = $totrol + $rol;
         $totberat = $totberat + $brt;
         $no++;
+      }
       }
     ?>
     <tr>
