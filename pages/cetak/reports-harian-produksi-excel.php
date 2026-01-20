@@ -164,7 +164,7 @@ $shft = $_GET['shft'];
       $Akhir = $_GET['akhir'];
       $Tgl = substr($Awal, 0, 10);
       if ($Awal != $Akhir) {
-        $Where = " c.tgl_update BETWEEN '$Awal' AND '$Akhir' ";
+        $Where = " CONVERT(char(16), c.tgl_update, 120) BETWEEN '$Awal' AND '$Akhir' ";
       } else {
         $Where = " CONVERT(date, c.tgl_update) = CONVERT(date, '$Tgl') ";
       }
@@ -188,14 +188,14 @@ $shft = $_GET['shft'];
                                             RIGHT('0' + CAST(
                                               FLOOR((
                                                 (DATEPART(HOUR, a.lama_proses) * 60 + DATEPART(MINUTE, a.lama_proses))
-                                                - DATEDIFF(MINUTE, c.tgl_stop, c.tgl_mulai)
+                                                - (DATEDIFF(SECOND, c.tgl_stop, c.tgl_mulai) / 60)
                                               ) / 60) AS VARCHAR(2)
                                             ), 2)
                                             + ':' +
                                             RIGHT('0' + CAST(
                                               (
                                                 (DATEPART(HOUR, a.lama_proses) * 60 + DATEPART(MINUTE, a.lama_proses))
-                                                - DATEDIFF(MINUTE, c.tgl_stop, c.tgl_mulai)
+                                                - (DATEDIFF(SECOND, c.tgl_stop, c.tgl_mulai) / 60)
                                               ) % 60 AS VARCHAR(2)
                                             ), 2)
                                         END AS lama_proses,
@@ -205,7 +205,7 @@ $shft = $_GET['shft'];
                                         CONVERT(varchar(10), a.selesai_stop, 23) as t_selesai,
                                         CONVERT(varchar(5), a.mulai_stop, 108) as j_mulai,
                                         CONVERT(varchar(5), a.selesai_stop, 108) as j_selesai,
-                                        DATEDIFF(MINUTE, a.mulai_stop, a.selesai_stop) as lama_stop_menit,
+                                        (DATEDIFF(SECOND, a.mulai_stop, a.selesai_stop) / 60) as lama_stop_menit,
                                         a.acc_keluar,
                                         CASE WHEN (a.proses = '' OR a.proses IS NULL) THEN b.proses ELSE a.proses END as proses,
                                         b.buyer,
@@ -287,7 +287,11 @@ $shft = $_GET['shft'];
                                         a.tambah_dyestuff,
                                         a.arah_warna,
                                         a.status_warna,
-                                        COALESCE(a.point2, b.target) as point2,
+                                        CASE
+                                          WHEN a.point2 IS NOT NULL
+                                            THEN COALESCE(TRY_CONVERT(decimal(18, 2), a.point2), 0)
+                                          ELSE COALESCE(TRY_CONVERT(decimal(18, 2), b.target), 0)
+                                        END as point2,
                                         c.note_wt,
                                         a.operatorpolyester,
 		                                    a.operatorcotton,
@@ -326,6 +330,25 @@ $shft = $_GET['shft'];
           $shftSM = " g_shift='$_GET[shft]' AND ";
         }
         $sqlSM = sqlsrv_query($con, "SELECT *,
+          CASE
+            WHEN mulai IS NULL OR selesai IS NULL THEN NULL
+            ELSE
+              CASE
+                WHEN ((DATEDIFF(SECOND, mulai, selesai) / 60) / 60) BETWEEN 0 AND 9
+                  THEN '0' + CAST(((DATEDIFF(SECOND, mulai, selesai) / 60) / 60) AS varchar(10))
+                ELSE CAST(((DATEDIFF(SECOND, mulai, selesai) / 60) / 60) AS varchar(10))
+              END
+              + ':' +
+              CASE
+                WHEN ((DATEDIFF(SECOND, mulai, selesai) / 60) % 60) BETWEEN 0 AND 9
+                  THEN '0' + CAST(((DATEDIFF(SECOND, mulai, selesai) / 60) % 60) AS varchar(10))
+                ELSE CAST(((DATEDIFF(SECOND, mulai, selesai) / 60) % 60) AS varchar(10))
+              END
+          END as menitSM,
+          CONVERT(varchar(10), mulai, 23) as tgl_masuk,
+          CONVERT(varchar(10), selesai, 23) as tgl_selesai,
+          CONVERT(varchar(5), mulai, 108) as jam_masuk,
+          CONVERT(varchar(5), selesai, 108) as jam_selesai,
           kapasitas as kapSM,
           g_shift as shiftSM
           FROM db_dying.tbl_stopmesin
