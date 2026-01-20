@@ -1,8 +1,8 @@
 <?php
-// header("Content-type: application/octet-stream");
-// header("Content-Disposition: attachment; filename=report-produksi-" . substr($_GET['awal'], 0, 10) . ".xls"); //ganti nama sesuai keperluan
-// header("Pragma: no-cache");
-// header("Expires: 0");
+header("Content-type: application/octet-stream");
+header("Content-Disposition: attachment; filename=report-produksi-" . substr($_GET['awal'], 0, 10) . ".xls"); //ganti nama sesuai keperluan
+header("Pragma: no-cache");
+header("Expires: 0");
 //disini script laporan anda
 ?>
 <?php
