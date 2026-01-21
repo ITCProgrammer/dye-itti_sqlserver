@@ -64,3 +64,55 @@ function getNumericVal($val) {
 
     return $val;
 }
+
+function sqlsrvErrorMessage($errors = null)
+{
+    if ($errors === null) {
+        $errors = sqlsrv_errors();
+    }
+
+    if ($errors === null) {
+        return "Unknown SQL Server error.";
+    }
+
+    $msg = "";
+    foreach ($errors as $err) {
+        $msg .= "SQLSTATE: " . $err['SQLSTATE'] . "\n";
+        $msg .= "Kode: " . $err['code'] . "\n";
+        $msg .= "Pesan: " . $err['message'] . "\n\n";
+    }
+
+    return $msg;
+}
+
+function logMonitoringError($con, $message, $user = null)
+{
+    if ($user === null && isset($_SESSION['user_id10'])) {
+        $user = $_SESSION['user_id10'];
+    }
+
+    $sql = "INSERT INTO db_dying.log_monitoring (log, tgl_log, [user]) VALUES (?, GETDATE(), ?)";
+    $params = [$message, $user];
+    $result = sqlsrv_query($con, $sql, $params);
+
+    return $result !== false;
+}
+
+function sqlsrvLogAndAlert($con, $context = null, $user = null, $errors = null, $title = "Error SQL Server!")
+{
+    $msg = sqlsrvErrorMessage($errors);
+    $full = $context ? $context . "\n\n" . $msg : $msg;
+    logMonitoringError($con, $full, $user);
+
+    $msgEscaped = addslashes($msg);
+    $titleEscaped = addslashes($title);
+
+    return "
+    <script>
+        swal({
+            title: '" . $titleEscaped . "',
+            text: `" . $msgEscaped . "`,
+            icon: 'error',
+        });
+    </script>";
+}

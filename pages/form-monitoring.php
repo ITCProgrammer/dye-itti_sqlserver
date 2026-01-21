@@ -1276,25 +1276,8 @@ if ($_POST['simpan_analisa'] == "Simpan") {
 	}
 
 	if ($sqlData1 === false) {
-		$errors = sqlsrv_errors();
-
-		$msg = "";
-		if ($errors !== null) {
-			foreach ($errors as $err) {
-				$msg .= "SQLSTATE: " . $err['SQLSTATE'] . "\n";
-				$msg .= "Kode: " . $err['code'] . "\n";
-				$msg .= "Pesan: " . $err['message'] . "\n\n";
-			}
-		}
-
-		echo "
-		<script>
-			swal({
-				title: 'Error SQL Server!',
-				text: `" . addslashes($msg) . "`,
-				icon: 'error',
-			});
-		</script>";
+		$context = "Form-Monitoring simpan_analisa; nokk=" . (isset($_GET['nokk']) ? $_GET['nokk'] : '');
+		echo sqlsrvLogAndAlert($con, $context);
 
 		exit; // stop proses agar tidak lanjut
 	}
@@ -1487,25 +1470,8 @@ if ($_POST['save'] == "save") {
 					});</script>";
 	}
 	if ($sqlData === false) {
-		$errors = sqlsrv_errors();
-
-		$msg = "";
-		if ($errors !== null) {
-			foreach ($errors as $err) {
-				$msg .= "SQLSTATE: " . $err['SQLSTATE'] . "\n";
-				$msg .= "Kode: " . $err['code'] . "\n";
-				$msg .= "Pesan: " . $err['message'] . "\n\n";
-			}
-		}
-
-		echo "
-		<script>
-			swal({
-				title: 'Error SQL Server!',
-				text: `" . addslashes($msg) . "`,
-				icon: 'error',
-			});
-		</script>";
+		$context = "Form-Monitoring save; nokk=" . (isset($_POST['nokk']) ? $_POST['nokk'] : '') . "; no_mc=" . (isset($_POST['no_mc']) ? $_POST['no_mc'] : '');
+		echo sqlsrvLogAndAlert($con, $context);
 
 		exit; // stop proses agar tidak lanjut
 	}
