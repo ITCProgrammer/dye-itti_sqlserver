@@ -1277,7 +1277,7 @@ if ($_POST['simpan_analisa'] == "Simpan") {
 
 	if ($sqlData1 === false) {
 		$context = "Form-Monitoring simpan_analisa; nokk=" . (isset($_GET['nokk']) ? $_GET['nokk'] : '');
-		echo sqlsrvLogAndAlert($con, $context);
+		echo sqlsrvLogAndAlert($con, $context, null, null, "Error SQL Server!", $sql);
 
 		exit; // stop proses agar tidak lanjut
 	}
@@ -1471,7 +1471,7 @@ if ($_POST['save'] == "save") {
 	}
 	if ($sqlData === false) {
 		$context = "Form-Monitoring save; nokk=" . (isset($_POST['nokk']) ? $_POST['nokk'] : '') . "; no_mc=" . (isset($_POST['no_mc']) ? $_POST['no_mc'] : '');
-		echo sqlsrvLogAndAlert($con, $context);
+		echo sqlsrvLogAndAlert($con, $context, null, null, "Error SQL Server!", $queryLengkap);
 
 		exit; // stop proses agar tidak lanjut
 	}

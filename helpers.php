@@ -85,24 +85,24 @@ function sqlsrvErrorMessage($errors = null)
     return $msg;
 }
 
-function logMonitoringError($con, $message, $user = null)
+function logMonitoringError($con, $message, $user = null, $queryLengkap = null)
 {
     if ($user === null && isset($_SESSION['user_id10'])) {
         $user = $_SESSION['user_id10'];
     }
 
-    $sql = "INSERT INTO db_dying.log_monitoring (log, tgl_log, [user]) VALUES (?, GETDATE(), ?)";
-    $params = [$message, $user];
+    $sql = "INSERT INTO db_dying.log_monitoring (log, tgl_log, [user], [query]) VALUES (?, GETDATE(), ?, ?)";
+    $params = [$message, $user, $queryLengkap];
     $result = sqlsrv_query($con, $sql, $params);
 
     return $result !== false;
 }
 
-function sqlsrvLogAndAlert($con, $context = null, $user = null, $errors = null, $title = "Error SQL Server!")
+function sqlsrvLogAndAlert($con, $context = null, $user = null, $errors = null, $title = "Error SQL Server!", $queryLengkap = null)
 {
     $msg = sqlsrvErrorMessage($errors);
     $full = $context ? $context . "\n\n" . $msg : $msg;
-    logMonitoringError($con, $full, $user);
+    logMonitoringError($con, $full, $user, $queryLengkap);
 
     $msgEscaped = addslashes($msg);
     $titleEscaped = addslashes($title);
