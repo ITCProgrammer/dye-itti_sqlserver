@@ -164,9 +164,9 @@ $shft = $_GET['shft'];
       $Akhir = $_GET['akhir'];
       $Tgl = substr($Awal, 0, 10);
       if ($Awal != $Akhir) {
-        $Where = " CONVERT(char(16), c.tgl_update, 120) BETWEEN '$Awal' AND '$Akhir' ";
+        $Where = " TRY_CONVERT(datetime, c.tgl_update, 120) BETWEEN TRY_CONVERT(datetime, '$Awal', 120) AND TRY_CONVERT(datetime, '$Akhir', 120) ";
       } else {
-        $Where = " CONVERT(date, c.tgl_update) = CONVERT(date, '$Tgl') ";
+        $Where = " TRY_CONVERT(date, c.tgl_update, 120) = TRY_CONVERT(date, '$Tgl', 120) ";
       }
       if ($_GET['shft'] == "ALL") {
         $shft = " ";
@@ -182,30 +182,30 @@ $shft = $_GET['shft'];
                                         a.selesai_stop,
                                         a.ket,
                                         CASE 
-                                          WHEN c.tgl_mulai IS NULL OR c.tgl_stop IS NULL 
-                                            THEN CONVERT(VARCHAR(5), a.lama_proses, 108)
+                                          WHEN TRY_CONVERT(datetime, c.tgl_mulai, 120) IS NULL OR TRY_CONVERT(datetime, c.tgl_stop, 120) IS NULL 
+                                            THEN CONVERT(VARCHAR(5), TRY_CONVERT(time, a.lama_proses, 108), 108)
                                           ELSE
                                             RIGHT('0' + CAST(
                                               FLOOR((
-                                                (DATEPART(HOUR, a.lama_proses) * 60 + DATEPART(MINUTE, a.lama_proses))
-                                                - (DATEDIFF(SECOND, c.tgl_stop, c.tgl_mulai) / 60)
+                                                (DATEPART(HOUR, TRY_CONVERT(time, a.lama_proses, 108)) * 60 + DATEPART(MINUTE, TRY_CONVERT(time, a.lama_proses, 108)))
+                                                - (DATEDIFF(SECOND, TRY_CONVERT(datetime, c.tgl_stop, 120), TRY_CONVERT(datetime, c.tgl_mulai, 120)) / 60)
                                               ) / 60) AS VARCHAR(2)
                                             ), 2)
                                             + ':' +
                                             RIGHT('0' + CAST(
                                               (
-                                                (DATEPART(HOUR, a.lama_proses) * 60 + DATEPART(MINUTE, a.lama_proses))
-                                                - (DATEDIFF(SECOND, c.tgl_stop, c.tgl_mulai) / 60)
+                                                (DATEPART(HOUR, TRY_CONVERT(time, a.lama_proses, 108)) * 60 + DATEPART(MINUTE, TRY_CONVERT(time, a.lama_proses, 108)))
+                                                - (DATEDIFF(SECOND, TRY_CONVERT(datetime, c.tgl_stop, 120), TRY_CONVERT(datetime, c.tgl_mulai, 120)) / 60)
                                               ) % 60 AS VARCHAR(2)
                                             ), 2)
                                         END AS lama_proses,
                                         a.status as sts,
                                         a.point,
-                                        CONVERT(varchar(10), a.mulai_stop, 23) as t_mulai,
-                                        CONVERT(varchar(10), a.selesai_stop, 23) as t_selesai,
-                                        CONVERT(varchar(5), a.mulai_stop, 108) as j_mulai,
-                                        CONVERT(varchar(5), a.selesai_stop, 108) as j_selesai,
-                                        (DATEDIFF(SECOND, a.mulai_stop, a.selesai_stop) / 60) as lama_stop_menit,
+                                        CONVERT(varchar(10), TRY_CONVERT(datetime, a.mulai_stop, 120), 23) as t_mulai,
+                                        CONVERT(varchar(10), TRY_CONVERT(datetime, a.selesai_stop, 120), 23) as t_selesai,
+                                        CONVERT(varchar(5), TRY_CONVERT(datetime, a.mulai_stop, 120), 108) as j_mulai,
+                                        CONVERT(varchar(5), TRY_CONVERT(datetime, a.selesai_stop, 120), 108) as j_selesai,
+                                        (DATEDIFF(SECOND, TRY_CONVERT(datetime, a.mulai_stop, 120), TRY_CONVERT(datetime, a.selesai_stop, 120)) / 60) as lama_stop_menit,
                                         a.acc_keluar,
                                         CASE WHEN (a.proses = '' OR a.proses IS NULL) THEN b.proses ELSE a.proses END as proses,
                                         b.buyer,
@@ -242,10 +242,10 @@ $shft = $_GET['shft'];
                                         c.nozzle,
                                         c.plaiter,
                                         c.blower,
-                                        CONVERT(varchar(10), c.tgl_buat, 23) as tgl_in,
-                                        CONVERT(varchar(10), a.tgl_buat, 23) as tgl_out,
-                                        CONVERT(varchar(5), c.tgl_buat, 108) as jam_in,
-                                        CONVERT(varchar(5), a.tgl_buat, 108) as jam_out,
+                                        CONVERT(varchar(10), TRY_CONVERT(datetime, c.tgl_buat, 120), 23) as tgl_in,
+                                        CONVERT(varchar(10), TRY_CONVERT(datetime, a.tgl_buat, 120), 23) as tgl_out,
+                                        CONVERT(varchar(5), TRY_CONVERT(datetime, c.tgl_buat, 120), 108) as jam_in,
+                                        CONVERT(varchar(5), TRY_CONVERT(datetime, a.tgl_buat, 120), 108) as jam_out,
                                         ISNULL(a.g_shift, c.g_shift) as shft,
                                         a.operator_keluar,
                                         a.k_resep,
@@ -304,7 +304,7 @@ $shft = $_GET['shft'];
                                         $shft 
                                         $Where
                                         )x ON (a.no_mesin=x.no_mesin or a.no_mc_lama=x.no_mesin) ORDER BY a.no_mesin");
-
+          
       $no = 1;
 
       $c = 0;
