@@ -1239,12 +1239,12 @@
 				satuan_order,
 				lot, rol, bruto, no_rajut, shift, g_shift, kapasitas, no_mesin, no_urut, no_sch,
 				 loading, resep, no_resep, no_resep2, suffix, suffix2, energi, dyestuff, proses,
-				 revisi, kategori_warna, ket_status, ket_kain, tgl_masuk,
+				 revisi, kategori_warna, ket_status, ket_kain, personil, tgl_masuk,
 				 kk_kestabilan, kk_normal, tgl_update)
 				OUTPUT INSERTED.id
 				VALUES
 				(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-				 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,  GETDATE(), ?, ?, GETDATE())";
+				 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?, GETDATE())";
 			// $sqlInsert = "INSERT INTO db_dying.tbl_schedule
 			// 	(nokk, 
 			// 	nodemand, 
@@ -1314,6 +1314,7 @@
 				$_POST['kategori_warna'],
 				$ket_status_db,
 				$ket_kain_db,
+				$_POST['personil'],
 				$kk_kestabilan,
 				$kk_normal
 			);
