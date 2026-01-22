@@ -1315,14 +1315,27 @@ if ($_POST['save'] == "save") {
 											ORDER BY 
 												th.id DESC");
 	$rcekW1 				= sqlsrv_fetch_array($sqlCekWaktu1);
-	$awalP1  				= strtotime(formatDateTime($rcekW1['jam_stop'], 'H:i'));
-	$akhirP1 				= strtotime(formatDateTime($rcekW1['jam_start'], 'H:i'));
-	$diffP1  				= ($akhirP1 - $awalP1);
-	$tjamP1  				= round($diffP1 / (60 * 60), 2);
+	$awalP1Str 				= formatDateTime($rcekW1['jam_stop'] ?? null, 'H:i');
+	$akhirP1Str 			= formatDateTime($rcekW1['jam_start'] ?? null, 'H:i');
+	if ($awalP1Str === null || $akhirP1Str === null) {
+		$tjamP1 = null;
+	} else {
+		$awalP1  = strtotime($awalP1Str);
+		$akhirP1 = strtotime($akhirP1Str);
+		if ($awalP1 === false || $akhirP1 === false) {
+			$tjamP1 = null;
+		} else {
+			$diffP1 = ($akhirP1 - $awalP1);
+			$tjamP1 = round($diffP1 / (60 * 60), 2);
+		}
+	}
+	$tjamP1 = clampDecimal($tjamP1, 999.99);
 	$tgljam 				= $_POST['jammasukkain'] . ' ' . $_POST['tglmasukkain'];
-	list($t_jam, $t_menit) 	= explode(":", $_POST['target']);
-    $total_menit 			= ($t_jam * 60) + $t_menit;
-	$cycle_time 			= num($_POST['cycle_time']);
+	$targetParts 			= explode(":", $_POST['target']);
+	$t_jam 					= $targetParts[0] ?? 0;
+	$t_menit 				= $targetParts[1] ?? 0;
+    $total_menit 			= ((int)$t_jam * 60) + (int)$t_menit;
+	$cycle_time 			= normalizeInt($_POST['cycle_time'] ?? null);
 	// echo $cycle_time;
 	// sqlsrv_query($con, "SELECT DATEADD(MINUTE, $total_menit, $tgljam) AS TGL");
 	$sql = "SELECT DATEADD(MINUTE, ?, ?) AS TGL";
@@ -1334,26 +1347,33 @@ if ($_POST['save'] == "save") {
 	// $rpm 		= toNumericOrNull($_POST['rpm']);
 	// $tekanan	= toNumericOrNull($_POST['tekanan']);
 	// $tekanan	= ($_POST['tekanan']?''?NULL);
-	$tekanan 	= is_numeric(getNumericVal($_POST['tekanan'])) ? getNumericVal($_POST['tekanan']) : null;
-	$rpm     	= is_numeric(getNumericVal($_POST['rpm'])) ? getNumericVal($_POST['rpm']) : null;
+	$tekanan 	= clampDecimal(normalizeDecimal($_POST['tekanan'] ?? null, 2), 99999.99);
+	$rpm     	= normalizeInt($_POST['rpm'] ?? null);
 	$tgl_masuk 	=  $_POST['jammasukkain']. " " . $_POST['tglmasukkain'];
-	$pakai_air 	= is_numeric(getNumericVal($_POST['pakai_air'])) ? ceil(getNumericVal($_POST['pakai_air'])) : null;
-	$grms_a     = is_numeric(getNumericVal($_POST['grms_a'])) ? getNumericVal($_POST['grms_a']) : null;
-    $lebar_a    = is_numeric(getNumericVal($_POST['lebar_a'])) ? getNumericVal($_POST['lebar_a']) : null;
-    $pjng_kain  = is_numeric(getNumericVal($_POST['pjng_kain'])) ? getNumericVal($_POST['pjng_kain']) : null;
-    $pjng_kain_lub = is_numeric(getNumericVal($_POST['pjng_kain_perlubang'])) ? getNumericVal($_POST['pjng_kain_perlubang']) : null;
-    $bruto      = is_numeric(getNumericVal($_POST['qty3'])) ? getNumericVal($_POST['qty3']) : null; // Asumsi qty3 adalah bruto
-    $lr         = is_numeric(getNumericVal($_POST['l_r'])) ? getNumericVal($_POST['l_r'] ): null;
-    $lr2        = is_numeric(getNumericVal($_POST['l_r2'])) ? getNumericVal($_POST['l_r2']) : null;
-	$lb1 		= is_numeric(getNumericVal($_POST['lb1'])) ? getNumericVal($_POST['lb1'] ): null;
-    $lb2 		= is_numeric(getNumericVal($_POST['lb2'])) ? getNumericVal($_POST['lb2'] ): null;
-    $lb3 		= is_numeric(getNumericVal($_POST['lb3'])) ? getNumericVal($_POST['lb3'] ): null;
-    $lb4 		= is_numeric(getNumericVal($_POST['lb4'])) ? getNumericVal($_POST['lb4'] ): null;
-    $lb5 		= is_numeric(getNumericVal($_POST['lb5'])) ? getNumericVal($_POST['lb5'] ): null;
-    $lb6 		= is_numeric(getNumericVal($_POST['lb6'])) ? getNumericVal($_POST['lb6'] ): null;
-    $lb7 		= is_numeric(getNumericVal($_POST['lb7'])) ? getNumericVal($_POST['lb7'] ): null;
-    $lb8 		= is_numeric(getNumericVal($_POST['lb8'])) ? getNumericVal($_POST['lb8'] ): null;
-    $lb8 		= is_numeric(getNumericVal($_POST['lb8'])) ? getNumericVal($_POST['lb8'] ): null;
+	$pakai_air 	= normalizeNumber($_POST['pakai_air'] ?? null);
+	$pakai_air 	= $pakai_air === null ? null : (int)ceil($pakai_air);
+	$carry_over = normalizeInt($_POST['carry_over'] ?? null);
+	$grms_a     = normalizeInt($_POST['grms_a'] ?? null);
+    $lebar_a    = normalizeInt($_POST['lebar_a'] ?? null);
+    $pjng_kain  = normalizeDecimal($_POST['pjng_kain'] ?? null, 2);
+    $pjng_kain_lub = normalizeDecimal($_POST['pjng_kain_perlubang'] ?? null, 2);
+	$rol        = isset($_POST['qty3']) ? trim($_POST['qty3']) : null;
+    $bruto      = normalizeDecimal($_POST['qty4'] ?? null, 2);
+    $lr         = isset($_POST['l_r']) ? trim($_POST['l_r']) : null;
+    $lr2        = isset($_POST['l_r2']) ? trim($_POST['l_r2']) : null;
+	$lb1 		= normalizeInt($_POST['lb1'] ?? null);
+    $lb2 		= normalizeInt($_POST['lb2'] ?? null);
+    $lb3 		= normalizeInt($_POST['lb3'] ?? null);
+    $lb4 		= normalizeInt($_POST['lb4'] ?? null);
+    $lb5 		= normalizeInt($_POST['lb5'] ?? null);
+    $lb6 		= normalizeInt($_POST['lb6'] ?? null);
+    $lb7 		= normalizeInt($_POST['lb7'] ?? null);
+    $lb8 		= normalizeInt($_POST['lb8'] ?? null);
+	$nozzle     = normalizeInt($_POST['nozzle'] ?? null);
+	$blower     = clampDecimal(normalizeDecimal($_POST['blower'] ?? null, 2), 999.99);
+	$air_awal   = normalizeDecimal($_POST['air_awal'] ?? null, 2);
+	$lebar_fin  = normalizeInt($_POST['lebar_fin'] ?? null);
+	$grm_fin    = normalizeInt($_POST['grm_fin'] ?? null);
 
 	$sql = "INSERT INTO db_dying.tbl_montemp (
             id_schedule, nodemand, nokk, operator, colorist, leader, pakai_air,
@@ -1377,38 +1397,38 @@ if ($_POST['save'] == "save") {
         $_POST['colorist'], 
         $_POST['leader'], 
         $pakai_air, // Sudah aman
-        $_POST['carry_over'], 
+        $carry_over, 
         $_POST['shift'], 
         $grms_a,     // DIPERBAIKI
         $lebar_a,    // DIPERBAIKI
         $pjng_kain,  // DIPERBAIKI
         $pjng_kain_lub, // DIPERBAIKI
-        $bruto,      // DIPERBAIKI (qty3)
-        $_POST['qty4'], 
+        $rol, 
+        $bruto, 
         $_POST['nokk_legacy'], 
         $_POST['g_shift'], 
         $_POST['no_program'], 
         $lr,         // DIPERBAIKI
         $lr2,        // DIPERBAIKI
         $_POST['gabung'], 
-        $_POST['cycle_time'], 
+        $cycle_time, 
         $lb1, $lb2, $lb3, $lb4, $lb5, $lb6, $lb7, $lb8, // DIPERBAIKI SEMUA
         $rpm,       // Sudah aman
         $tekanan,   // Sudah aman
-        $_POST['nozzle'], 
+        $nozzle, 
         $benang, 
         $_POST['std_cok_wrn'], 
         $_POST['ket'], 
         $tgl_masuk,
         $tgl_trgt, 
-        $_POST['blower'], 
+        $blower, 
         $_POST['plaiter'], 
-        $_POST['air_awal'], 
+        $air_awal, 
         $tjamP1, 
         $jk1,
         $_POST['oper_shift'], 
-        $_POST['lebar_fin'], 
-        $_POST['grm_fin'], 
+        $lebar_fin, 
+        $grm_fin, 
         $_POST['masukkain'], 
         $_POST['kategori_resep'],
         $_POST['kasih_resep'], 
