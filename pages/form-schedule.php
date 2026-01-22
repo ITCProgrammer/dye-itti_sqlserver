@@ -1201,6 +1201,11 @@
 			$jns = str_replace("'", "''", $_POST['jns_kain']);
 			$po = str_replace("'", "''", $_POST['no_po']);
 			$lot = trim($_POST['lot']);
+			if (!empty($_POST['qty4']) && !empty($_POST['kapasitas'])) {
+				$loading1 = round($_POST['qty4'] / $_POST['kapasitas'], 4) * 100;
+			} else {
+				$loading1 = '0';
+			}
 			if ($_POST['kk_kestabilan'] == "1") {
 				$kk_kestabilan = "1";
 			} else {
