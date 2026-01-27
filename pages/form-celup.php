@@ -2005,11 +2005,11 @@ if ($_POST['save'] == "save") {
 		]
 	);
 
-	// if ($sqlData === false) {
-	// 	$err = print_r(sqlsrv_errors(), true);
-	// 	echo "<pre>Gagal INSERT ke db_dying.tbl_hasilcelup:\n{$err}</pre>";
-	// 	exit;
-	// }
+	if ($sqlData === false) {
+		$err = print_r(sqlsrv_errors(), true);
+		echo "<pre>Gagal INSERT ke db_dying.tbl_hasilcelup:\n{$err}</pre>";
+		exit;
+	}
 
 	if ($sqlData) {
 		/* awal form potong */
