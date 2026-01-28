@@ -7,20 +7,106 @@
 ?>
 
 <?php
+  $queryErrors = [];
+  $inputWarnings = [];
+
+  function addSqlsrvError(&$queryErrors, $context, $query = '')
+  {
+    $errors = sqlsrv_errors(SQLSRV_ERR_ERRORS);
+    if (!$errors) {
+      $queryErrors[] = $context . " gagal. Detail error tidak tersedia.";
+      return;
+    }
+
+    foreach ($errors as $err) {
+      $msg = $context . " gagal. SQLSTATE: " . $err['SQLSTATE'] . ", Code: " . $err['code'] . ", Message: " . $err['message'];
+      if ($query !== '') {
+        $msg .= " | Query: " . $query;
+      }
+      $queryErrors[] = $msg;
+    }
+  }
+
+  function addDb2Error(&$queryErrors, $context, $conn2, $query = '')
+  {
+    $err = db2_stmt_errormsg();
+    if ($err === '' || $err === null) {
+      $err = db2_conn_errormsg($conn2);
+    }
+    if ($err === '' || $err === null) {
+      $queryErrors[] = $context . " gagal. Detail error tidak tersedia.";
+      return;
+    }
+
+    $msg = $context . " gagal. Message: " . $err;
+    if ($query !== '') {
+      $msg .= " | Query: " . $query;
+    }
+    $queryErrors[] = $msg;
+  }
+
+  function normalizeDate($date, &$inputWarnings, $label)
+  {
+    $date = trim($date);
+    if ($date === '') {
+      return '';
+    }
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+      $inputWarnings[] = $label . " tidak valid, format harus YYYY-MM-DD. Input diabaikan.";
+      return '';
+    }
+    return $date;
+  }
+
+  function normalizeTime($time, &$inputWarnings, $label)
+  {
+    $time = trim($time);
+    if ($time === '') {
+      return '';
+    }
+
+    if (preg_match('/^\d{1,2}$/', $time)) {
+      $time = $time . ':00';
+    } elseif (preg_match('/^\d{1,2}:$/', $time)) {
+      $time = $time . '00';
+    } elseif (preg_match('/^\d{1,2}:\d{1}$/', $time)) {
+      $time = $time . '0';
+    } elseif (!preg_match('/^\d{1,2}:\d{2}$/', $time)) {
+      $inputWarnings[] = $label . " tidak valid, format harus HH:MM. Input diabaikan.";
+      return '';
+    }
+
+    list($hh, $mm) = explode(':', $time);
+    $hh = (int)$hh;
+    $mm = (int)$mm;
+    if ($hh < 0 || $hh > 23 || $mm < 0 || $mm > 59) {
+      $inputWarnings[] = $label . " di luar rentang (00:00-23:59). Input diabaikan.";
+      return '';
+    }
+
+    return str_pad((string)$hh, 2, '0', STR_PAD_LEFT) . ':' . str_pad((string)$mm, 2, '0', STR_PAD_LEFT);
+  }
+
   $daftarProses = [];
-  $queryProses  = sqlsrv_query($con, "SELECT DISTINCT proses FROM db_dying.tbl_proses ORDER BY proses ASC");
+  $queryProsesSql = "SELECT DISTINCT proses FROM db_dying.tbl_proses ORDER BY proses ASC";
+  $queryProses  = sqlsrv_query($con, $queryProsesSql);
   if ($queryProses !== false) {
     while ($rowProses = sqlsrv_fetch_array($queryProses, SQLSRV_FETCH_ASSOC)) {
       $daftarProses[] = $rowProses['proses'];
     }
+  } else {
+    addSqlsrvError($queryErrors, "Query daftar proses", $queryProsesSql);
   }
 
   $statusProses = [];
-  $queryStatusProses = sqlsrv_query($con, "SELECT nama FROM db_dying.tbl_status_proses ORDER BY nama ASC");
+  $queryStatusProsesSql = "SELECT nama FROM db_dying.tbl_status_proses ORDER BY nama ASC";
+  $queryStatusProses = sqlsrv_query($con, $queryStatusProsesSql);
   if ($queryStatusProses !== false) {
     while ($rowStatusProses = sqlsrv_fetch_array($queryStatusProses, SQLSRV_FETCH_ASSOC)) {
       $statusProses[] = $rowStatusProses['nama'];
     }
+  } else {
+    addSqlsrvError($queryErrors, "Query status proses", $queryStatusProsesSql);
   }
 ?>
 <?php
@@ -31,6 +117,11 @@
   $jamA  = isset($_POST['jam_awal']) ? $_POST['jam_awal'] : '';
   $jamAr = isset($_POST['jam_akhir']) ? $_POST['jam_akhir'] : '';
   $Rcode = isset($_POST['rcode']) ? $_POST['rcode'] : '';
+
+  $Awal = normalizeDate($Awal, $inputWarnings, 'Tanggal awal');
+  $Akhir = normalizeDate($Akhir, $inputWarnings, 'Tanggal akhir');
+  $jamA = normalizeTime($jamA, $inputWarnings, 'Jam awal');
+  $jamAr = normalizeTime($jamAr, $inputWarnings, 'Jam akhir');
 
   $start_date = '';
   $stop_date  = '';
@@ -71,7 +162,7 @@
     } else {
       $shft = " ISNULL(a.g_shift, c.g_shift)='$GShift' AND ";
     }
-    $sql = sqlsrv_query($con, "SELECT x.*, a.no_mesin as mc 
+    $sqlMain = "SELECT x.*, a.no_mesin as mc 
                                   FROM db_dying.tbl_mesin a
                                       LEFT JOIN
                                       (SELECT
@@ -118,7 +209,7 @@
                                       b.id as idshedule,
                                       c.id as idmontemp,
 		                                  a.status_proses,
-                                      COALESCE(a.point2, b.target) as point2
+                                      COALESCE(TRY_CONVERT(decimal(18, 4), a.point2), TRY_CONVERT(decimal(18, 4), b.target)) as point2
                                     FROM
                                       db_dying.tbl_schedule b
                                         LEFT JOIN  db_dying.tbl_montemp c ON c.id_schedule = b.id
@@ -126,7 +217,8 @@
                                     WHERE
                                       $shft 
                                       $Where
-                                      )x ON (a.no_mesin=x.no_mesin) ORDER BY a.no_mesin");
+                                      )x ON (CAST(a.no_mesin AS varchar(50)) = CAST(x.no_mesin AS varchar(50))) ORDER BY a.no_mesin";
+    $sql = sqlsrv_query($con, $sqlMain);
     $no = 1;
     $c = 0;
     $totrol = 0;
@@ -134,21 +226,25 @@
     $data=array();
     $mc_all=array();
     $nokk_all=array();
-    while ($rowd = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)) {
-      $rl ="";
-      if (strlen($rowd['rol']) > 5) {
-        $jk = strlen($rowd['rol']) - 5;
-        $rl = substr($rowd['rol'], 0, $jk);
-      } else {
-        $rl = $rowd['rol'];
+    if ($sql !== false) {
+      while ($rowd = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)) {
+        $rl ="";
+        if (strlen($rowd['rol']) > 5) {
+          $jk = strlen($rowd['rol']) - 5;
+          $rl = substr($rowd['rol'], 0, $jk);
+        } else {
+          $rl = $rowd['rol'];
+        }
+        $rowd['rl']=$rl;
+        
+        $data[]=$rowd;
+        $mc_all[]=$rowd['mc'];
+        if($rowd['nokk']!=""){
+          $nokk_all[]=$rowd['nokk'];
+        }
       }
-      $rowd['rl']=$rl;
-      
-      $data[]=$rowd;
-      $mc_all[]=$rowd['mc'];
-      if($rowd['nokk']!=""){
-        $nokk_all[]=$rowd['nokk'];
-      }
+    } else {
+      addSqlsrvError($queryErrors, "Query data utama", $sqlMain);
     }
     $mesin_join= join("','",$mc_all);
     if ($GShift == "ALL") {
@@ -157,41 +253,62 @@
       $shftSM = " g_shift='$GShift' AND ";
     }
     $mesin=array();
-    $sqlSM = sqlsrv_query($con, "SELECT *,
-                    kapasitas as kapSM,
-                    g_shift as shiftSM
-                    FROM db_dying.tbl_stopmesin
-                    WHERE $shftSM tgl_update BETWEEN '$start_date' AND '$stop_date' AND no_mesin IN ('$mesin_join')");
-    while ($rowSM = sqlsrv_fetch_array($sqlSM, SQLSRV_FETCH_ASSOC)) {
-      $mesin[$rowSM['no_mesin']]=$rowSM;
+    if (!empty($mc_all)) {
+      $sqlSMSql = "SELECT *,
+                      kapasitas as kapSM,
+                      g_shift as shiftSM
+                      FROM db_dying.tbl_stopmesin
+                      WHERE $shftSM tgl_update BETWEEN '$start_date' AND '$stop_date' AND no_mesin IN ('$mesin_join')";
+      $sqlSM = sqlsrv_query($con, $sqlSMSql);
+      if ($sqlSM !== false) {
+        while ($rowSM = sqlsrv_fetch_array($sqlSM, SQLSRV_FETCH_ASSOC)) {
+          $mesin[$rowSM['no_mesin']]=$rowSM;
+        }
+      } else {
+        addSqlsrvError($queryErrors, "Query stop mesin", $sqlSMSql);
+      }
     }
                 
     $subcode_all=array();
     $nokk_join= join("','",$nokk_all);
                 
-    $q_itxviewkk = db2_exec($conn2, "SELECT TRIM(PRODUCTIONORDERCODE) AS PRODUCTIONORDERCODE,
-                                        LISTAGG(DISTINCT TRIM(LOT), ', ') AS LOT,
-                                        LISTAGG(DISTINCT TRIM(SUBCODE01), ', ') AS SUBCODE01 
-                                      FROM 
-                                        ITXVIEWKK 
-                                        WHERE PRODUCTIONORDERCODE IN ('$nokk_join')
-                                  GROUP BY PRODUCTIONORDERCODE; ");
-    while ($rowCode = db2_fetch_assoc($q_itxviewkk)) {
-      $subcode_all[$rowCode['PRODUCTIONORDERCODE']]=$rowCode;
+    if (!empty($nokk_all)) {
+      $qItxSql = "SELECT TRIM(PRODUCTIONORDERCODE) AS PRODUCTIONORDERCODE,
+                                          LISTAGG(DISTINCT TRIM(LOT), ', ') AS LOT,
+                                          LISTAGG(DISTINCT TRIM(SUBCODE01), ', ') AS SUBCODE01 
+                                        FROM 
+                                          ITXVIEWKK 
+                                          WHERE PRODUCTIONORDERCODE IN ('$nokk_join')
+                                    GROUP BY PRODUCTIONORDERCODE; ";
+      $q_itxviewkk = db2_exec($conn2, $qItxSql);
+      if ($q_itxviewkk !== false) {
+        while ($rowCode = db2_fetch_assoc($q_itxviewkk)) {
+          $subcode_all[$rowCode['PRODUCTIONORDERCODE']]=$rowCode;
+        }
+      } else {
+        addDb2Error($queryErrors, "Query ITXVIEWKK", $conn2, $qItxSql);
+      }
     }
     $lama_proses_all=array();
-    $qryLama = sqlsrv_query($con, "SELECT b.nokk,
-                                      DATEDIFF(MINUTE, b.tgl_buat, GETDATE()) AS lama 
-                                    FROM
-                                      db_dying.tbl_schedule a
-                                    LEFT JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule 
-                                    WHERE
-                                       b.nokk IN ('$nokk_join')
-                                    AND b.STATUS = 'sedang jalan' 
-                                      ORDER BY
-                                    a.no_urut ASC");
-    while ($rLama = sqlsrv_fetch_array($qryLama, SQLSRV_FETCH_ASSOC)) {
-      $lama_proses_all[$rLama['nokk']]=$rLama;
+    if (!empty($nokk_all)) {
+      $qryLamaSql = "SELECT b.nokk,
+                                        DATEDIFF(MINUTE, b.tgl_buat, GETDATE()) AS lama 
+                                      FROM
+                                        db_dying.tbl_schedule a
+                                      LEFT JOIN db_dying.tbl_montemp b ON a.id = b.id_schedule 
+                                      WHERE
+                                         b.nokk IN ('$nokk_join')
+                                      AND b.STATUS = 'sedang jalan' 
+                                        ORDER BY
+                                      a.no_urut ASC";
+      $qryLama = sqlsrv_query($con, $qryLamaSql);
+      if ($qryLama !== false) {
+        while ($rLama = sqlsrv_fetch_array($qryLama, SQLSRV_FETCH_ASSOC)) {
+          $lama_proses_all[$rLama['nokk']]=$rLama;
+        }
+      } else {
+        addSqlsrvError($queryErrors, "Query lama proses", $qryLamaSql);
+      }
     }
   }  
   ?>
@@ -221,6 +338,28 @@
 
 <body>
   
+  <?php if (!empty($inputWarnings)) { ?>
+    <div class="alert alert-warning" style="margin: 10px;">
+      <strong>Input tidak valid:</strong>
+      <ul style="margin: 5px 0 0 18px;">
+        <?php foreach ($inputWarnings as $warn) { ?>
+          <li><?php echo htmlspecialchars($warn, ENT_QUOTES, 'UTF-8'); ?></li>
+        <?php } ?>
+      </ul>
+    </div>
+  <?php } ?>
+
+  <?php if (!empty($queryErrors)) { ?>
+    <div class="alert alert-danger" style="margin: 10px;">
+      <strong>Terjadi kesalahan query:</strong>
+      <ul style="margin: 5px 0 0 18px;">
+        <?php foreach ($queryErrors as $err) { ?>
+          <li><?php echo htmlspecialchars($err, ENT_QUOTES, 'UTF-8'); ?></li>
+        <?php } ?>
+      </ul>
+    </div>
+  <?php } ?>
+
   <div class="box">
     <div class="box-header with-border">
       <h3 class="box-title"> Filter Laporan Harian Produksi (Baru)</h3>
