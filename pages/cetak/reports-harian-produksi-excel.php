@@ -182,22 +182,8 @@ $shft = $_GET['shft'];
                                         a.selesai_stop,
                                         a.ket,
                                         CASE 
-                                          WHEN TRY_CONVERT(datetime, c.tgl_mulai, 120) IS NULL OR TRY_CONVERT(datetime, c.tgl_stop, 120) IS NULL 
-                                            THEN CONVERT(VARCHAR(5), TRY_CONVERT(time, a.lama_proses, 108), 108)
-                                          ELSE
-                                            RIGHT('0' + CAST(
-                                              FLOOR((
-                                                (DATEPART(HOUR, TRY_CONVERT(time, a.lama_proses, 108)) * 60 + DATEPART(MINUTE, TRY_CONVERT(time, a.lama_proses, 108)))
-                                                - (DATEDIFF(SECOND, TRY_CONVERT(datetime, c.tgl_stop, 120), TRY_CONVERT(datetime, c.tgl_mulai, 120)) / 60)
-                                              ) / 60) AS VARCHAR(2)
-                                            ), 2)
-                                            + ':' +
-                                            RIGHT('0' + CAST(
-                                              (
-                                                (DATEPART(HOUR, TRY_CONVERT(time, a.lama_proses, 108)) * 60 + DATEPART(MINUTE, TRY_CONVERT(time, a.lama_proses, 108)))
-                                                - (DATEDIFF(SECOND, TRY_CONVERT(datetime, c.tgl_stop, 120), TRY_CONVERT(datetime, c.tgl_mulai, 120)) / 60)
-                                              ) % 60 AS VARCHAR(2)
-                                            ), 2)
+                                          WHEN lm.total_menit IS NULL THEN NULL
+                                          ELSE CONVERT(VARCHAR(5), DATEADD(MINUTE, lm.total_menit, 0), 108)
                                         END AS lama_proses,
                                         a.status as sts,
                                         a.point,
@@ -299,7 +285,19 @@ $shft = $_GET['shft'];
                                       FROM
                                         db_dying.tbl_schedule b
                                           LEFT JOIN  db_dying.tbl_montemp c ON c.id_schedule = b.id
-                                          LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id	
+                                          LEFT JOIN db_dying.tbl_hasilcelup a ON a.id_montemp=c.id
+                                          CROSS APPLY (
+                                            SELECT 
+                                              CASE 
+                                                WHEN TRY_CONVERT(datetime, c.tgl_mulai, 120) IS NULL OR TRY_CONVERT(datetime, c.tgl_stop, 120) IS NULL 
+                                                  THEN (DATEPART(HOUR, TRY_CONVERT(time, a.lama_proses, 108)) * 60 + DATEPART(MINUTE, TRY_CONVERT(time, a.lama_proses, 108)))
+                                                ELSE
+                                                  (
+                                                    (DATEPART(HOUR, TRY_CONVERT(time, a.lama_proses, 108)) * 60 + DATEPART(MINUTE, TRY_CONVERT(time, a.lama_proses, 108)))
+                                                    - (DATEDIFF(SECOND, TRY_CONVERT(datetime, c.tgl_stop, 120), TRY_CONVERT(datetime, c.tgl_mulai, 120)) / 60)
+                                                  )
+                                              END AS total_menit
+                                          ) lm	
                                       WHERE
                                         $shft 
                                         $Where
