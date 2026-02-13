@@ -1170,6 +1170,18 @@
 	function toDateOrNull($v) {
     	return ($v === '' || $v === null) ? null : $v; 
 	}
+	function round2OrNull($value) {
+		if ($value === '' || $value === null) {
+			return null;
+		}
+		$value = str_replace(',', '.', $value);
+
+		if (!is_numeric($value)) {
+			return null;
+		}
+
+		return round((float)$value, 2);
+	}
 	if ($_POST['save'] == "save") {
 		function sqlsrv_last_insert_id($con) {
 			$stmt = sqlsrv_query($con, "SELECT SCOPE_IDENTITY() AS last_id");
@@ -1293,12 +1305,12 @@
 				(int)toDateOrNull($_POST['grms']),
 				$warna,
 				$nowarna,
-				(int)toDateOrNull($_POST['qty1']),
+				round2OrNull($_POST['qty1']),
 				(int)toDateOrNull($_POST['qty2']),
 				$_POST['satuan1'],
 				$lot,
 				(int)toDateOrNull($_POST['qty3']),
-				(int)toDateOrNull($_POST['qty4']),
+				round2OrNull($_POST['qty4']),
 				$_POST['no_rajut'],
 				$_POST['shift'],
 				$_POST['g_shift'],
