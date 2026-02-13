@@ -1306,7 +1306,7 @@
 				$warna,
 				$nowarna,
 				round2OrNull($_POST['qty1']),
-				(int)toDateOrNull($_POST['qty2']),
+				round2OrNull($_POST['qty2']),
 				$_POST['satuan1'],
 				$lot,
 				(int)toDateOrNull($_POST['qty3']),
