@@ -135,7 +135,9 @@ WHERE $nokk ((a.`status`='selesai' AND b.`status`='sedang jalan') or (a.`status`
      <td><?php echo $rowd['warna'];?></td>
      <td align="left"><?php echo $rowd['no_warna'];?></td>
      <td align="center"><?php echo $rowd['lot'];?></td>
-     <td align="center"><?php echo $rowd['tgl_delivery'];?></td>
+    <td align="center">
+      <?= ($rowd['tgl_delivery'] instanceof DateTime) ? $rowd['tgl_delivery']->format('Y-m-d') : ($rowd['tgl_delivery'] ?? '') ?>
+    </td>
      <td align="center"><?php echo $rowd['rol'];?></td>
      <td align="right"><?php echo $rowd['bruto'];?></td>
      <td><i class="label bg-abu"><?php echo $rowd['ket_status'];?></i><br />
