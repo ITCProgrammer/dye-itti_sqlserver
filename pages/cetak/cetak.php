@@ -315,7 +315,7 @@ $rowbg = sqlsrv_fetch_array($sqlbg);
           <font size="+1">FORM TEMPELAN SAMPLE CELUP</font>
         </strong></td>
       <td width="29%">
-        <pre>No. Form		: FW - 12 - CQA - 13</pre>
+        <pre>No. Form		: FW - 12 - DYE - 27</pre>
       </td>
     </tr>
     <tr>
@@ -325,7 +325,7 @@ $rowbg = sqlsrv_fetch_array($sqlbg);
     </tr>
     <tr>
       <td>
-        <pre>Tgl. Terbit	: 14 Oktober 2025</pre>
+        <pre>Tgl. Terbit	: 19 Februari 2026</pre>
       </td>
     </tr>
   </table>
