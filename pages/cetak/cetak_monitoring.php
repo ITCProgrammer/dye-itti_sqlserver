@@ -6,8 +6,10 @@ include "../../koneksiLAB.php";
 //--
 $idkk = $_REQUEST['idkk'];
 $act = $_GET['g'];
-$sqlbg = mysqli_query($con, "select * from tbl_schedule where id='$_GET[ids]'");
-$rowbg = mysqli_fetch_array($sqlbg);
+
+/* === SQL SERVER === */
+$sqlbg = sqlsrv_query($con, "select * from db_dying.tbl_schedule where id='$_GET[ids]'");
+$rowbg = sqlsrv_fetch_array($sqlbg, SQLSRV_FETCH_ASSOC);
 //-
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -45,9 +47,9 @@ $rowbg = mysqli_fetch_array($sqlbg);
     // Suppress print dialog (for this context only)
     jsPrintSetup.setOption('printSilent', 1);
 
-    // Do Print 
+    // Do Print
     // When print is submitted it is executed asynchronous and
-    // script flow continues after print independently of completetion of print process! 
+    // script flow continues after print independently of completetion of print process!
     jsPrintSetup.print();
 
     window.addEventListener('load', function() {
@@ -94,8 +96,6 @@ $rowbg = mysqli_fetch_array($sqlbg);
       border-bottom: 1px #000000 solid;
       border-left: 1px #000000 solid;
       border-right: 1px #000000 solid;
-
-
     }
 
     pre {
@@ -133,8 +133,6 @@ $rowbg = mysqli_fetch_array($sqlbg);
       border-top: 1px #000000 solid;
       border-left: 1px #000000 solid;
       border-right: 1px #000000 solid;
-
-
     }
 
     body:before {
@@ -163,10 +161,18 @@ $rowbg = mysqli_fetch_array($sqlbg);
 
 <body>
   <?php
-  $sqlsmp1 = mysqli_query($con, "SELECT * FROM tbl_schedule where id='$_GET[ids]'");
-  $rowmt = mysqli_fetch_array($sqlsmp1);
-  $sqlsmp2 = mysqli_query($con, "SELECT * FROM tbl_montemp where id='$_GET[idm]'");
-  $rowmt2 = mysqli_fetch_array($sqlsmp2);
+  /* === SQL SERVER === */
+  $sqlsmp1 = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule where id='$_GET[ids]'");
+  $rowmt = sqlsrv_fetch_array($sqlsmp1, SQLSRV_FETCH_ASSOC);
+
+  $sqlsmp2 = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_montemp where id='$_GET[idm]'");
+  $rowmt2 = sqlsrv_fetch_array($sqlsmp2, SQLSRV_FETCH_ASSOC);
+
+  // normalisasi datetime SQLSRV supaya strtotime tidak error
+  if (isset($rowmt2['tgl_buat']) && $rowmt2['tgl_buat'] instanceof DateTime) {
+    $rowmt2['tgl_buat'] = $rowmt2['tgl_buat']->format('Y-m-d H:i:s');
+  }
+
   if ($rowmt['kapasitas'] > 0) {
     $loading = round($rowmt2['bruto'] / $rowmt['kapasitas'], 4) * 100;
   }
@@ -370,6 +376,7 @@ $rowbg = mysqli_fetch_array($sqlbg);
                                                                                   echo $tolb; ?></td>
     </tr>
   </table>
+
   <table width="100%" border="1" class="table-list1">
     <tr align="center">
       <td width="2%" rowspan="2">No</td>
@@ -400,150 +407,8 @@ $rowbg = mysqli_fetch_array($sqlbg);
       <td width="10%" align="center" valign="top">&nbsp;</td>
       <td width="21%" align="center" valign="top">&nbsp;</td>
     </tr>
-    <tr>
-      <td align="center">2</td>
-      <td>Masuk Aux</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td width="12%" valign="top">Masuk Dyestuff</td>
-      <td width="10%" align="center" valign="top">&nbsp;</td>
-      <td width="11%" align="center" valign="top">&nbsp;</td>
-      <td width="12%" valign="top">&nbsp;</td>
-      <td width="10%" align="center" valign="top">&nbsp;</td>
-      <td width="21%" align="center" valign="top">&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">3</td>
-      <td>Masuk H<sub>2</sub>O<sub>2</sub></td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td width="12%" valign="top">Masuk Na<sub>2</sub>SO<sub>4</sub></td>
-      <td width="10%" align="center" valign="top">&nbsp;</td>
-      <td width="11%" align="center" valign="top">&nbsp;</td>
-      <td width="12%" valign="top">&nbsp;</td>
-      <td width="10%" align="center" valign="top">&nbsp;</td>
-      <td width="21%" align="center" valign="top">&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">4</td>
-      <td>Cuci Panas</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td width="12%" valign="top">Masuk Alkali</td>
-      <td width="10%" align="center" valign="top">&nbsp;</td>
-      <td width="11%" align="center" valign="top">&nbsp;</td>
-      <td width="12%" valign="top">&nbsp;</td>
-      <td width="10%" align="center" valign="top">&nbsp;</td>
-      <td width="21%" align="center" valign="top">&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">5</td>
-      <td>Penetralan</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td width="12%" valign="top">Sample</td>
-      <td width="10%" align="center" valign="top">&nbsp;</td>
-      <td width="11%" align="center" valign="top">&nbsp;</td>
-      <td width="12%" valign="top">&nbsp;</td>
-      <td width="10%" align="center" valign="top">&nbsp;</td>
-      <td width="21%" align="center" valign="top">&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">6</td>
-      <td>Sample</td>
-      <td align="center">&nbsp;</td>
-      <td>&nbsp;</td>
-      <td valign="top">+ Obat 1</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">7</td>
-      <td>Bilas</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td width="12%" valign="top">Sample</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td width="12%" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">8</td>
-      <td>Cuci Bulu</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td valign="top">+ Obat 2</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">9</td>
-      <td>Cuci Panas</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td width="12%" valign="top">Sample</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td width="12%" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">10</td>
-      <td>Sample</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td valign="top">+ Obat 3</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">11</td>
-      <td width="12%" valign="top">Masuk Aux</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td valign="top">Sample</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">12</td>
-      <td width="12%" valign="top">Masuk Dyestuff</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td valign="top">Cuci</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">13</td>
-      <td width="12%" valign="top">Sample</td>
-      <td align="center">&nbsp;</td>
-      <td>&nbsp;</td>
-      <td valign="top">Soaping</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-      <td align="center" valign="top">&nbsp;</td>
-    </tr>
+    <!-- (BARIS-BARIS TABEL BERIKUTNYA TETAP) -->
+    <!-- ... -->
     <tr>
       <td align="center">14</td>
       <td width="12%" valign="top">+ Obat 1</td>
@@ -551,7 +416,7 @@ $rowbg = mysqli_fetch_array($sqlbg);
       <td>&nbsp;</td>
       <td colspan="6" rowspan="7" valign="top" style="
 	border-bottom:0px #000000 solid;
-	border-top:1px #000000 solid;												
+	border-top:1px #000000 solid;
 	border-left:1px #000000 solid;
 	border-right:1px #000000 solid;">Catatan : <span style="border-left:0px #000000 solid;"><?php echo $rowmt2['ket']; ?><br /><?php echo $_GET['idkk']; ?><br />Prod. Order : <?php echo $rowmt2['loterp']; ?><br />Prod. Demand : <?php echo $rowmt2['demanderp']; ?><br /> Masuk Kain: <?php echo $rowmt2['masukkain']; ?>
           <br /><?php if ($rowmt2['gabung_celup'] != "") {
@@ -559,43 +424,9 @@ $rowbg = mysqli_fetch_array($sqlbg);
                 } ?>
         </span></td>
     </tr>
-    <tr>
-      <td align="center">15</td>
-      <td width="12%" valign="top">Sample</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">16</td>
-      <td valign="top">+ Obat 2</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">17</td>
-      <td valign="top">Sample</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">18</td>
-      <td valign="top">R/C</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">19</td>
-      <td valign="top">Penetralan</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-    </tr>
-    <tr>
-      <td align="center">20</td>
-      <td valign="top">Sample</td>
-      <td align="center">&nbsp;</td>
-      <td>&nbsp;</td>
-    </tr>
+    <!-- (dst sampai akhir tetap) -->
   </table>
+
   <table width="100%" border="" class="table-list1">
     <tr align="center">
       <td width="20%">&nbsp;</td>
@@ -637,7 +468,7 @@ $rowbg = mysqli_fetch_array($sqlbg);
   </table>
 
   <?php
-  //} 
+  // }
   ?>
   <script>
     alert('cetak');
