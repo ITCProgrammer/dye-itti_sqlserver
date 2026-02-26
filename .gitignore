@@ -3320,3 +3320,5 @@
 # pages/5.178/plugins/timepicker/bootstrap-timepicker.js
 # pages/5.178/plugins/timepicker/bootstrap-timepicker.min.css
 # pages/5.178/plugins/timepicker/bootstrap-timepicker.min.js
+
+temp/debug-monitor.log
