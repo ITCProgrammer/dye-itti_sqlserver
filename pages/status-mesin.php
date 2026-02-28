@@ -84,7 +84,10 @@ include "koneksi.php";
 								<?php
 								function NoMesin($mc)
 								{
-									include "koneksi.php";
+									global $con;
+									$dMC = array('ket_status' => null, 'sts' => null);
+									$dLama = array('lama' => null);
+
 									$qMC = sqlsrv_query(
 										$con,
 										"SELECT 
@@ -101,7 +104,13 @@ include "koneksi.php";
 										ORDER BY a.no_urut ASC",
 										array($mc)
 									);
-									$dMC = sqlsrv_fetch_array($qMC, SQLSRV_FETCH_ASSOC);
+									if ($qMC !== false) {
+										$tmp = sqlsrv_fetch_array($qMC, SQLSRV_FETCH_ASSOC);
+										if (is_array($tmp)) {
+											$dMC = array_merge($dMC, $tmp);
+										}
+										@sqlsrv_free_stmt($qMC);
+									}
 
 									$qLama = sqlsrv_query(
 										$con,
@@ -119,7 +128,13 @@ include "koneksi.php";
 										ORDER BY a.no_urut ASC",
 										array($mc)
 									);
-									$dLama = sqlsrv_fetch_array($qLama, SQLSRV_FETCH_ASSOC);
+									if ($qLama !== false) {
+										$tmpLama = sqlsrv_fetch_array($qLama, SQLSRV_FETCH_ASSOC);
+										if (is_array($tmpLama)) {
+											$dLama = array_merge($dLama, $tmpLama);
+										}
+										@sqlsrv_free_stmt($qLama);
+									}
 
 									if ($dMC['ket_status'] == "Tolak Basah") {
 										if ($dLama['lama'] < "1" and $dLama['lama'] != "") {
@@ -300,7 +315,7 @@ include "koneksi.php";
 								}
 								function Waktu($mc)
 								{
-									include "koneksi.php";
+									global $con;
 
 									// Port dari logika MySQL lama:
 									// Hitung tgl_buat_target = tgl_buat + target (jam & menit),
@@ -321,7 +336,12 @@ include "koneksi.php";
 										array($mc)
 									);
 
+									if ($qLama === false) {
+										return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ";
+									}
+
 									$dLama = sqlsrv_fetch_array($qLama, SQLSRV_FETCH_ASSOC);
+									@sqlsrv_free_stmt($qLama);
 
 									if ($dLama && $dLama['tgl_buat'] instanceof DateTime && $dLama['target'] !== null) {
 										$tglBuat = clone $dLama['tgl_buat'];
@@ -355,17 +375,17 @@ include "koneksi.php";
 											$hours   = intdiv($effectiveMinutes, 60);
 											$minutes = $effectiveMinutes % 60;
 
-											echo sprintf('%02d:%02d', $hours, $minutes);
+											return sprintf('%02d:%02d', $hours, $minutes);
 										} catch (Exception $e) {
-											echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ";
+											return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ";
 										}
 									} else {
-										echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ";
+										return "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ";
 									}
 								}
 
 								function InfoMesin($mc) {
-								    include "koneksi.php";
+								    global $con;
 								    $q = sqlsrv_query(
 										$con,
 										"SELECT TOP 1 a.no_order, a.langganan, a.warna, a.proses 
@@ -375,9 +395,15 @@ include "koneksi.php";
 										 ORDER BY a.no_urut ASC",
 										array($mc)
 									);
+									if ($q === false) {
+										return 'Mesin: ' . htmlspecialchars((string)$mc, ENT_QUOTES, 'UTF-8');
+									}
+
 								    $d = sqlsrv_fetch_array($q, SQLSRV_FETCH_ASSOC);
+									@sqlsrv_free_stmt($q);
+
 								    if ($d) {
-								        return htmlspecialchars($d['no_order'] . ' | ' . $d['langganan'] . ' | ' . $d['warna'] . ' | ' . $d['proses']);
+								        return htmlspecialchars($d['no_order'] . ' | ' . $d['langganan'] . ' | ' . $d['warna'] . ' | ' . $d['proses'], ENT_QUOTES, 'UTF-8');
 								    } else {
 								        return 'Mesin: ' . $mc;
 								    }
