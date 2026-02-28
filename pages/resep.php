@@ -1,13 +1,28 @@
 <?php
-	ini_set("error_reporting", 1);
-	session_start();
-	set_time_limit(600);
-	include("../koneksi.php");
-	// include "../koneksiLAB.php";
-	//db_connect($db_name);
-	$id = $_GET['id'];
-	$qcek = mysqli_query($con, "SELECT * FROM tbl_schedule WHERE id='$id'");
-	$rCek = mysqli_fetch_array($qcek);
+ini_set("error_reporting", 1);
+session_start();
+set_time_limit(600);
+include("../koneksi.php");
+
+function resep_escape($value)
+{
+    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$rCek = null;
+
+if ($id > 0) {
+    $qcek = sqlsrv_query(
+        $con,
+        "SELECT TOP 1 * FROM db_dying.tbl_schedule WHERE id = ?",
+        array($id)
+    );
+    if ($qcek !== false) {
+        $rCek = sqlsrv_fetch_array($qcek, SQLSRV_FETCH_ASSOC);
+        @sqlsrv_free_stmt($qcek);
+    }
+}
 ?>
 <div class="modal-dialog modal-lg">
 	<div class="modal-content">
@@ -18,78 +33,114 @@
 		</div>
 		<div class="modal-body">
 			<?php
-				if ($rCek['no_resep'] != '') {
-					$ket .= " AND ID_NO='$rCek[no_resep]' ";
-				} else {
-					$ket .= "";
+			if (!$rCek) {
+				echo "<div class='alert alert-warning'>Data schedule tidak ditemukan.</div>";
+			} else {
+				$nokk = isset($rCek['nokk']) ? trim((string)$rCek['nokk']) : '';
+				$noResep = isset($rCek['no_resep']) ? trim((string)$rCek['no_resep']) : '';
+
+				$sqlc = "SELECT
+							CONVERT(char(10), CreateTime, 103) AS TglBonResep,
+							CONVERT(char(10), CreateTime, 108) AS JamBonResep,
+							ID_NO,
+							COLOR_NAME,
+							PROGRAM_NAME,
+							PRODUCT_LOT,
+							VOLUME,
+							PROGRAM_CODE,
+							YARN AS NoKK,
+							TOTAL_WT,
+							USER25
+						FROM db_dying.ticket_title
+						WHERE YARN = ?";
+				$paramsC = array($nokk);
+
+				if ($noResep !== '') {
+					$sqlc .= " AND ID_NO = ?";
+					$paramsC[] = $noResep;
 				}
-				$sqlc = "select convert(char(10),CreateTime,103) as TglBonResep,convert(char(10),CreateTime,108) as JamBonResep,ID_NO,COLOR_NAME,PROGRAM_NAME,PRODUCT_LOT,VOLUME,PROGRAM_CODE,YARN as NoKK,TOTAL_WT,USER25 from ticket_title where YARN='$rCek[nokk]' " . $ket . " order by createtime Desc";
-				//--lot
-				// $qryc = sqlsrv_query($conn1, $sqlc, array(), array("Scrollable" => "buffered"));
 
-				$countdata = sqlsrv_num_rows($qryc);
-				$row = sqlsrv_fetch_array($qryc);
-				if ($countdata > 0) {
-					echo "<table width=100%>";
-					echo "<tr><td colspan='2' align=left >Printout : $row[TglBonResep] $row[JamBonResep] </td><td colspan='2' align=right > Type : $row[ID_NO]</td></tr></table>";
-					echo "<hr>";
-					echo "<table>";
-					echo "<tr><td width=150>Color Name </td><td width=250>: $row[COLOR_NAME]</td><td width=150>Program Code </td><td>: $row[PROGRAM_CODE] </td></tr>";
-					echo "<tr><td>Program Name </td><td>: $row[PROGRAM_NAME]</td><td width=150>Nomor KK</td><td>: $idkk</td></tr>";
-					echo "<tr><td>Lots </td><td>: $row[PRODUCT_LOT]</td><td>Total Wt (Kg)</td><td>: $row[TOTAL_WT]</td></tr>";
-					echo "<tr><td>Volume (Litres) </td><td>: $row[VOLUME]</td><td>Carry Over </td><td>: $row[USER25] </td></tr>";
-					//echo "<tr><td></td><td>: $row[PROGRAM_NAME] </td></tr>";
-					echo "</table>";
-					echo "<hr>";
+				$sqlc .= " ORDER BY CreateTime DESC";
+				$qryc = sqlsrv_query($con, $sqlc, $paramsC, array("Scrollable" => "static"));
 
-					$sqlstep = "select distinct(STEP_NO),RECIPE_CODE from Ticket_detail where ID_No='$row[ID_NO]' order by Step_NO asc";
-					// $qrystep = sqlsrv_query($conn1, $sqlstep);
+				if ($qryc === false) {
+					echo "<div class='alert alert-danger'>Gagal mengambil data resep (ticket_title).</div>";
+				} else {
+					$countdata = sqlsrv_num_rows($qryc);
+					$row = ($countdata > 0) ? sqlsrv_fetch_array($qryc, SQLSRV_FETCH_ASSOC) : null;
+					@sqlsrv_free_stmt($qryc);
 
-					while ($rowst = sqlsrv_fetch_array($qrystep)) {
-
-						echo "Step $rowst[STEP_NO] Recipe Code: $rowst[RECIPE_CODE]<br>";
-
-						$sqlisi = "select ID_NO,STEP_NO,RECIPE_CODE,PRODUCT_CODE,CONC,CONCUNIT,TARGET_WT,REMARK from Ticket_detail 
-											where ID_No='$row[ID_NO]' and STEP_NO='$rowst[STEP_NO]' order by Step_NO Desc";
-						// $qryisi = sqlsrv_query($conn1, $sqlisi);
-
-						echo " <table width='80%' border='0'>";
-						while ($rowisi = sqlsrv_fetch_array($qryisi)) {
-							echo "  <tr>";
-							echo "   <td class='normal333' width=60><div align='left'>$rowisi[PRODUCT_CODE]</div></td>";
-
-							// $sqlp = sqlsrv_query($conn1, "Select ProductName from Product where ProductCode='$rowisi[PRODUCT_CODE]'");
-							$qryp = sqlsrv_fetch_array($sqlp);
-
-							echo "   <td class='normal333' width=300><div align='left'>$qryp[ProductName] </div></td>";
-
-							if ($rowisi['CONCUNIT'] == 0) {
-								$unit1 = "%";
-								$unit2 = "g";
-								$berat = $rowisi['TARGET_WT'];
-							} else {
-								$unit1 = "g/L";
-								$unit2 = "Kg";
-								//---hitung  berat
-								$berat = $rowisi['TARGET_WT'] / 1000;
-								$berat = "" . number_format($berat, 3) . "";
-							}
-							echo "   <td class='normal333' width=100><div align='right'>$rowisi[CONC] $unit1</div></td>";
-
-							echo "   <td class='normal333' width=100><div align='right'>$berat $unit2</div></td>";
-							echo "<td class='normal333' width=100><div align='left'>$rowisi[REMARK]</div></td>";
-
-							echo "</tr>";
-						}
+					if ($countdata > 0 && is_array($row)) {
+						echo "<table width='100%'>";
+						echo "<tr><td colspan='2' align='left'>Printout : " . resep_escape($row['TglBonResep']) . " " . resep_escape($row['JamBonResep']) . "</td><td colspan='2' align='right'>Type : " . resep_escape($row['ID_NO']) . "</td></tr></table>";
+						echo "<hr>";
+						echo "<table>";
+						echo "<tr><td width='150'>Color Name </td><td width='250'>: " . resep_escape($row['COLOR_NAME']) . "</td><td width='150'>Program Code </td><td>: " . resep_escape($row['PROGRAM_CODE']) . " </td></tr>";
+						echo "<tr><td>Program Name </td><td>: " . resep_escape($row['PROGRAM_NAME']) . "</td><td width='150'>Nomor KK</td><td>: " . resep_escape($nokk) . "</td></tr>";
+						echo "<tr><td>Lots </td><td>: " . resep_escape($row['PRODUCT_LOT']) . "</td><td>Total Wt (Kg)</td><td>: " . resep_escape($row['TOTAL_WT']) . "</td></tr>";
+						echo "<tr><td>Volume (Litres) </td><td>: " . resep_escape($row['VOLUME']) . "</td><td>Carry Over </td><td>: " . resep_escape($row['USER25']) . " </td></tr>";
 						echo "</table>";
-
 						echo "<hr>";
 
-						//--
-					} //end detail
-					//echo "<hr size='2' style='outline-style:double' />";
-					//echo "<hr>";
-				} 
+						$sqlstep = "SELECT DISTINCT STEP_NO, RECIPE_CODE
+									FROM db_dying.Ticket_detail
+									WHERE ID_No = ?
+									ORDER BY STEP_NO ASC";
+						$qrystep = sqlsrv_query($con, $sqlstep, array($row['ID_NO']));
+
+						if ($qrystep !== false) {
+							while ($rowst = sqlsrv_fetch_array($qrystep, SQLSRV_FETCH_ASSOC)) {
+								echo "Step " . resep_escape($rowst['STEP_NO']) . " Recipe Code: " . resep_escape($rowst['RECIPE_CODE']) . "<br>";
+
+								$sqlisi = "SELECT ID_NO, STEP_NO, RECIPE_CODE, PRODUCT_CODE, CONC, CONCUNIT, TARGET_WT, REMARK
+											FROM db_dying.Ticket_detail
+											WHERE ID_No = ? AND STEP_NO = ?
+											ORDER BY STEP_NO DESC";
+								$qryisi = sqlsrv_query($con, $sqlisi, array($row['ID_NO'], $rowst['STEP_NO']));
+
+								echo "<table width='80%' border='0'>";
+								if ($qryisi !== false) {
+									while ($rowisi = sqlsrv_fetch_array($qryisi, SQLSRV_FETCH_ASSOC)) {
+										$sqlp = sqlsrv_query(
+											$con,
+											"SELECT TOP 1 ProductName FROM db_dying.Product WHERE ProductCode = ?",
+											array($rowisi['PRODUCT_CODE'])
+										);
+										$qryp = ($sqlp !== false) ? sqlsrv_fetch_array($sqlp, SQLSRV_FETCH_ASSOC) : null;
+										if ($sqlp !== false) {
+											@sqlsrv_free_stmt($sqlp);
+										}
+
+										if ((int)$rowisi['CONCUNIT'] === 0) {
+											$unit1 = "%";
+											$unit2 = "g";
+											$berat = $rowisi['TARGET_WT'];
+										} else {
+											$unit1 = "g/L";
+											$unit2 = "Kg";
+											$berat = number_format(((float)$rowisi['TARGET_WT']) / 1000, 3);
+										}
+
+										echo "<tr>";
+										echo "<td class='normal333' width='60'><div align='left'>" . resep_escape($rowisi['PRODUCT_CODE']) . "</div></td>";
+										echo "<td class='normal333' width='300'><div align='left'>" . resep_escape($qryp['ProductName'] ?? '') . "</div></td>";
+										echo "<td class='normal333' width='100'><div align='right'>" . resep_escape($rowisi['CONC']) . " " . resep_escape($unit1) . "</div></td>";
+										echo "<td class='normal333' width='100'><div align='right'>" . resep_escape($berat) . " " . resep_escape($unit2) . "</div></td>";
+										echo "<td class='normal333' width='100'><div align='left'>" . resep_escape($rowisi['REMARK']) . "</div></td>";
+										echo "</tr>";
+									}
+									@sqlsrv_free_stmt($qryisi);
+								}
+								echo "</table>";
+								echo "<hr>";
+							}
+							@sqlsrv_free_stmt($qrystep);
+						}
+					} else {
+						echo "<div class='alert alert-info'>Data resep tidak ditemukan untuk KK ini.</div>";
+					}
+				}
+			}
 			?>
 
 		</div>
