@@ -21,6 +21,7 @@ $db_dbnow_gdb = array(
 );
 
 $con = sqlsrv_connect($hostSVR19, $db_dbnow_gdb);
+$con_db_dying_sqlsrv = null;
 
 if ($con === false) {
     die(print_r(sqlsrv_errors(), true));
@@ -55,4 +56,30 @@ else{
     exit("DB2 Connection failed");
     }
 
+if (!function_exists('qcf_get_db_dying_conn')) {
+    function qcf_get_db_dying_conn()
+    {
+        static $conn = null;
+        if (is_resource($conn) || is_object($conn)) {
+            return $conn;
+        }
 
+        $conn = @sqlsrv_connect(
+            "10.0.0.221",
+            array(
+                "Database" => "db_dying",
+                "UID" => "sa",
+                "PWD" => "Ind@taichen2024",
+                "CharacterSet" => "UTF-8"
+            )
+        );
+
+        $GLOBALS['con_db_dying_sqlsrv'] = $conn;
+        return $conn;
+    }
+}
+
+$qcfDebugBootstrap = __DIR__ . DIRECTORY_SEPARATOR . 'observability' . DIRECTORY_SEPARATOR . 'debug_bootstrap.php';
+if (is_file($qcfDebugBootstrap)) {
+    include_once $qcfDebugBootstrap;
+}

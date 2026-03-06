@@ -4,8 +4,12 @@ session_start();
 include("../koneksi.php");
 include("./../koneksiORGATEX.php");
 
-$sqlcek=mysqli_query($con,"SELECT no_mesin FROM tbl_mesin WHERE no_mesin_lama='" .$_GET['id']. "'");
-$rcek  = mysqli_fetch_array($sqlcek);
+$sqlcek = sqlsrv_query(
+    $con,
+    "SELECT no_mesin FROM db_dying.tbl_mesin WHERE no_mesin_lama = ?",
+    array($_GET['id'])
+);
+$rcek = ($sqlcek !== false) ? sqlsrv_fetch_array($sqlcek, SQLSRV_FETCH_ASSOC) : array();
 
 ?>
 <div class="modal-dialog modal-lg" style="width: 95%">
@@ -14,7 +18,7 @@ $rcek  = mysqli_fetch_array($sqlcek);
       <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       <h4 class="modal-title" id="myModalLabel">IP Address Orgatex:
         <?php echo $_GET['id']; ?><br><br>
-		Machine NEW: <?php echo $rcek['no_mesin']; ?>  
+		Machine NEW: <?php echo isset($rcek['no_mesin']) ? $rcek['no_mesin'] : '-'; ?>  
       </h4>
     </div>
     <div class="modal-body table-responsive">
@@ -68,11 +72,15 @@ WHERE ms.RunState > 1 AND ms.Machine = ? ";
 
 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {	
 	$wkt=$row['Hours']." Hours ".$row['Minutes']." Minutes";
-	$sql=mysqli_query($con,"SELECT no_mesin FROM tbl_mesin WHERE no_mesin_lama='" .$row['Machine']. "'");
-	$r  = mysqli_fetch_array($sql);
+	$sql = sqlsrv_query(
+		$con,
+		"SELECT no_mesin FROM db_dying.tbl_mesin WHERE no_mesin_lama = ?",
+		array($row['Machine'])
+	);
+	$r = ($sql !== false) ? sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC) : array();
     echo "<tr>";
     echo "<td>" .$row['Group No']. "</td>"; //Name here should be same as the SQL Statement as [Name]
-    echo "<td>" .$r['no_mesin']. "</td>";
+    echo "<td>" .(isset($r['no_mesin']) ? $r['no_mesin'] : '-'). "</td>";
 	echo "<td>" .$row['Machine']. "</td>";
 	echo "<td>" .$row['Dyelot']. "</td>";
     echo "<td>" .$row['Dyelot Ref Number']. "</td>";
