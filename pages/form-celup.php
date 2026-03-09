@@ -2069,33 +2069,6 @@ if ($_POST['save'] == "save") {
 		$sqlMonT = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_montemp WHERE id = ?", [$_POST['id']]);
 		$rMonT   = sqlsrv_fetch_array($sqlMonT, SQLSRV_FETCH_ASSOC);
 
-		$sqlD = sqlsrv_query(
-			$con,
-			"UPDATE db_dying.tbl_schedule
-			 SET status = 'selesai',
-			     tgl_update = GETDATE()
-			 WHERE no_mesin = ? AND no_urut = 1 AND status = 'sedang jalan'",
-			[$rcek['no_mesin']]
-		);
-
-		$sqlDT = sqlsrv_query(
-			$con,
-			"UPDATE db_dying.tbl_montemp
-			 SET status = 'selesai',
-			     tgl_update = GETDATE()
-			 WHERE id = ?",
-			[$_POST['id']]
-		);
-
-		$sqlUrut = sqlsrv_query(
-			$con,
-			"UPDATE db_dying.tbl_schedule
-			 SET no_urut = no_urut - 1
-			 WHERE no_mesin = ?
-			   AND status = 'antri mesin'
-			   AND no_urut <> 1",
-			[$rcek['no_mesin']]
-		);
 
 		if ($sqlDataP) {
 			$out_to = $_POST['out_to'] ?? '';
