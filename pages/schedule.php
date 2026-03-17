@@ -150,6 +150,7 @@
 						</thead>
 						<tbody>
 							<?php
+																			   			
 								$col = 0;
 								while ($rowd = sqlsrv_fetch_array($data, SQLSRV_FETCH_ASSOC)) {
 									$bgcolor = ($col++ & 1) ? 'gainsboro' : 'antiquewhite';
@@ -157,6 +158,22 @@
 									$paramsCek = array($rowd['id']);
 									$qCek = sqlsrv_query($con, $sqlCek, $paramsCek);
 									$rCEk = sqlsrv_fetch_array($qCek, SQLSRV_FETCH_ASSOC);
+									
+									$sql_check = "
+									SELECT COUNT(*) as jml
+									FROM db_dying.tbl_schedule a
+									INNER JOIN db_dying.tbl_montemp b 
+										ON a.id = b.id_schedule
+									INNER JOIN db_dying.tbl_hasilcelup c 
+										ON b.id = c.id_montemp
+									WHERE a.status IN ('antri mesin', 'sedang jalan')
+									AND a.id = '".$rowd['id']."'
+									";
+
+									$result = sqlsrv_query($con, $sql_check);
+									$row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC);
+
+									$ck_up = $row['jml'];
 							?>
 								<tr bgcolor="<?php echo $bgcolor; ?>">
 									<td align="center">
@@ -202,7 +219,7 @@
 											<a href="#" onclick="confirm_del('?p=sch_hapus&id=<?php echo $rowd['id'] ?>');" class="btn btn-xs btn-danger <?php if ($_SESSION['lvl_id10'] == "3" or $rCEk['idb'] != "") {
 																																								echo "disabled";
 																																							} ?>"><i class="fa fa-trash"></i> </a>
-											<a href="#" class="btn btn-warning btn-xs" onclick="confirm_selesai('?p=sch_selesai&id=<?php echo $rowd['id'] ?>');"><i class="fa fa-flag-checkered" data-toggle="tooltip" data-placement="top" title="Selesai"></i> </a>
+											<a href="#" class="btn btn-warning btn-xs <?php if($ck_up > 0) {}else{ echo "disabled"; } ?>" onclick="confirm_selesai('?p=sch_selesai&id=<?php echo $rowd['id'] ?>');"><?php if($ck_up > 0) { ?><blink><i class="fa fa-flag-checkered" data-toggle="tooltip" data-placement="top" title="Selesai"></i></blink> <?php }else{ ?><i class="fa fa-flag-checkered" data-toggle="tooltip" data-placement="top" title="Selesai"></i><?php } ?></a>
 
 											<?php if($rowd['high_temp'] == 1) : ?>
 												<a href="#" class="btn btn-primary btn-xs" onclick="delete_high_temp('?p=delete_high_temp&id=<?= $rowd['id'] ?>');"><i class="fa fa-exclamation-triangle" data-toggle="tooltip" data-placement="top" title="Delete High Temperature"></i></a>
@@ -295,6 +312,23 @@
 
 				<div class="modal-footer" style="margin:0px; border-top:0px; text-align:center;">
 					<a href="#" class="btn btn-danger" id="selesai_link">Yes</a>
+					<button type="button" class="btn btn-success" data-dismiss="modal">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<!-- Modal Popup untuk High Temperature-->
+	<div class="modal fade" id="UpdateScheduled" tabindex="-1">
+		<div class="modal-dialog modal-sm">
+			<div class="modal-content" style="margin-top:100px;">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+					<h4 class="modal-title" style="text-align:center;">Are you sure to finished this Schedule ?</h4>
+				</div>
+
+				<div class="modal-footer" style="margin:0px; border-top:0px; text-align:center;">
+					<a href="#" class="btn btn-danger" id="yes_update_scheduled">Yes</a>
 					<button type="button" class="btn btn-success" data-dismiss="modal">Cancel</button>
 				</div>
 			</div>

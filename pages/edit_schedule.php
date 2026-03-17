@@ -99,8 +99,30 @@ if($_POST){
 	if ($q_old === false) {
 		warnOnError("Load schedule");
 	}
-  $d_old 		 = sqlsrv_fetch_array($q_old,SQLSRV_FETCH_ASSOC);
+    $d_old 		 = sqlsrv_fetch_array($q_old,SQLSRV_FETCH_ASSOC);
+	// VALIDASI: no_urut + no_mesin tidak boleh sama
+		$sqlCek = "SELECT COUNT(*) as jml 
+				   FROM db_dying.tbl_schedule 
+				   WHERE no_urut = ? 
+				   AND no_mesin = ? 
+				   AND id <> ?";
 
+		$paramsCek = array($urut, $mesin, $id);
+		$qCek = sqlsrv_query($con, $sqlCek, $paramsCek);
+
+		if ($qCek === false) {
+			warnOnError("Cek no urut & mesin");
+		}
+
+		$dCek = sqlsrv_fetch_array($qCek, SQLSRV_FETCH_ASSOC);
+
+		if ($dCek['jml'] > 0) {
+			echo "<script>
+					alert('No urut $urut sudah digunakan di mesin $mesin');
+					window.history.back();
+				  </script>";
+			exit;
+		}
 	// Ambil kapasitas mesin dari db_dying.tbl_mesin
 	$sqlMesin   = "SELECT TOP 1 kapasitas FROM db_dying.tbl_mesin WHERE no_mesin = ?";
 	$paramsMesin = array($mesin);

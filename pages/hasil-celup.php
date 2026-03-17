@@ -191,7 +191,9 @@ include "koneksi.php";
 										<font size="-2"><?php echo $rowd['warna']; ?></font>
 									</td>
 									<td align="left">
-										<font size="-1"><?php echo $rowd['proses']; ?></font><br><i class="btn btn-xs bg-hijau">
+<!--										<a href="#" class="aktual_proses" id="<?php echo $rowd['id']; ?>"><font size="-1"><?php echo $rowd['proses']; ?></font></a>-->
+										<font size="-1"><?php echo $rowd['proses']; ?></font>
+										<br><i class="btn btn-xs bg-hijau">
 											<font size="-2"><?php echo $rowd['operator_keluar']; ?></font>
 										</i>
 									</td>
@@ -258,6 +260,7 @@ include "koneksi.php";
 	</div>
 	<div id="PotongEdit" class="modal fade modal-3d-slit" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
 	<div id="ShiftEdit1" class="modal fade modal-3d-slit" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
+	<div id="AktualProses" class="modal fade modal-3d-slit" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
 	<!-- Modal Popup untuk delete-->
 	<div class="modal fade" id="delSchedule" tabindex="-1">
 		<div class="modal-dialog modal-sm">

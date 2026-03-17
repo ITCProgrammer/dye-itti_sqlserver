@@ -1236,6 +1236,36 @@
 			if ($paramTglDelivery === '0000-00-00' || $paramTglDelivery === '' || $paramTglDelivery === '0000-00-00 00:00:00') {
 				$paramTglDelivery = null;
 			}
+			// VALIDASI: no_urut + no_mesin tidak boleh sama (INSERT)
+			$sqlCek = "SELECT COUNT(*) as jml 
+					   FROM db_dying.tbl_schedule 
+					   WHERE no_urut = ? 
+					   AND no_mesin = ?";
+
+			$paramsCek = array($_POST['no_urut'], $_POST['no_mc']);
+			$qCek = sqlsrv_query($con, $sqlCek, $paramsCek);
+
+			if ($qCek === false) {
+				die(print_r(sqlsrv_errors(), true));
+			}
+
+			$dCek = sqlsrv_fetch_array($qCek, SQLSRV_FETCH_ASSOC);
+			$nokk = urlencode($_POST['nokk']);
+		    $kap  = urlencode($_POST['kapasitas']);
+			
+			if ($dCek['jml'] > 0) {
+				echo "<script>swal({
+				title: 'Gagal Simpan!',   
+				text: 'No urut ".$_POST['no_urut']." sudah ada di mesin ".$_POST['no_mc']."',
+				type: 'warning',
+				}).then((result) => {
+				if (result.value) {					
+					window.location.href='?p=Form-Schedule&nokk={$nokk}&kap={$kap}';
+				}
+				});</script>";
+				
+				exit;
+			}
 			$sqlInsert = "INSERT INTO db_dying.tbl_schedule
 				(nokk, 
 				nodemand, 
@@ -1262,33 +1292,6 @@
 				VALUES
 				(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 				 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?, GETDATE())";
-			// $sqlInsert = "INSERT INTO db_dying.tbl_schedule
-			// 	(nokk, 
-			// 	nodemand, 
-			// 	langganan, 
-			// 	buyer, 
-			// 	no_order, 
-			// 	po, 
-			// 	no_hanger, 
-			// 	no_item, 
-			// 	jenis_kain,
-			// 	tgl_delivery, 
-			// 	lebar, 
-			// 	gramasi, 
-			// 	warna, 
-			// 	no_warna, 
-			// 	qty_order, 
-			// 	pjng_order, 
-			// 	satuan_order,
-			// 	lot, rol, bruto, no_rajut, shift, g_shift, kapasitas, no_mesin, no_urut, no_sch,
-			// 	 loading, resep, no_resep, no_resep2, suffix, suffix2, energi, dyestuff, proses,
-			// 	 revisi, kategori_warna, ket_status, ket_kain, tgl_masuk,
-			// 	 kk_kestabilan, kk_normal, tgl_update)
-			// 	OUTPUT INSERTED.id
-			// 	VALUES
-			// 	($kartu, $_POST[demand], $_POST[langganan], $_POST[buyer], $_POST[no_order], $po, $_POST[no_hanger], $_POST[no_item], $jns, $paramTglDelivery, $_POST[lebar], $_POST[grms], $warna, $nowarna, $_POST[qty1], $_POST[qty2], $_POST[satuan1], $lot, $_POST[qty3], $_POST[qty4], $_POST[no_rajut], $_POST[shift], $_POST[g_shift], $_POST[kapasitas], $_POST[no_mc], $_POST[no_urut], $_POST[no_urut], $loading1, $_POST[resep], $_POST[no_resep], $_POST[no_resep2], $_POST[suffix], $_POST[suffix2], $_POST[energi], $_POST[dyestuff], $_POST[proses], $_POST[revisi], $_POST[kategori_warna], $ket_status_db, $ket_kain_db, GETDATE(), $kk_kestabilan, $kk_normal, GETDATE())";
-
-				//  echo $kartu; // Debug: Tampilkan query insert
 
 			$paramsInsert = array(
 				$kartu,
@@ -1306,7 +1309,7 @@
 				$warna,
 				$nowarna,
 				round2OrNull($_POST['qty1']),
-				round2OrNull($_POST['qty2']),
+				(int)toDateOrNull($_POST['qty2']),
 				$_POST['satuan1'],
 				$lot,
 				(int)toDateOrNull($_POST['qty3']),
@@ -1365,13 +1368,14 @@
 				$params_log = [$last_id_schedule,$nodemand,$nokk,$nomc,$user_id,
 								$user_id,$getdate,$getdate,$urut,$urut,$remote_add,$remote_add];
 				$sqlLog 		= sqlsrv_query($con, $query_log, $params_log);
+				
 				echo "<script>swal({
 				title: 'Data Tersimpan',   
 				text: 'Klik Ok untuk input data kembali',
 				type: 'success',
 				}).then((result) => {
-				if (result.value) {
-					window.location.href='?p=Schedule'; 
+				if (result.value) {					
+					window.location.href='?p=Schedule';
 				}
 				});</script>";
 			} else {
@@ -1414,6 +1418,41 @@
 		$paramTglDelivery = $_POST['tgl_delivery'];
 		if ($paramTglDelivery === '0000-00-00' || $paramTglDelivery === '' || $paramTglDelivery === '0000-00-00 00:00:00') {
 			$paramTglDelivery = null;
+		}
+		// Ambil ID berdasarkan nokk (karena update pakai nokk)
+		$sqlGetId = "SELECT id FROM db_dying.tbl_schedule WHERE nokk = ?";
+		$qGetId = sqlsrv_query($con, $sqlGetId, array($_POST['nokk']));
+		$dGetId = sqlsrv_fetch_array($qGetId, SQLSRV_FETCH_ASSOC);
+		$current_id = $dGetId['id'] ?? 0;
+
+		// VALIDASI: no_urut + no_mesin tidak boleh sama (UPDATE)
+		$sqlCek = "SELECT COUNT(*) as jml 
+				   FROM db_dying.tbl_schedule 
+				   WHERE no_urut = ? 
+				   AND no_mesin = ? 
+				   AND id <> ?";
+
+		$paramsCek = array($_POST['no_urut'], $_POST['no_mc'], $current_id);
+		$qCek = sqlsrv_query($con, $sqlCek, $paramsCek);
+
+		if ($qCek === false) {
+			die(print_r(sqlsrv_errors(), true));
+		}
+
+		$dCek = sqlsrv_fetch_array($qCek, SQLSRV_FETCH_ASSOC);
+		$nokk = urlencode($_POST['nokk']);
+		$kap  = urlencode($_POST['kapasitas']);
+		if ($dCek['jml'] > 0) {
+			echo "<script>swal({
+				title: 'Gagal Update!',   
+				text: 'No urut ".$_POST['no_urut']." sudah ada di mesin ".$_POST['no_mc']."',
+				type: 'warning',
+				}).then((result) => {
+				if (result.value) {					
+					window.location.href='?p=Form-Schedule&nokk={$nokk}&kap={$kap}';
+				}
+				});</script>";
+			exit;
 		}
 		$sqlUpdate = "UPDATE db_dying.tbl_schedule SET 
 				nodemand = ?,

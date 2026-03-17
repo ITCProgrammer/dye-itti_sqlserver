@@ -1365,6 +1365,23 @@ desired effect
                 }
             });
         });
+		
+		$(document).on('click', '.aktual_proses', function(e) {
+            var m = $(this).attr("id");
+            $.ajax({
+                url: "pages/aktual_proses_edit.php",
+                type: "GET",
+                data: {
+                    id: m,
+                },
+                success: function(ajaxData) {
+                    $("#AktualProses").html(ajaxData);
+                    $("#AktualProses").modal('show', {
+                        backdrop: 'true'
+                    });
+                }
+            });
+        });
         $(document).on('click', '.edit_sts_dok', function(e) {
             var m = $(this).attr("id");
             $.ajax({

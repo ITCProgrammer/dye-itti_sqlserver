@@ -13,6 +13,33 @@ if (isset($_POST['ubah'])) {
     $remote_add = $_SERVER['REMOTE_ADDR']; 
 
     foreach ($urut as $urut_key => $urut_value) {
+		// Ambil no_mesin dari data lama
+		$no_mesin = $d_old['no_mesin'];
+
+		// Cek apakah kombinasi no_urut + no_mesin sudah ada (selain record ini sendiri)
+		$cek_query = "SELECT COUNT(*) as jml 
+					  FROM db_dying.tbl_schedule 
+					  WHERE no_urut = ? 
+					  AND no_mesin = ? 
+					  AND id <> ?";
+
+		$params_cek = array($urut_value, $no_mesin, $urut_key);
+		$cek_result = sqlsrv_query($con, $cek_query, $params_cek);
+
+		if ($cek_result === false) {
+			die(print_r(sqlsrv_errors(), true));
+		}
+
+		$data_cek = sqlsrv_fetch_array($cek_result, SQLSRV_FETCH_ASSOC);
+
+		if ($data_cek['jml'] > 0) {
+			echo "<script>
+            alert('No urut $urut_value sudah digunakan di mesin $no_mesin');
+            window.history.back();
+          </script>";
+    	exit;
+		}
+		
         // Ambil data urutan lama dari database (SQL Server)
         $q_old = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id = ?", array($urut_key));
         if ($q_old === false) {
@@ -84,7 +111,33 @@ if (isset($_POST['ubah'])) {
                 die('cant update: nilai target di luar range (maksimal 99.99) : ' . htmlspecialchars($target_input));
             }
         }
+		
+		// Ambil no_mesin dari data lama
+		$no_mesin = $d_old['no_mesin'];
 
+		// Cek apakah kombinasi no_urut + no_mesin sudah ada (selain record ini sendiri)
+		$cek_query = "SELECT COUNT(*) as jml 
+					  FROM db_dying.tbl_schedule 
+					  WHERE no_urut = ? 
+					  AND no_mesin = ? 
+					  AND id <> ?";
+
+		$params_cek = array($urut_value, $no_mesin, $urut_key);
+		$cek_result = sqlsrv_query($con, $cek_query, $params_cek);
+
+		if ($cek_result === false) {
+			die(print_r(sqlsrv_errors(), true));
+		}
+
+		$data_cek = sqlsrv_fetch_array($cek_result, SQLSRV_FETCH_ASSOC);
+
+		if ($data_cek['jml'] > 0) {
+			echo "<script>
+            alert('No urut $urut_value sudah digunakan di mesin $no_mesin');
+            window.history.back();
+          </script>";
+    	exit;
+		}
         $nama_personil = $personil[$urut_key];
         $q_old = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id = ?", array($urut_key));
         $d_old = sqlsrv_fetch_array($q_old, SQLSRV_FETCH_ASSOC);
