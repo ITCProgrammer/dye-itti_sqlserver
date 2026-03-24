@@ -19,7 +19,8 @@ if (isset($_POST['ubah'])) {
 		// Cek apakah kombinasi no_urut + no_mesin sudah ada (selain record ini sendiri)
 		$cek_query = "SELECT COUNT(*) as jml 
 					  FROM db_dying.tbl_schedule 
-					  WHERE no_urut = ? 
+					  WHERE status <> 'selesai' 
+					  AND no_urut = ? 
 					  AND no_mesin = ? 
 					  AND id <> ?";
 
