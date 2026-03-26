@@ -1239,7 +1239,8 @@
 			// VALIDASI: no_urut + no_mesin tidak boleh sama (INSERT)
 			$sqlCek = "SELECT COUNT(*) as jml 
 					   FROM db_dying.tbl_schedule 
-					   WHERE no_urut = ? 
+					   WHERE status <> 'selesai'
+					   AND no_urut = ? 
 					   AND no_mesin = ?";
 
 			$paramsCek = array($_POST['no_urut'], $_POST['no_mc']);
