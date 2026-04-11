@@ -54,7 +54,10 @@
                                 FROM
                                     db_dying.tbl_schedule a
                                 WHERE a.no_mesin = ? AND a.status <> 'selesai' $where
-                                ORDER BY a.no_urut ASC";
+                                ORDER BY
+                                    CASE WHEN TRY_CONVERT(int, a.no_urut) IS NULL THEN 1 ELSE 0 END,
+                                    TRY_CONVERT(int, a.no_urut) ASC,
+                                    a.no_urut ASC";
                         $params = array($_GET['id']);
                         $qry = sqlsrv_query($con, $sql, $params);
                         $no = 1;

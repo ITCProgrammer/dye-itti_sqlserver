@@ -70,6 +70,8 @@
 			nokk
 		ORDER BY
 			no_mesin ASC,
+			CASE WHEN TRY_CONVERT(int, no_urut) IS NULL THEN 1 ELSE 0 END,
+			TRY_CONVERT(int, no_urut) ASC,
 			no_urut ASC";
 
 	$data = sqlsrv_query($con, $sqlSchedule);
