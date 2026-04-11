@@ -1421,15 +1421,16 @@
 			$paramTglDelivery = null;
 		}
 		// Ambil ID berdasarkan nokk (karena update pakai nokk)
-		$sqlGetId = "SELECT id FROM db_dying.tbl_schedule WHERE nokk = ?";
+		$sqlGetId = "SELECT TOP 1 id FROM db_dying.tbl_schedule WHERE nokk = ? AND status <> 'selesai' ORDER BY id DESC";
 		$qGetId = sqlsrv_query($con, $sqlGetId, array($_POST['nokk']));
 		$dGetId = sqlsrv_fetch_array($qGetId, SQLSRV_FETCH_ASSOC);
 		$current_id = $dGetId['id'] ?? 0;
 
-		// VALIDASI: no_urut + no_mesin tidak boleh sama (UPDATE)
+		// VALIDASI: no_urut + no_mesin hanya unik untuk schedule aktif (UPDATE)
 		$sqlCek = "SELECT COUNT(*) as jml 
 				   FROM db_dying.tbl_schedule 
-				   WHERE no_urut = ? 
+				   WHERE status <> 'selesai'
+				   AND no_urut = ? 
 				   AND no_mesin = ? 
 				   AND id <> ?";
 

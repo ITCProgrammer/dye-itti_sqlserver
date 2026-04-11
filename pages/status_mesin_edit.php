@@ -13,7 +13,17 @@ if (isset($_POST['ubah'])) {
     $remote_add = $_SERVER['REMOTE_ADDR']; 
 
     foreach ($urut as $urut_key => $urut_value) {
-		// Ambil no_mesin dari data lama
+        // Ambil data schedule aktif lebih dulu agar validasi pakai mesin yang benar.
+        $q_old = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id = ?", array($urut_key));
+        if ($q_old === false) {
+            die('Gagal ambil data lama: ' . print_r(sqlsrv_errors(), true));
+        }
+
+        $d_old = sqlsrv_fetch_array($q_old, SQLSRV_FETCH_ASSOC);
+        if ($d_old === null) {
+            continue;
+        }
+
 		$no_mesin = $d_old['no_mesin'];
 
 		// Cek apakah kombinasi no_urut + no_mesin sudah ada (selain record ini sendiri)
@@ -40,19 +50,6 @@ if (isset($_POST['ubah'])) {
           </script>";
     	exit;
 		}
-		
-        // Ambil data urutan lama dari database (SQL Server)
-        $q_old = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id = ?", array($urut_key));
-        if ($q_old === false) {
-            die('Gagal ambil data lama: ' . print_r(sqlsrv_errors(), true));
-        }
-
-        $d_old = sqlsrv_fetch_array($q_old, SQLSRV_FETCH_ASSOC);
-        if ($d_old === null) {
-            // Jika data dengan id tsb tidak ditemukan, lewati saja
-            continue;
-        }
-
         $no_urut_lama = $d_old['no_urut'];
 
         // Cek jika urutan berubah baru lakukan update
@@ -95,6 +92,16 @@ if (isset($_POST['ubah'])) {
     $remote_add         = $_SERVER['REMOTE_ADDR'];
 
     foreach ($urut as $urut_key => $urut_value) {
+        $q_old = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id = ?", array($urut_key));
+        if ($q_old === false) {
+            die('Gagal ambil data lama: ' . print_r(sqlsrv_errors(), true));
+        }
+
+        $d_old = sqlsrv_fetch_array($q_old, SQLSRV_FETCH_ASSOC);
+        if ($d_old === null) {
+            continue;
+        }
+
         // Normalisasi nilai target agar sesuai dengan kolom decimal(5,2)
         $target_input = isset($_POST['target'][$urut_key]) ? trim($_POST['target'][$urut_key]) : null;
         if ($target_input === '' || $target_input === null) {
@@ -113,13 +120,13 @@ if (isset($_POST['ubah'])) {
             }
         }
 		
-		// Ambil no_mesin dari data lama
 		$no_mesin = $d_old['no_mesin'];
 
 		// Cek apakah kombinasi no_urut + no_mesin sudah ada (selain record ini sendiri)
 		$cek_query = "SELECT COUNT(*) as jml 
 					  FROM db_dying.tbl_schedule 
-					  WHERE no_urut = ? 
+					  WHERE status <> 'selesai'
+					  AND no_urut = ? 
 					  AND no_mesin = ? 
 					  AND id <> ?";
 
@@ -140,8 +147,6 @@ if (isset($_POST['ubah'])) {
     	exit;
 		}
         $nama_personil = $personil[$urut_key];
-        $q_old = sqlsrv_query($con, "SELECT * FROM db_dying.tbl_schedule WHERE id = ?", array($urut_key));
-        $d_old = sqlsrv_fetch_array($q_old, SQLSRV_FETCH_ASSOC);
         // Pada ubah_stdtarget juga boleh mengubah no_urut
         $query  = "UPDATE db_dying.tbl_schedule 
                    SET target = ?, 

@@ -94,16 +94,17 @@ if($_POST){
 	$urut      = toNumericOrNull($urut);
 	$mcfrom    = toNumericOrNull($mcfrom);
 	
-	$query_old = "SELECT * FROM db_dying.tbl_schedule WHERE id = '$id'";
-	$q_old 		 = sqlsrv_query($con, $query_old);
+	$query_old = "SELECT * FROM db_dying.tbl_schedule WHERE id = ?";
+	$q_old 		 = sqlsrv_query($con, $query_old, array($id));
 	if ($q_old === false) {
 		warnOnError("Load schedule");
 	}
     $d_old 		 = sqlsrv_fetch_array($q_old,SQLSRV_FETCH_ASSOC);
-	// VALIDASI: no_urut + no_mesin tidak boleh sama
+	// VALIDASI: no_urut + no_mesin hanya unik untuk schedule yang masih aktif.
 		$sqlCek = "SELECT COUNT(*) as jml 
 				   FROM db_dying.tbl_schedule 
-				   WHERE no_urut = ? 
+				   WHERE status <> 'selesai'
+				   AND no_urut = ? 
 				   AND no_mesin = ? 
 				   AND id <> ?";
 
